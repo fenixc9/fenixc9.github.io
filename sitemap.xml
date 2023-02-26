@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>https://fenix0.com/ebpf-in-rust-1/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/directory-tree-in-rust/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/string-in-java/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/about/index.html</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/index.html</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/index.html</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-raw-pointer/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/smart-pointer/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/union-find/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/vlan%E5%92%8Cvxlan%E7%9A%84%E5%8C%BA%E5%88%AB/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust_lock_free/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/pour-water-problem/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-concurrent-std-2/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-concurrent-std-3/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-concurrent-std/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-error-handle/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-future/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-how-to-use-future-2/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-how-to-use-future/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-mod-detail/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-pin/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/rust-mini-blockchain/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/minio/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/ebpf-and-servicemesh/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/epoll-and-nonbloking/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/go-non-blocking/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/how-tcp-socket-work/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/impl-trait/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/jump-problem/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/lunarvim/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/course-schedule-problem/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/cuckoohash/</loc>
+    
+    <lastmod>2023-02-26</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+
+  <url>
+    <loc>https://fenix0.com/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  
+  <url>
+    <loc>https://fenix0.com/tags/Rust/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Lock/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Concurrent/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%BC%82%E6%AD%A5/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%9B%BE/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%B9%B6%E6%9F%A5%E9%9B%86/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/leetcode/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%93%88%E5%B8%8C%C2%B8/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Kubernetes/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/ServiceMesh/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/eBPF/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E7%BF%BB%E8%AF%91/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Linux/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%B9%B6%E5%8F%91/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/linux/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/IO/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Golang/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E9%98%BB%E5%A1%9E/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E7%BD%91%E7%BB%9C/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/C/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/trait/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E6%8A%BD%E8%B1%A1/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E8%B4%AA%E5%BF%83/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/vim/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/ide/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E4%B8%AD%E9%97%B4%E4%BB%B6/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E6%B7%B1%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E9%94%99%E8%AF%AF%E5%A4%84%E7%90%86/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%BC%82%E5%B8%B8/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E6%8C%87%E9%92%88/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/Java/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/istio/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/BlockChain/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/p2p/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/tags/%E5%8E%BB%E4%B8%AD%E5%BF%83%E5%8C%96/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+
+  
+  <url>
+    <loc>https://fenix0.com/categories/Rust/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/%E7%AE%97%E6%B3%95/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/Linux/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/Go/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/linux/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/Vim/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/%E5%AD%98%E5%82%A8/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/Java/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/%E7%BD%91%E7%BB%9C/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenix0.com/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2023-02-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+</urlset>
