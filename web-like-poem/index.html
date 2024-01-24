@@ -29,14 +29,12 @@
 <meta property="og:site_name" content="ByteDrift">
 <meta property="og:description" content="以poem为例，来看看如何设计一个web框架">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://fenix0.com/web-like-poem/raindrops.gif">
 <meta property="article:published_time" content="2024-01-19T16:15:17.000Z">
-<meta property="article:modified_time" content="2024-01-22T14:51:54.967Z">
+<meta property="article:modified_time" content="2024-01-24T13:51:38.530Z">
 <meta property="article:author" content="fenix">
 <meta property="article:tag" content="Rust">
 <meta property="article:tag" content="web">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://fenix0.com/web-like-poem/raindrops.gif">
 
 <link rel="canonical" href="https://fenix0.com/web-like-poem/">
 
@@ -221,7 +219,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2024-01-22 22:51:54" itemprop="dateModified" datetime="2024-01-22T22:51:54+08:00">2024-01-22</time>
+                <time title="修改时间：2024-01-24 21:51:38" itemprop="dateModified" datetime="2024-01-24T21:51:38+08:00">2024-01-24</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -252,7 +250,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <img src="/web-like-poem/raindrops.gif" class="" title="This is an example image">
+        
 <h1 id="项目地址"><a href="#项目地址" class="headerlink" title="项目地址"></a>项目地址</h1><p><a target="_blank" rel="noopener" href="https://github.com/poem-web/poem">https://github.com/poem-web/poem</a></p>
 <h1 id="什么是web框架"><a href="#什么是web框架" class="headerlink" title="什么是web框架"></a>什么是web框架</h1><p>web框架是一种用来简化web开发的软件框架，它提供了一系列的功能，比如路由、中间件、模板引擎、数据库连接等等。这些功能可以让开发者更加专注于业务逻辑的实现，而不用花费大量的精力在底层的实现上。</p>
 <p>而web框架之所以成为web框架，其首要且核心功能就是：</p>
@@ -354,6 +352,20 @@
 <figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T, E&gt; Endpoint <span class="keyword">for</span> <span class="title class_">ServerSessionEndpoint</span>&lt;T, E&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    T: SessionStorage,</span><br><span class="line">    E: Endpoint,</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
 
 
+
+<h1 id="openapi"><a href="#openapi" class="headerlink" title="openapi"></a>openapi</h1><p>在poem的example中可以看到很多poem内置的认证功能。</p>
+<p>我们先看看最简单的签名：</p>
+<h2 id="sign"><a href="#sign" class="headerlink" title="sign"></a>sign</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug, Serialize, Deserialize)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">User</span> &#123;</span><br><span class="line">    username: <span class="type">String</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于我们为User开启了 serde的Serialize宏，那么poem就为我们实现了：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T: Serialize&gt; ToBase64 <span class="keyword">for</span> <span class="title class_">T</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">to_base64</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Cow&lt;<span class="type">str</span>&gt;, Error&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">json_bytes</span> = serde_json::<span class="title function_ invoke__">to_vec</span>(&amp;<span class="keyword">self</span>)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">encoded_json_bytes</span> = base64::<span class="title function_ invoke__">encode_config</span>(&amp;json_bytes, base64::URL_SAFE_NO_PAD);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(Cow::<span class="title function_ invoke__">Owned</span>(encoded_json_bytes))</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>所以任何实现了Serialize的类型T都将自动实现ToBase64，也就自动实现了:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;C: ToBase64&gt; SignWithKey&lt;<span class="type">String</span>&gt; <span class="keyword">for</span> <span class="title class_">C</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">sign_with_key</span>(<span class="keyword">self</span>, key: &amp;<span class="keyword">impl</span> <span class="title class_">SigningAlgorithm</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">String</span>, Error&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">header</span> = Header &#123;</span><br><span class="line">            algorithm: key.<span class="title function_ invoke__">algorithm_type</span>(),</span><br><span class="line">            ..<span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>()</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">token</span> = Token::<span class="title function_ invoke__">new</span>(header, <span class="keyword">self</span>).<span class="title function_ invoke__">sign_with_key</span>(key)?;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(token.signature.token_string)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>SignWithKey 这个 trait。也就是说用户的struct只需添加Serialize就拥有了生成token的能力。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">login</span>(</span><br><span class="line">    &amp;<span class="keyword">self</span>,</span><br><span class="line">    server_key: Data&lt;&amp;ServerKey&gt;,</span><br><span class="line">    req: Json&lt;LoginRequest&gt;,</span><br><span class="line">) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;PlainText&lt;<span class="type">String</span>&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">token</span> = User &#123;</span><br><span class="line">        username: req.<span class="number">0</span>.username,</span><br><span class="line">    &#125;</span><br><span class="line">    .<span class="title function_ invoke__">sign_with_key</span>(server_key.<span class="number">0</span>)</span><br><span class="line">    .<span class="title function_ invoke__">map_err</span>(InternalServerError)?;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(<span class="title function_ invoke__">PlainText</span>(token))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
     </div>
 
     
@@ -452,7 +464,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E5%9C%B0%E5%9D%80"><span class="nav-number">1.</span> <span class="nav-text">项目地址</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFweb%E6%A1%86%E6%9E%B6"><span class="nav-number">2.</span> <span class="nav-text">什么是web框架</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88servlet%E8%BF%99%E4%B9%88%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.1.</span> <span class="nav-text">为什么servlet这么设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#poem%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.2.</span> <span class="nav-text">poem的设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Middleware"><span class="nav-number">2.3.1.</span> <span class="nav-text">Middleware</span></a></li></ol></li></ol></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E5%9C%B0%E5%9D%80"><span class="nav-number">1.</span> <span class="nav-text">项目地址</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFweb%E6%A1%86%E6%9E%B6"><span class="nav-number">2.</span> <span class="nav-text">什么是web框架</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88servlet%E8%BF%99%E4%B9%88%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.1.</span> <span class="nav-text">为什么servlet这么设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#poem%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.2.</span> <span class="nav-text">poem的设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Middleware"><span class="nav-number">2.3.1.</span> <span class="nav-text">Middleware</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#openapi"><span class="nav-number">3.</span> <span class="nav-text">openapi</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#sign"><span class="nav-number">3.1.</span> <span class="nav-text">sign</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
 
