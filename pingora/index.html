@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenix0.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="最近cloudflare终于开源了pingora，我们这里将从官方的博客和源码角度看看这波cloudflare到底整了个什么活">
+<meta property="og:type" content="article">
+<meta property="og:title" content="代替nginx？cloudflare开源的服务框架pingora">
+<meta property="og:url" content="https://fenix0.com/pingora/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="最近cloudflare终于开源了pingora，我们这里将从官方的博客和源码角度看看这波cloudflare到底整了个什么活">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-03-02T10:15:09.000Z">
+<meta property="article:modified_time" content="2024-03-03T16:48:31.938Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="Crate">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenix0.com/pingora/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>代替nginx？cloudflare开源的服务框架pingora | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenix0.com/pingora/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          代替nginx？cloudflare开源的服务框架pingora
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-03-02 18:15:09" itemprop="dateCreated datePublished" datetime="2024-03-02T18:15:09+08:00">2024-03-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2024-03-04 00:48:31" itemprop="dateModified" datetime="2024-03-04T00:48:31+08:00">2024-03-04</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">最近cloudflare终于开源了pingora，我们这里将从官方的博客和源码角度看看这波cloudflare到底整了个什么活 </div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>最近cloudflare终于开源了pingora，<a target="_blank" rel="noopener" href="https://github.com/cloudflare/pingora%EF%BC%8C%E5%BC%80%E6%BA%90%E4%B8%80%E5%A4%A9%E4%B9%8B%E5%86%85%E5%B0%B1%E6%94%B6%E5%88%B0%E4%BA%865k">https://github.com/cloudflare/pingora，开源一天之内就收到了5k</a> star，热度非常高，截至目前本文开始撰写，pingora依然在github趋势榜榜首，star 11.5k。</p>
+<p>热度如此之高的原因在于，cloudflare2022年就有博客提到pingora  </p>
+<p><a target="_blank" rel="noopener" href="https://blog.cloudflare.com/zh-cn/how-we-built-pingora-the-proxy-that-connects-cloudflare-to-the-internet-zh-cn/">https://blog.cloudflare.com/zh-cn/how-we-built-pingora-the-proxy-that-connects-cloudflare-to-the-internet-zh-cn/</a></p>
+<p>这是2年前的博客，当时cloudflare就已经用Rust实现了nginx的代替方案，但是一直没有开源，这次终于开源了，可谓是千呼万唤始出来。</p>
+<p>我们先看下2年前的博客中cloudflare是怎么说的：</p>
+<p><em>今天，我们很高兴有机会在此介绍 Pingora，这是我们使用 Rust 在内部构建的新 HTTP 代理，它每天处理超过 1 万亿个请求，提高了我们的性能，并为 Cloudflare 客户带来了许多新功能，同时只需要我们以前代理基础架构的三分之一的 CPU 和内存资源。<br>cloudflare表示pingora每天处理超过1万亿个请求，性能提高了，资源相较于nginx集群却只有三分之一。看来pingora已经在cloudflare生产部署了。</em></p>
+<h1 id="究竟为什么要研发一个新玩意代替nginx？"><a href="#究竟为什么要研发一个新玩意代替nginx？" class="headerlink" title="究竟为什么要研发一个新玩意代替nginx？"></a>究竟为什么要研发一个新玩意代替nginx？</h1><h2 id="进程模型的问题"><a href="#进程模型的问题" class="headerlink" title="进程模型的问题"></a>进程模型的问题</h2><p><em>NGINX worker（进程）架构对于我们的用例而言存在操作缺陷，这会损害我们的性能和效率。<br>首先，在 NGINX 中，每个请求只能由单个 worker 处理。这会导致所有 CPU 内核之间的负载不平衡，从而导致速度变慢。<br>由于这种请求进程锁定效应，执行 CPU 繁重或阻止 IO 任务的请求可能会减慢其他请求的速度。正如这些博客文章所表明的那样，我们已经花了很多时间来解决这些问题。</em></p>
+<p>cloudflare也是在抱怨nginx的进程模型，master监听到一个socket并分配给worker后，worker之间是无法做任务窃取的，线程模型可以解决这个问题。</p>
+<p><em>对于我们的用例来说，最关键的问题是糟糕的连接重用。我们的机器与原始服务器建立 TCP 连接，以代理 HTTP 请求。连接重用通过重用之前从连接池建立的连接，跳过新连接所需的 TCP 和 TLS 握手，来加快请求的 TTFB（首字节时间）。</em></p>
+<p>这个进程之间的连接无法复用的问题对于cloudflare这个CDN来说是致命的，因为CDN的核心就是代理请求，如果每次请求都要重新建立连接，那么CDN的性能就会大打折扣。</p>
+<h2 id="编程语言的问题"><a href="#编程语言的问题" class="headerlink" title="编程语言的问题"></a>编程语言的问题</h2><p>nginx对于一些复杂的特性支持不够：</p>
+<p><em>NGINX 是一个非常好的 Web 服务器、负载均衡器或简单的网关。但 Cloudflare 的作用远不止于此。我们过去常常围绕 NGINX 构建我们需要的所有功能，但要尽量避免与 NGINX 上游代码库有太多分歧，这并不容易。<br>例如，当重试请求&#x2F;请求失败时，有时我们希望将请求发送到具有不同请求标头集的不同源服务器。但 NGINX 并不允许执行此操作。在这种情况下，我们需要花费时间和精力来解决 NGINX 的限制</em></p>
+<p>自行研发的话，C语言又存在安全性的问题。lua能支持一些需求，但是缺乏类型支持。</p>
+<h1 id="Rust自研"><a href="#Rust自研" class="headerlink" title="Rust自研"></a>Rust自研</h1><p>基于上面的原因cloudflare决定使用类型安全的Rust自行研发代理系统。“为了打造一个每秒提供数百万次请求且快速、高效和安全的代理，我们必须首先做出一些重要的设计决定”</p>
+<p><em>尽管有一些很棒的现成第 3 方 HTTP 库，例如 hyper，我们选择构建自己的库是因为我们希望最大限度地提高处理 HTTP 流量的灵活性，并确保我们可以按照自己的节奏进行创新。</em></p>
+<p>由于cloudflare需要处理海量请求，可能多少会遇到不符合RFC规范的Http请求，所以cloudflare选择自行研发底层Http组件。</p>
+<p>由于Tokio支持任务窃取，非常适合cloudflare的异步需求。</p>
+<h1 id="真的快吗"><a href="#真的快吗" class="headerlink" title="真的快吗"></a>真的快吗</h1><h2 id="连接复用"><a href="#连接复用" class="headerlink" title="连接复用"></a>连接复用</h2><p><em>让我们快进到现在。Pingora 处理几乎所有需要与源服务器交互的 HTTP 请求（例如缓存未命中），我们在此过程中收集了很多性能数据。<br>首先，让我们看看 Pingora 如何加快我们客户的流量。Pingora 上的总体流量显示，TTFB 中位数减少了 5 毫秒，第 95 个百分位数减少了 80 毫秒。这不是因为我们运行代码更快。甚至我们的旧服务也可以处理亚毫秒范围内的请求。</em></p>
+<p><em>时间节省来自我们的新架构，它可以跨所有线程共享连接。这意味着更好的连接重用率，在 TCP 和 TLS 握手上花费的时间更少。</em></p>
+<p>可以看到pingora对比nginx对于连接复用的时间节省效果非常显著：</p>
+<p><em>在所有客户中，与旧服务相比，Pingora 每秒的新连接数只有三分之一。对于一个主要客户，它将连接重用率从 87.1% 提高到 99.92%，这将新连接减少了 160 倍。更直观地说，通过切换到 Pingora，我们每天为客户和用户节省了 434 年的握手时间。</em></p>
+<h2 id="cpu也降了不少"><a href="#cpu也降了不少" class="headerlink" title="cpu也降了不少"></a>cpu也降了不少</h2><p><em>在生产环境中，与我们的旧服务相比，Pingora 在相同流量负载的情况下，消耗的 CPU 和内存减少了约 70% 和 67%。节省来自几个因素。<br>与旧的 Lua 代码相比，我们的 Rust 代码运行效率更高。最重要的是，它们的架构也存在效率差异。例如，在 NGINX&#x2F;OpenResty 中，当 Lua 代码想要访问 HTTP 头时，它必须从 NGINX C 结构中读取它，分配一个 Lua 字符串，然后将其复制到 Lua 字符串中。之后，Lua 还对其新字符串进行垃圾回收。在 Pingora 中，它只是一个直接的字符串访问。</em></p>
+<p>这部分的收益来自把Http请求头处理的复杂逻辑从lua迁移到Rust。</p>
+<h1 id="开源项目"><a href="#开源项目" class="headerlink" title="开源项目"></a>开源项目</h1><p>博客以及pingora的设计初衷介绍完毕，我们来看下pingora本身。<br><a target="_blank" rel="noopener" href="https://github.com/cloudflare/pingora">https://github.com/cloudflare/pingora</a></p>
+<p>先看下目录结构</p>
+<hr>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">.</span><br><span class="line">├── Cargo.lock</span><br><span class="line">├── Cargo.toml</span><br><span class="line">├── LICENSE</span><br><span class="line">├── README.md</span><br><span class="line">├── docs</span><br><span class="line">├── pingora</span><br><span class="line">├── pingora-boringssl</span><br><span class="line">├── pingora-cache</span><br><span class="line">├── pingora-core</span><br><span class="line">├── pingora-error</span><br><span class="line">├── pingora-header-serde</span><br><span class="line">├── pingora-http</span><br><span class="line">├── pingora-ketama</span><br><span class="line">├── pingora-limits</span><br><span class="line">├── pingora-load-balancing</span><br><span class="line">├── pingora-lru</span><br><span class="line">├── pingora-memory-cache</span><br><span class="line">├── pingora-openssl</span><br><span class="line">├── pingora-pool</span><br><span class="line">├── pingora-proxy</span><br><span class="line">├── pingora-runtime</span><br><span class="line">├── pingora-timeout</span><br><span class="line">├── target</span><br><span class="line">└── tinyufo</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>README来看，pingora并不是一个开箱即用的代理服务器，而是一个底层的库，可以用来构建自己的代理服务器。有可能cloudflare早期是一套完整的proxy-server，并且重度耦合cloudflare自身的业务逻辑。所以2年后才开源是cloudflare在将cloudflare内部逻辑拆分，将可开源部分拆分出来。</p>
+<h2 id="项目依赖"><a href="#项目依赖" class="headerlink" title="项目依赖"></a>项目依赖</h2><p>全局依赖</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">tokio = &quot;1&quot;</span><br><span class="line">async-trait = &quot;0.1.42&quot;</span><br><span class="line">httparse = &quot;1&quot;</span><br><span class="line">bytes = &quot;1.0&quot;</span><br><span class="line">http = &quot;1.0.0&quot;</span><br><span class="line">log = &quot;0.4&quot;</span><br><span class="line">h2 = &quot;&gt;=0.4.2&quot;</span><br><span class="line">once_cell = &quot;1&quot;</span><br><span class="line">lru = &quot;0&quot;</span><br><span class="line">ahash = &quot;&gt;=0.8.9&quot;</span><br></pre></td></tr></table></figure>
+
+<p>异步trait必要的async-trait就不说了，异步运行时也是绑定了tokio，项目目前不支持更换运行时。</p>
+<h2 id="examples"><a href="#examples" class="headerlink" title="examples"></a>examples</h2><p>我们从项目给出的样例来看看pingora到底怎么用？</p>
+<p>四层代理怎么做的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[async_trait]</span></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">ServerApp</span> <span class="keyword">for</span> <span class="title class_">ProxyApp</span> &#123;</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">process_new</span>(</span><br><span class="line">        <span class="keyword">self</span>: &amp;Arc&lt;<span class="keyword">Self</span>&gt;,</span><br><span class="line">        io: Stream,</span><br><span class="line">        _shutdown: &amp;ShutdownWatch,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;Stream&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">client_session</span> = <span class="keyword">self</span>.client_connector.<span class="title function_ invoke__">new_stream</span>(&amp;<span class="keyword">self</span>.proxy_to).<span class="keyword">await</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">match</span> client_session &#123;</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(client_session) =&gt; &#123;</span><br><span class="line">                <span class="keyword">self</span>.<span class="title function_ invoke__">duplex</span>(io, client_session).<span class="keyword">await</span>;</span><br><span class="line">                <span class="literal">None</span></span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(e) =&gt; &#123;</span><br><span class="line">                debug!(<span class="string">&quot;Failed to create client session: &#123;&#125;&quot;</span>, e);</span><br><span class="line">                <span class="literal">None</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>框架交给我们一个Stream，我们立刻尝试连接上游proxy_to，然后：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">duplex</span>(&amp;<span class="keyword">self</span>, <span class="keyword">mut</span> server_session: Stream, <span class="keyword">mut</span> client_session: Stream) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">upstream_buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">downstream_buf</span> = [<span class="number">0</span>; <span class="number">1024</span>];</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">downstream_read</span> = server_session.<span class="title function_ invoke__">read</span>(&amp;<span class="keyword">mut</span> upstream_buf);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">upstream_read</span> = client_session.<span class="title function_ invoke__">read</span>(&amp;<span class="keyword">mut</span> downstream_buf);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">event</span>: DuplexEvent;</span><br><span class="line">        <span class="built_in">select!</span> &#123;</span><br><span class="line">            n = downstream_read =&gt; event</span><br><span class="line">                = DuplexEvent::<span class="title function_ invoke__">DownstreamRead</span>(n.<span class="title function_ invoke__">unwrap</span>()),</span><br><span class="line">            n = upstream_read =&gt; event</span><br><span class="line">                = DuplexEvent::<span class="title function_ invoke__">UpstreamRead</span>(n.<span class="title function_ invoke__">unwrap</span>()),</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">match</span> event &#123;</span><br><span class="line">            DuplexEvent::<span class="title function_ invoke__">DownstreamRead</span>(<span class="number">0</span>) =&gt; &#123;</span><br><span class="line">                debug!(<span class="string">&quot;downstream session closing&quot;</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            DuplexEvent::<span class="title function_ invoke__">UpstreamRead</span>(<span class="number">0</span>) =&gt; &#123;</span><br><span class="line">                debug!(<span class="string">&quot;upstream session closing&quot;</span>);</span><br><span class="line">                <span class="keyword">return</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            DuplexEvent::<span class="title function_ invoke__">DownstreamRead</span>(n) =&gt; &#123;</span><br><span class="line">                client_session.<span class="title function_ invoke__">write_all</span>(&amp;upstream_buf[<span class="number">0</span>..n]).<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">                client_session.<span class="title function_ invoke__">flush</span>().<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">            &#125;</span><br><span class="line">            DuplexEvent::<span class="title function_ invoke__">UpstreamRead</span>(n) =&gt; &#123;</span><br><span class="line">                server_session</span><br><span class="line">                    .<span class="title function_ invoke__">write_all</span>(&amp;downstream_buf[<span class="number">0</span>..n])</span><br><span class="line">                    .<span class="keyword">await</span></span><br><span class="line">                    .<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">                server_session.<span class="title function_ invoke__">flush</span>().<span class="keyword">await</span>.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>对于4层代理来说就是简单的将两边读到的内容copy到对端。</p>
+<p>pingora的四层框架就是ServerApp:</p>
+<pre><code class="rust">
+pub trait ServerApp &#123;
+    /// Whenever a new connection is established, this function will be called with the established
+    /// [`Stream`] object provided.
+    ///
+    /// The application can do whatever it wants with the `session`.
+    ///
+    /// After processing the `session`, if the `session`&#39;s connection is reusable, This function
+    /// can return it to the service by returning `Some(session)`. The returned `session` will be
+    /// fed to another [`Self::process_new()`] for another round of processing.
+    /// If not reusable, `None` should be returned.
+    ///
+    /// The `shutdown` argument will change from `false` to `true` when the server receives a
+    /// signal to shutdown. This argument allows the application to react accordingly.
+    async fn process_new(
+        self: &amp;Arc&lt;Self&gt;,
+        mut session: Stream,
+        // TODO: make this ShutdownWatch so that all task can await on this event
+        shutdown: &amp;ShutdownWatch,
+    ) -&gt; Option&lt;Stream&gt;;
+
+    /// This callback will be called once after the service stops listening to its endpoints.
+    fn cleanup(&amp;self) &#123;&#125;
+&#125;
+</code></pre>
+<p>从注释的描述来看，当process_new返回Stream的时候代表这个连接可以被复用，如果返回None则代表这个连接不能被复用。显然，对于四层代理，端口是独占的，一个连接只能单独处理一个请求，所以这里我们只能返回None。</p>
+<p>而可靠的Http代理协议则是较为复杂的实现，不仅要能完整的解析Http Header，并根据Header路由上游节点，还有连接复用，协议的转换，升级诸多琐事。因此效率自然会比四层代理低很多。</p>
+<p>除此之外，pingora还实现了自己的一致性哈希算法，ssl上也提供了openssl和boringssl供选择。项目中还有个名为tinyufo的高效的内存缓存，后续我会单独写文分析它。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenix0.com/pingora/" title="代替nginx？cloudflare开源的服务框架pingora">https://fenix0.com/pingora/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/Crate/" rel="tag"># Crate</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/once-cell/" rel="prev" title="[crate学习]once_cell">
+      <i class="fa fa-chevron-left"></i> [crate学习]once_cell
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A9%B6%E7%AB%9F%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%A0%94%E5%8F%91%E4%B8%80%E4%B8%AA%E6%96%B0%E7%8E%A9%E6%84%8F%E4%BB%A3%E6%9B%BFnginx%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">究竟为什么要研发一个新玩意代替nginx？</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E6%A8%A1%E5%9E%8B%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.1.</span> <span class="nav-text">进程模型的问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80%E7%9A%84%E9%97%AE%E9%A2%98"><span class="nav-number">1.2.</span> <span class="nav-text">编程语言的问题</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Rust%E8%87%AA%E7%A0%94"><span class="nav-number">2.</span> <span class="nav-text">Rust自研</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9C%9F%E7%9A%84%E5%BF%AB%E5%90%97"><span class="nav-number">3.</span> <span class="nav-text">真的快吗</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BF%9E%E6%8E%A5%E5%A4%8D%E7%94%A8"><span class="nav-number">3.1.</span> <span class="nav-text">连接复用</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cpu%E4%B9%9F%E9%99%8D%E4%BA%86%E4%B8%8D%E5%B0%91"><span class="nav-number">3.2.</span> <span class="nav-text">cpu也降了不少</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%BC%80%E6%BA%90%E9%A1%B9%E7%9B%AE"><span class="nav-number">4.</span> <span class="nav-text">开源项目</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E4%BE%9D%E8%B5%96"><span class="nav-number">4.1.</span> <span class="nav-text">项目依赖</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#examples"><span class="nav-number">4.2.</span> <span class="nav-text">examples</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">18</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">64</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2024</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '005d8ccea5c401d2ae248c6ce5a62d8d',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
