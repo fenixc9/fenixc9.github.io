@@ -19,20 +19,20 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"fenix0.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="如果你已经听过service mesh，也尝试过istio，你也许会有如下问题： 1. 为什么Istio跑在Kubernetes上。 2. 在云原生应用架构中，K8s和service mesh到底扮演什么角色？ 3. Istio扩展了K8s的那个切面？解决了什么问题？ 4. K8s，Envoy，Istio之间是什么关系？ 本文将带你走近K8s和istio的内部机制，此外，我还会介绍K8s的负载均">
 <meta property="og:type" content="article">
 <meta property="og:title" content="【译】为什么有Kubernetes了还要Istio？">
-<meta property="og:url" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/index.html">
+<meta property="og:url" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/index.html">
 <meta property="og:site_name" content="ByteDrift">
 <meta property="og:description" content="如果你已经听过service mesh，也尝试过istio，你也许会有如下问题： 1. 为什么Istio跑在Kubernetes上。 2. 在云原生应用架构中，K8s和service mesh到底扮演什么角色？ 3. Istio扩展了K8s的那个切面？解决了什么问题？ 4. K8s，Envoy，Istio之间是什么关系？ 本文将带你走近K8s和istio的内部机制，此外，我还会介绍K8s的负载均">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
-<meta property="og:image" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/2.webp">
-<meta property="og:image" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/3.webp">
-<meta property="og:image" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/4.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/2.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/3.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/4.webp">
 <meta property="article:published_time" content="2023-01-27T06:13:40.000Z">
 <meta property="article:modified_time" content="2024-05-03T07:13:38.588Z">
 <meta property="article:author" content="fenix">
@@ -42,9 +42,9 @@
 <meta property="article:tag" content="翻译">
 <meta property="article:tag" content="istio">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
+<meta name="twitter:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
 
-<link rel="canonical" href="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/">
+<link rel="canonical" href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/">
 
 
 <script id="page-configurations">
@@ -197,7 +197,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/a.jpeg">
@@ -387,7 +387,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/" title="【译】为什么有Kubernetes了还要Istio？">https://fenix0.com/why-do-you-need-istio-when-you-already-have-kubernetes/</a>
+    <a href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/" title="【译】为什么有Kubernetes了还要Istio？">https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
@@ -540,7 +540,7 @@
 <div class="copyright">
   
   &copy; 2020 – 
-  <span itemprop="copyrightYear">2024</span>
+  <span itemprop="copyrightYear">2025</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
