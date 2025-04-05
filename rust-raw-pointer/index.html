@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本篇将讨论Rust裸指针。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust裸指针">
+<meta property="og:url" content="https://fenixc9.github.io/rust-raw-pointer/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="本篇将讨论Rust裸指针。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-19T16:31:13.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.196Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="指针">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/rust-raw-pointer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Rust裸指针 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/rust-raw-pointer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Rust裸指针
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-20 00:31:13" itemprop="dateCreated datePublished" datetime="2023-01-20T00:31:13+08:00">2023-01-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">本篇将讨论Rust裸指针。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><p>Rust开发中直接使用裸指针并不常见，裸指针更多的用于标准库，和一些基础设施，数据结构等。</p>
+<h2 id="分类"><a href="#分类" class="headerlink" title="分类"></a>分类</h2><p>Rust裸指针分两种</p>
+<ul>
+<li><code>* mut T</code> 可变裸指针</li>
+<li><code>* const T</code>  不可变裸指针<br>这两者可以互相转换：<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f1</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="number">100</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">b</span> = &amp;a <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">i32</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">c</span> = b <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">i32</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">d</span> = c <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">i32</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;b = &#123;&#125;&quot;</span>, <span class="keyword">unsafe</span> &#123; *b &#125;);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;c = &#123;&#125;&quot;</span>, <span class="keyword">unsafe</span> &#123; *c &#125;);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;d = &#123;&#125;&quot;</span>, <span class="keyword">unsafe</span> &#123; *d &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">-------</span><br><span class="line">b = <span class="number">100</span></span><br><span class="line">c = <span class="number">100</span></span><br><span class="line">d = <span class="number">100</span></span><br></pre></td></tr></table></figure>
+这里似乎Rust并不介意我们对a存在多个可变裸指针。</li>
+</ul>
+<h1 id="如何获取一个裸指针"><a href="#如何获取一个裸指针" class="headerlink" title="如何获取一个裸指针"></a>如何获取一个裸指针</h1><h2 id="1-由引用转换而来"><a href="#1-由引用转换而来" class="headerlink" title="1. 由引用转换而来"></a>1. 由引用转换而来</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f1</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">my_num</span>: <span class="type">i32</span> = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ptr</span>: *<span class="keyword">const</span> <span class="type">i32</span> = &amp;my_num;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>也可以这样转：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f1</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">my_num</span>: <span class="type">i32</span> = <span class="number">10</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ptr</span> = &amp;my_num <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">i32</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>侧面印证，引用本质就是指针</p>
+<h2 id="2-由Box转换而来"><a href="#2-由Box转换而来" class="headerlink" title="2. 由Box转换而来"></a>2. 由Box转换而来</h2><p>这里会消费一个Box指针生成一个裸指针。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">a</span> = A;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">a</span>: *<span class="keyword">const</span> A = <span class="type">Box</span>::<span class="title function_ invoke__">into_raw</span>(<span class="type">Box</span>::<span class="title function_ invoke__">new</span>(a));</span><br></pre></td></tr></table></figure>
+
+<h1 id="功能"><a href="#功能" class="headerlink" title="功能"></a>功能</h1><h2 id="read"><a href="#read" class="headerlink" title="read"></a>read</h2><p>将裸指针转为裸指针类型对应的对象。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = <span class="number">3</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">x</span> = &amp;a <span class="keyword">as</span> *<span class="keyword">const</span> <span class="type">i32</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mm</span> = <span class="keyword">unsafe</span> &#123; x.<span class="title function_ invoke__">read</span>() &#125;;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>,mm);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="write"><a href="#write" class="headerlink" title="write"></a>write</h2><h2 id="null-x2F-is-null"><a href="#null-x2F-is-null" class="headerlink" title="null&#x2F;is_null"></a>null&#x2F;is_null</h2><p>构建一个空指针&#x2F;判断是否为空指针</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">p</span> = std::ptr::null::&lt;<span class="type">usize</span>&gt;();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;p is null: &#123;&#125;&quot;</span>, p.<span class="title function_ invoke__">is_null</span>());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="特性"><a href="#特性" class="headerlink" title="特性"></a>特性</h1><h2 id="1-Drop裸指针不会释放其指向的元素"><a href="#1-Drop裸指针不会释放其指向的元素" class="headerlink" title="1. Drop裸指针不会释放其指向的元素"></a>1. Drop裸指针不会释放其指向的元素</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;drop A...&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">b</span> = <span class="type">Box</span>::<span class="title function_ invoke__">into_raw</span>(<span class="type">Box</span>::<span class="title function_ invoke__">new</span>(a));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行这段代码并不会打印drop A。换句话说，释放裸指针并不会释放它所指向的对象。裸指针b的释放不会同时释放其指向的内存结构。 </p>
+<h2 id="2-构建裸指针safe，解引用裸指针是unsafe"><a href="#2-构建裸指针safe，解引用裸指针是unsafe" class="headerlink" title="2. 构建裸指针safe，解引用裸指针是unsafe"></a>2. 构建裸指针safe，解引用裸指针是unsafe</h2><p>比如我们从引用转裸指针，引用总是合法的指针，然而将其转为裸指针后。原本跟随引用的生命周期检查则失效了：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">p</span> = <span class="title function_ invoke__">u</span>();</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, <span class="keyword">unsafe</span> &#123; *p &#125;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">u</span>() <span class="punctuation">-&gt;</span> *<span class="keyword">mut</span> <span class="type">i32</span> &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">x</span> = <span class="number">2</span>;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">y</span> = &amp;<span class="keyword">mut</span> x <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">i32</span>;</span><br><span class="line">    y</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>上例中，函数u执行完成后，裸指针y指向的元素已经回收。此时解引用y将会产出ub，这里使用debug可能仍能打印正确结果<code>2</code> ，使用release build会看到奇怪的问题。</p>
+<h2 id="3-不能将value-move出来"><a href="#3-不能将value-move出来" class="headerlink" title="3. 不能将value move出来"></a>3. 不能将value move出来</h2><p>和引用一样不能从解引用（裸指针）move，只能读写解引用。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">x</span> = &amp;a <span class="keyword">as</span> *<span class="keyword">const</span> A;</span><br><span class="line">    <span class="comment">// 这里报错</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mm</span> :A = <span class="keyword">unsafe</span> &#123; *x &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么read可以move吗？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">x</span> = &amp;a <span class="keyword">as</span> *<span class="keyword">const</span> A;</span><br><span class="line">    <span class="comment">// let mm:A = unsafe &#123; *x &#125;;</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">mm</span>:A = <span class="keyword">unsafe</span> &#123; x.<span class="title function_ invoke__">read</span>() &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看起来没报错。我们看read这个函数的注释：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/// Reads the value from `src` without moving it. This leaves the</span><br><span class="line"></span><br><span class="line">/// memory in `src` unchanged.</span><br></pre></td></tr></table></figure>
+<p>实际上 read 也不会move原数据。所以从语义上来看，将裸指针转为了裸指针对应的对象。<code>src</code> must be [valid] for reads.</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">///</span><br><span class="line">/// `read` creates a bitwise copy of `T`, regardless of whether `T` is [`Copy`].</span><br><span class="line">/// If `T` is not [`Copy`], using both the returned value and the value at</span><br><span class="line">/// `*src` can violate memory safety. Note that assigning to `*src` counts as a</span><br><span class="line">/// use because it will attempt to drop the value at `*src`.</span><br></pre></td></tr></table></figure>
+
+<p>rust read的语义这里Rust官方论坛有些讨论：<br><a target="_blank" rel="noopener" href="https://users.rust-lang.org/t/why-does-reading-a-raw-pointer-cause-a-drop/66411/2">https://users.rust-lang.org/t/why-does-reading-a-raw-pointer-cause-a-drop/66411/2</a></p>
+<p>语义上讲如果T是非Copy，则执行read就应该将原数据从旧地址move到新地址，实际上实现上根据文档来看是<code>bit级浅拷贝</code>，原地址内存并没有动。</p>
+<h1 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h1><p>应该说Rust裸指针和C的指针仍有非常大的不同。C指针只是一个地址。Rust裸指针兼顾部分安全性和效率。 </p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//从下面结构定义可以看到，裸指针本质就是PtrComponents&lt;T&gt;</span></span><br><span class="line"><span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">union</span> <span class="title class_">PtrRepr</span>&lt;T: ?<span class="built_in">Sized</span>&gt; &#123;</span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) const_ptr: *<span class="keyword">const</span> T,</span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) mut_ptr: *<span class="keyword">mut</span> T,</span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) components: PtrComponents&lt;T&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">struct</span> <span class="title class_">PtrComponents</span>&lt;T: ?<span class="built_in">Sized</span>&gt; &#123;</span><br><span class="line">    <span class="comment">//*const ()保证元数据部分是空</span></span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) data_address: *<span class="title function_ invoke__">const</span> (),</span><br><span class="line">    <span class="comment">//不同类型指针的元数据</span></span><br><span class="line">    <span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) metadata: &lt;T <span class="keyword">as</span> Pointee&gt;::Metadata,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//从下面Pointee的定义可以看到一个RUST的编程技巧，即Trait可以只用来实现对关联类型的指定，Pointee这一Trait即只用来指定Metadata的类型。</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Pointee</span> &#123;</span><br><span class="line">    <span class="comment">/// The type for metadata in pointers and references to `Self`.</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Metadata</span>: <span class="built_in">Copy</span> + <span class="built_in">Send</span> + <span class="built_in">Sync</span> + <span class="built_in">Ord</span> + Hash + Unpin;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//廋指针元数据是单元类型，即是空</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Thin</span> = Pointee&lt;Metadata = ()&gt;; </span><br></pre></td></tr></table></figure>
+<p>Thin 瘦指针Metadata是空的。此外就是metadata不为空的胖指针。str，切片，trait object是目前的三种常见的胖指针。</p>
+<p>裸指针<em>const T&#x2F;</em> mut T将内存和类型系统相连接，*const T代表了一个内存块，指示了内存块首地址，大小，对齐等属性，以及后文提到的元数据，但不保证这个内存块的有效性和安全性。    </p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/rust-raw-pointer/" title="Rust裸指针">https://fenixc9.github.io/rust-raw-pointer/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/%E6%8C%87%E9%92%88/" rel="tag"># 指针</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-concurrent-std-3/" rel="prev" title="Rust并发系列3-channel">
+      <i class="fa fa-chevron-left"></i> Rust并发系列3-channel
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/rust-mini-blockchain/" rel="next" title="自己动手实现区块链">
+      自己动手实现区块链 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">概念</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%B1%BB"><span class="nav-number">1.1.</span> <span class="nav-text">分类</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E8%8E%B7%E5%8F%96%E4%B8%80%E4%B8%AA%E8%A3%B8%E6%8C%87%E9%92%88"><span class="nav-number">2.</span> <span class="nav-text">如何获取一个裸指针</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E7%94%B1%E5%BC%95%E7%94%A8%E8%BD%AC%E6%8D%A2%E8%80%8C%E6%9D%A5"><span class="nav-number">2.1.</span> <span class="nav-text">1. 由引用转换而来</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E7%94%B1Box%E8%BD%AC%E6%8D%A2%E8%80%8C%E6%9D%A5"><span class="nav-number">2.2.</span> <span class="nav-text">2. 由Box转换而来</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%9F%E8%83%BD"><span class="nav-number">3.</span> <span class="nav-text">功能</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#read"><span class="nav-number">3.1.</span> <span class="nav-text">read</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#write"><span class="nav-number">3.2.</span> <span class="nav-text">write</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#null-x2F-is-null"><span class="nav-number">3.3.</span> <span class="nav-text">null&#x2F;is_null</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%89%B9%E6%80%A7"><span class="nav-number">4.</span> <span class="nav-text">特性</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Drop%E8%A3%B8%E6%8C%87%E9%92%88%E4%B8%8D%E4%BC%9A%E9%87%8A%E6%94%BE%E5%85%B6%E6%8C%87%E5%90%91%E7%9A%84%E5%85%83%E7%B4%A0"><span class="nav-number">4.1.</span> <span class="nav-text">1. Drop裸指针不会释放其指向的元素</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9E%84%E5%BB%BA%E8%A3%B8%E6%8C%87%E9%92%88safe%EF%BC%8C%E8%A7%A3%E5%BC%95%E7%94%A8%E8%A3%B8%E6%8C%87%E9%92%88%E6%98%AFunsafe"><span class="nav-number">4.2.</span> <span class="nav-text">2. 构建裸指针safe，解引用裸指针是unsafe</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E4%B8%8D%E8%83%BD%E5%B0%86value-move%E5%87%BA%E6%9D%A5"><span class="nav-number">4.3.</span> <span class="nav-text">3. 不能将value move出来</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">5.</span> <span class="nav-text">实现</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '0d9968cbd4fcc55ec24316b8b66aaecd',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

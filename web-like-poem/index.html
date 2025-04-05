@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="以poem为例，来看看如何设计一个web框架">
+<meta property="og:type" content="article">
+<meta property="og:title" content="读诗一样写web框架">
+<meta property="og:url" content="https://fenixc9.github.io/web-like-poem/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="以poem为例，来看看如何设计一个web框架">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-01-19T16:15:17.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.208Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="web">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/web-like-poem/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>读诗一样写web框架 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/web-like-poem/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          读诗一样写web框架
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2024-01-20 00:15:17" itemprop="dateCreated datePublished" datetime="2024-01-20T00:15:17+08:00">2024-01-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">以poem为例，来看看如何设计一个web框架</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="项目地址"><a href="#项目地址" class="headerlink" title="项目地址"></a>项目地址</h1><p><a target="_blank" rel="noopener" href="https://github.com/poem-web/poem">https://github.com/poem-web/poem</a></p>
+<h1 id="什么是web框架"><a href="#什么是web框架" class="headerlink" title="什么是web框架"></a>什么是web框架</h1><p>web框架是一种用来简化web开发的软件框架，它提供了一系列的功能，比如路由、中间件、模板引擎、数据库连接等等。这些功能可以让开发者更加专注于业务逻辑的实现，而不用花费大量的精力在底层的实现上。</p>
+<p>而web框架之所以成为web框架，其首要且核心功能就是：</p>
+<ol>
+<li>解析http请求</li>
+<li>处理http请求</li>
+<li>构造http响应</li>
+</ol>
+<p>许多语言在抽象这一最基本的行为时，都大同小异</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">func  <span class="title function_">handle</span><span class="params">(request Request)</span> -&gt; (Response)</span><br></pre></td></tr></table></figure>
+<p>但是java 的servlet却是这样的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">void</span> service​(ServletRequest req, ServletResponse res) <span class="keyword">throws</span> ServletException, IOException</span><br></pre></td></tr></table></figure>
+<p>把请求和响应都放在参数里。我在stackoverflow上看到的一个说法是：<br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/5897215/why-does-servlet-service-method-return-void-and-not-an-instance-of-servletresp">https://stackoverflow.com/questions/5897215/why-does-servlet-service-method-return-void-and-not-an-instance-of-servletresp</a></p>
+<h2 id="为什么servlet这么设计"><a href="#为什么servlet这么设计" class="headerlink" title="为什么servlet这么设计"></a>为什么servlet这么设计</h2><p>这种设计是为了方便开发者，因为开发者可以直接使用servlet提供的response对象，而不用自己构造response对象。还有个问题就是如果使用Response放在响应中的方案那么servlet的运行时，即Web服务器本身是能够访问到container内部的buffer的（这种情况下必须由servlet容器创建buffer）。而创建buffer本就是web服务器的工作。这种写法在servlet这种嵌入的模式下将不太解耦。</p>
+<p>现如今新兴的语言，框架不再采用servlet托管的笨重模式，Response则回到了它本来的位置。</p>
+<h2 id="poem的设计"><a href="#poem的设计" class="headerlink" title="poem的设计"></a>poem的设计</h2><p>那么，poem这里是如何定义的呢？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[async_trait::async_trait]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Endpoint</span>: <span class="built_in">Send</span> + <span class="built_in">Sync</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span>: IntoResponse;</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">call</span>(&amp;<span class="keyword">self</span>, req: Request) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>::Output&gt;;</span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">get_response</span>(&amp;<span class="keyword">self</span>, req: Request) <span class="punctuation">-&gt;</span> Response &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">call</span>(req)</span><br><span class="line">            .<span class="keyword">await</span></span><br><span class="line">            .<span class="title function_ invoke__">map</span>(IntoResponse::into_response)</span><br><span class="line">            .<span class="title function_ invoke__">unwrap_or_else</span>(|err| err.<span class="title function_ invoke__">into_response</span>())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里基本就是我们前面说的return 模式了，但是为什么有两个函数呢？</p>
+<p>我们先看看poem的例子</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[handler]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">hello</span>(<span class="title function_ invoke__">Path</span>(name): Path&lt;<span class="type">String</span>&gt;) <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;</span><br><span class="line">    <span class="built_in">format!</span>(<span class="string">&quot;hello: &#123;name&#125;&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这段代码从Http path中解析name参数，返回String。</p>
+<p>现如今大多数web框架都是这样的声明式的，用户只需声明自己需要的参数，框架会自行解析这些参数，然后调用用户的函数，最后把返回值构造成http响应返回给客户端。这里的handler宏就是用来解析用户的函数的。</p>
+<p>我们将handler宏展开：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[allow(non_camel_case_types)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">hello</span>;</span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">poem</span>::Endpoint <span class="keyword">for</span> <span class="title class_">hello</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = poem::Response;</span><br><span class="line">    <span class="meta">#[allow(unused_mut)]</span></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">call</span>(&amp;<span class="keyword">self</span>, <span class="keyword">mut</span> req: poem::Request) <span class="punctuation">-&gt;</span> poem::<span class="type">Result</span>&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> (req, <span class="keyword">mut</span> body) = req.<span class="title function_ invoke__">split</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">p0</span> = &lt;Path&lt;<span class="type">String</span>&gt; <span class="keyword">as</span> poem::FromRequest&gt;::<span class="title function_ invoke__">from_request</span>(&amp;req, &amp;<span class="keyword">mut</span> body).<span class="keyword">await</span>?;</span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">hello</span>(<span class="title function_ invoke__">Path</span>(name): Path&lt;<span class="type">String</span>&gt;) <span class="punctuation">-&gt;</span> <span class="type">String</span> &#123;</span><br><span class="line">            <span class="built_in">format!</span>(<span class="string">&quot;hello: &#123;name&#125;&quot;</span>)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">res</span> = <span class="title function_ invoke__">hello</span>(p0);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">res</span> = poem::error::IntoResult::<span class="title function_ invoke__">into_result</span>(res);</span><br><span class="line">        std::result::<span class="type">Result</span>::<span class="title function_ invoke__">map</span>(res, poem::IntoResponse::into_response)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>我们可以看到，这里hello函数被过程宏转换为<code>struct hello</code> 结构体，然后实现了Endpoint trait，在call函数中，参数是框架从TcpStream中解析好的标准<code>HttpRequest</code>:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#[derive(Default)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Request</span> &#123;</span><br><span class="line">    method: Method,</span><br><span class="line">    uri: Uri,</span><br><span class="line">    version: Version,</span><br><span class="line">    headers: HeaderMap,</span><br><span class="line">    extensions: Extensions,</span><br><span class="line">    body: Body,</span><br><span class="line">    state: RequestState,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>框架把用户声明的参数解析出来后，把用户的函数声明出来，然后把参数塞进去调用。返回IntoResponse，这个trait长这样:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">IntoResponse</span>: <span class="built_in">Send</span> &#123;</span><br><span class="line">    <span class="comment">/// Consume itself and return [`Response`].</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">into_response</span>(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> Response;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个trait负责将用户声明的类型转为poem的标准Response。转换完成后再由框架将Response写回TcpStream。</p>
+<p>poem为我们实现了很多基本类型的IntoResponse，这就是trait比起继承强大的地方了，可以轻松扩展标准库的功能。</p>
+<p>如此这般，我们的handler代码就能正确地处理请求了。</p>
+<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>那么我们的TcpSteam是如何解析为HttpRequest呢？</p>
+<p>前面我们看了poem的核心，明白框架到底在干嘛，我们再从框架入口的角度看看这一切是怎么发生的。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">app</span> = Route::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">at</span>(<span class="string">&quot;/hello/:name&quot;</span>, <span class="title function_ invoke__">get</span>(hello)).<span class="title function_ invoke__">with</span>(Tracing);</span><br><span class="line">Server::<span class="title function_ invoke__">new</span>(TcpListener::<span class="title function_ invoke__">bind</span>(<span class="string">&quot;0.0.0.0:3000&quot;</span>))</span><br><span class="line">    .<span class="title function_ invoke__">name</span>(<span class="string">&quot;hello-world&quot;</span>)</span><br><span class="line">    .<span class="title function_ invoke__">run</span>(app)</span><br><span class="line">    .<span class="keyword">await</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这是example中的例子之一。对于<code>Server::new</code> 的签名:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;L: Listener&gt; Server&lt;L, Infallible&gt; &#123;</span><br><span class="line">    <span class="comment">/// Use the specified listener to create an HTTP server.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(listener: L) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            listener: Either::<span class="title function_ invoke__">Listener</span>(listener),</span><br><span class="line">            name: <span class="literal">None</span>,</span><br><span class="line">            idle_timeout: <span class="literal">None</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里poem中内置实现了tokio的TcpListenr，因此这里可以直接传入Tokio的TcpListener。在run函数中要求我们:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">run</span>&lt;E&gt;(<span class="keyword">self</span>, ep: E) <span class="punctuation">-&gt;</span> IoResult&lt;()&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        E: IntoEndpoint,</span><br><span class="line">        E::Endpoint: <span class="symbol">&#x27;static</span>,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">run_with_graceful_shutdown</span>(ep, futures_util::future::<span class="title function_ invoke__">pending</span>(), <span class="literal">None</span>)</span><br><span class="line">            .<span class="keyword">await</span></span><br><span class="line">    &#125;</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">这里则传入我们的Endpoint，Endpoint可以不是某个具体的，处理请求的函数，也可以是一个路由，通常我们在服务器启动是，代码中已经全局静态写好了路由：</span><br><span class="line"></span><br><span class="line">```rust</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">app</span> = Route::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">nest</span>(<span class="string">&quot;/api&quot;</span>, <span class="title function_ invoke__">api</span>());</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">在run_with_graceful_shutdown中:</span><br><span class="line">```rust</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">run_with_graceful_shutdown</span>&lt;E&gt;(</span><br><span class="line">        <span class="keyword">self</span>,</span><br><span class="line">        ep: E,</span><br><span class="line">        signal: <span class="keyword">impl</span> <span class="title class_">Future</span>&lt;Output = ()&gt;,</span><br><span class="line">        timeout: <span class="type">Option</span>&lt;Duration&gt;,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> IoResult&lt;()&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        E: IntoEndpoint,</span><br><span class="line">        E::Endpoint: <span class="symbol">&#x27;static</span>,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">ep</span> = Arc::<span class="title function_ invoke__">new</span>(ep.<span class="title function_ invoke__">into_endpoint</span>().<span class="title function_ invoke__">map_to_response</span>());</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">Server</span> &#123;</span><br><span class="line">            listener,</span><br><span class="line">            name,</span><br><span class="line">            idle_timeout,</span><br><span class="line">        &#125; = <span class="keyword">self</span>;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">name</span> = name.<span class="title function_ invoke__">as_deref</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">alive_connections</span> = Arc::<span class="title function_ invoke__">new</span>(AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>));</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">notify</span> = Arc::<span class="title function_ invoke__">new</span>(Notify::<span class="title function_ invoke__">new</span>());</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">timeout_token</span> = CancellationToken::<span class="title function_ invoke__">new</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">server_graceful_shutdown_token</span> = CancellationToken::<span class="title function_ invoke__">new</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">acceptor</span> = <span class="keyword">match</span> listener &#123;</span><br><span class="line">            Either::<span class="title function_ invoke__">Listener</span>(listener) =&gt; listener.<span class="title function_ invoke__">into_acceptor</span>().<span class="keyword">await</span>?.<span class="title function_ invoke__">boxed</span>(),</span><br><span class="line">            Either::<span class="title function_ invoke__">Acceptor</span>(acceptor) =&gt; acceptor.<span class="title function_ invoke__">boxed</span>(),</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        tokio::pin!(signal);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> <span class="variable">addr</span> <span class="keyword">in</span> acceptor.<span class="title function_ invoke__">local_addr</span>() &#123;</span><br><span class="line">            tracing::info!(name = name, addr = %addr, <span class="string">&quot;listening&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        tracing::info!(name = name, <span class="string">&quot;server started&quot;</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            tokio::<span class="built_in">select!</span> &#123;</span><br><span class="line">                _ = &amp;<span class="keyword">mut</span> signal =&gt; &#123;</span><br><span class="line">                    server_graceful_shutdown_token.<span class="title function_ invoke__">cancel</span>();</span><br><span class="line">                    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(timeout) = timeout &#123;</span><br><span class="line">                        tracing::info!(</span><br><span class="line">                            name = name,</span><br><span class="line">                            timeout_in_seconds = timeout.<span class="title function_ invoke__">as_secs_f32</span>(),</span><br><span class="line">                            <span class="string">&quot;initiate graceful shutdown&quot;</span>,</span><br><span class="line">                        );</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">timeout_token</span> = timeout_token.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                        tokio::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                            tokio::time::<span class="title function_ invoke__">sleep</span>(timeout).<span class="keyword">await</span>;</span><br><span class="line">                            timeout_token.<span class="title function_ invoke__">cancel</span>();</span><br><span class="line">                        &#125;);</span><br><span class="line">                    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                        tracing::info!(name = name, <span class="string">&quot;initiate graceful shutdown&quot;</span>);</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">break</span>;</span><br><span class="line">                &#125;,</span><br><span class="line">                res = acceptor.<span class="title function_ invoke__">accept</span>() =&gt; &#123;</span><br><span class="line">                    <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Ok</span>((socket, local_addr, remote_addr, scheme)) = res &#123;</span><br><span class="line">                        alive_connections.<span class="title function_ invoke__">fetch_add</span>(<span class="number">1</span>, Ordering::Release);</span><br><span class="line"></span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">ep</span> = ep.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">alive_connections</span> = alive_connections.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">notify</span> = notify.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">timeout_token</span> = timeout_token.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                        <span class="keyword">let</span> <span class="variable">server_graceful_shutdown_token</span> = server_graceful_shutdown_token.<span class="title function_ invoke__">clone</span>();</span><br><span class="line"></span><br><span class="line">                        tokio::<span class="title function_ invoke__">spawn</span>(<span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                            <span class="keyword">let</span> <span class="variable">serve_connection</span> = <span class="title function_ invoke__">serve_connection</span>(socket, local_addr, remote_addr, scheme, ep, server_graceful_shutdown_token, idle_timeout);</span><br><span class="line"></span><br><span class="line">                            <span class="keyword">if</span> timeout.<span class="title function_ invoke__">is_some</span>() &#123;</span><br><span class="line">                                tokio::<span class="built_in">select!</span> &#123;</span><br><span class="line">                                    _ = serve_connection =&gt; &#123;&#125;</span><br><span class="line">                                    _ = timeout_token.<span class="title function_ invoke__">cancelled</span>() =&gt; &#123;&#125;</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                               serve_connection.<span class="keyword">await</span>;</span><br><span class="line">                            &#125;</span><br><span class="line"></span><br><span class="line">                            <span class="keyword">if</span> alive_connections.<span class="title function_ invoke__">fetch_sub</span>(<span class="number">1</span>, Ordering::Acquire) == <span class="number">1</span> &#123;</span><br><span class="line">                                <span class="comment">// We have to notify only if there is a registered waiter on shutdown</span></span><br><span class="line">                                notify.<span class="title function_ invoke__">notify_waiters</span>();</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="title function_ invoke__">drop</span>(acceptor);</span><br><span class="line">        <span class="keyword">if</span> alive_connections.<span class="title function_ invoke__">load</span>(Ordering::Acquire) &gt; <span class="number">0</span> &#123;</span><br><span class="line">            tracing::info!(name = name, <span class="string">&quot;wait for all connections to close.&quot;</span>);</span><br><span class="line">            notify.<span class="title function_ invoke__">notified</span>().<span class="keyword">await</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        tracing::info!(name = name, <span class="string">&quot;server stopped&quot;</span>);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们在server的状态中会维护连接数<code>active_connections</code>，notify用于做优雅关闭的功能，在accept socket的循环中，第一层嵌套是在<code>accept</code>，和signal之间select，这意味着：</p>
+<ol>
+<li>假如外界添加了ctrl + c的signal，循环将立刻终止，我们的进程将无法接受新的socket。</li>
+<li>如果连接数不为0，则主线程在退出循环后将停在notifyed处，直到所有链接都被处理完毕。</li>
+</ol>
+<p>而在接受到链接后，tokio将开启一个协程，或者说子任务来单独处理来自这个socket的请求。同样的，假如用户配置了超时时间，这里也会用<code>select</code>的方式来处理。</p>
+<p>serve_connection是真正处理请求的函数，处理结束后如果当前只剩一个连接，会告知主线程，可以正常停止服务了。</p>
+<p>serve_connection长这样：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">serve_connection</span>(</span><br><span class="line">    socket: <span class="keyword">impl</span> <span class="title class_">AsyncRead</span> + AsyncWrite + <span class="built_in">Send</span> + Unpin + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    local_addr: LocalAddr,</span><br><span class="line">    remote_addr: RemoteAddr,</span><br><span class="line">    scheme: Scheme,</span><br><span class="line">    ep: Arc&lt;<span class="keyword">dyn</span> Endpoint&lt;Output = Response&gt;&gt;,</span><br><span class="line">    server_graceful_shutdown_token: CancellationToken,</span><br><span class="line">    idle_connection_close_timeout: <span class="type">Option</span>&lt;Duration&gt;,</span><br><span class="line">) &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">connection_shutdown_token</span> = CancellationToken::<span class="title function_ invoke__">new</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">service</span> = hyper::service::<span class="title function_ invoke__">service_fn</span>(&#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">remote_addr</span> = remote_addr.<span class="title function_ invoke__">clone</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">move</span> |req: http::Request&lt;Incoming&gt;| &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">ep</span> = ep.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">local_addr</span> = local_addr.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">remote_addr</span> = remote_addr.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">scheme</span> = scheme.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">            <span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                Ok::&lt;http::Response&lt;_&gt;, Infallible&gt;(</span><br><span class="line">                    ep.<span class="title function_ invoke__">get_response</span>((req, local_addr, remote_addr, scheme).<span class="title function_ invoke__">into</span>())</span><br><span class="line">                        .<span class="keyword">await</span></span><br><span class="line">                        .<span class="title function_ invoke__">into</span>(),</span><br><span class="line">                )</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">socket</span> = <span class="keyword">match</span> idle_connection_close_timeout &#123;</span><br><span class="line">        <span class="title function_ invoke__">Some</span>(timeout) =&gt; &#123;</span><br><span class="line">            tokio_util::either::Either::<span class="title function_ invoke__">Left</span>(ClosingInactiveConnection::<span class="title function_ invoke__">new</span>(socket, timeout, &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">connection_shutdown_token</span> = connection_shutdown_token.<span class="title function_ invoke__">clone</span>();</span><br><span class="line"></span><br><span class="line">                <span class="keyword">move</span> || &#123;</span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">connection_shutdown_token</span> = connection_shutdown_token.<span class="title function_ invoke__">clone</span>();</span><br><span class="line">                    <span class="keyword">async</span> <span class="keyword">move</span> &#123;</span><br><span class="line">                        connection_shutdown_token.<span class="title function_ invoke__">cancel</span>();</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;))</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="literal">None</span> =&gt; tokio_util::either::Either::<span class="title function_ invoke__">Right</span>(socket),</span><br><span class="line">    &#125;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">builder</span> = auto::Builder::<span class="title function_ invoke__">new</span>(hyper_util::rt::TokioExecutor::<span class="title function_ invoke__">new</span>());</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">conn</span> =</span><br><span class="line">        builder.<span class="title function_ invoke__">serve_connection_with_upgrades</span>(hyper_util::rt::TokioIo::<span class="title function_ invoke__">new</span>(socket), service);</span><br><span class="line">    futures_util::pin_mut!(conn);</span><br><span class="line"></span><br><span class="line">    tokio::<span class="built_in">select!</span> &#123;</span><br><span class="line">        _ = conn =&gt; &#123;</span><br><span class="line">            <span class="comment">// Connection completed successfully.</span></span><br><span class="line">        &#125;,</span><br><span class="line">        _ = connection_shutdown_token.<span class="title function_ invoke__">cancelled</span>() =&gt; &#123;</span><br><span class="line">            tracing::info!(remote_addr=%remote_addr, <span class="string">&quot;closing connection due to inactivity&quot;</span>);</span><br><span class="line">        &#125;</span><br><span class="line">        _ = server_graceful_shutdown_token.<span class="title function_ invoke__">cancelled</span>() =&gt; &#123;&#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">service</span> = hyper::service::<span class="title function_ invoke__">service_fn</span>(&#123;</span><br></pre></td></tr></table></figure>
+<p>这一部分会把一个包含我们的EndPoint的Future封装到hyper的service中，是的，poem是在hyper上的封装。</p>
+<p>hyper中将处理httpRequest的行为抽象为：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">HttpService</span>&lt;ReqBody&gt;: sealed::Sealed&lt;ReqBody&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">ResBody</span>: Body;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Error</span>: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Future</span>: Future&lt;Output = <span class="type">Result</span>&lt;Response&lt;<span class="keyword">Self</span>::ResBody&gt;, <span class="keyword">Self</span>::Error&gt;&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">call</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, req: Request&lt;ReqBody&gt;) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Future;</span><br><span class="line">&#125;</span><br><span class="line">````</span><br><span class="line">这里跟poem定义的非常类似。</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">最后异步运行时真正在poll的是这个玩意：</span><br><span class="line"></span><br><span class="line">```rust</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">conn</span> =</span><br><span class="line">        builder.<span class="title function_ invoke__">serve_connection_with_upgrades</span>(hyper_util::rt::TokioIo::<span class="title function_ invoke__">new</span>(socket), service);</span><br></pre></td></tr></table></figure>
+
+<p>看看里面是啥：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">serve_connection_with_upgrades</span>&lt;I, S, B&gt;(</span><br><span class="line">        &amp;<span class="keyword">self</span>,</span><br><span class="line">        io: I,</span><br><span class="line">        service: S,</span><br><span class="line">    ) <span class="punctuation">-&gt;</span> UpgradeableConnection&lt;<span class="symbol">&#x27;_</span>, I, S, E&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        S: Service&lt;Request&lt;Incoming&gt;, Response = Response&lt;B&gt;&gt;,</span><br><span class="line">        S::Future: <span class="symbol">&#x27;static</span>,</span><br><span class="line">        S::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">        B: Body + <span class="symbol">&#x27;static</span>,</span><br><span class="line">        B::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">        I: Read + Write + Unpin + <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">        E: Http2ServerConnExec&lt;S::Future, B&gt;,</span><br><span class="line">    &#123;</span><br><span class="line">        UpgradeableConnection &#123;</span><br><span class="line">            state: UpgradeableConnState::ReadVersion &#123;</span><br><span class="line">                read_version: <span class="title function_ invoke__">read_version</span>(io),</span><br><span class="line">                builder: <span class="keyword">self</span>,</span><br><span class="line">                service: <span class="title function_ invoke__">Some</span>(service),</span><br><span class="line">            &#125;,</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">代码这里就跳转到hyper中去了，这里就是分具体版本Http协议的解析部分了，我们直接看Future状态机怎么写的：</span><br><span class="line">```rust</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;I, S, E, B&gt; Future <span class="keyword">for</span> <span class="title class_">UpgradeableConnection</span>&lt;<span class="symbol">&#x27;_</span>, I, S, E&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    S: Service&lt;Request&lt;Incoming&gt;, Response = Response&lt;B&gt;&gt;,</span><br><span class="line">    S::Future: <span class="symbol">&#x27;static</span>,</span><br><span class="line">    S::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">    B: Body + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    B::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">    I: Read + Write + Unpin + <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    E: Http2ServerConnExec&lt;S::Future, B&gt;,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = <span class="type">Result</span>&lt;()&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll</span>(<span class="keyword">mut</span> <span class="keyword">self</span>: Pin&lt;&amp;<span class="keyword">mut</span> <span class="keyword">Self</span>&gt;, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">this</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">project</span>();</span><br><span class="line"></span><br><span class="line">            <span class="keyword">match</span> this.state.<span class="title function_ invoke__">as_mut</span>().<span class="title function_ invoke__">project</span>() &#123;</span><br><span class="line">                UpgradeableConnStateProj::ReadVersion &#123;</span><br><span class="line">                    read_version,</span><br><span class="line">                    builder,</span><br><span class="line">                    service,</span><br><span class="line">                &#125; =&gt; &#123;</span><br><span class="line">                    <span class="keyword">let</span> (version, io) = ready!(read_version.<span class="title function_ invoke__">poll</span>(cx))?;</span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">service</span> = service.<span class="title function_ invoke__">take</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">                    <span class="keyword">match</span> version &#123;</span><br><span class="line">                        Version::H1 =&gt; &#123;</span><br><span class="line">                            <span class="keyword">let</span> <span class="variable">conn</span> = builder.http1.<span class="title function_ invoke__">serve_connection</span>(io, service).<span class="title function_ invoke__">with_upgrades</span>();</span><br><span class="line">                            this.state.<span class="title function_ invoke__">set</span>(UpgradeableConnState::H1 &#123; conn &#125;);</span><br><span class="line">                        &#125;</span><br><span class="line">                        Version::H2 =&gt; &#123;</span><br><span class="line">                            <span class="keyword">let</span> <span class="variable">conn</span> = builder.http2.<span class="title function_ invoke__">serve_connection</span>(io, service);</span><br><span class="line">                            this.state.<span class="title function_ invoke__">set</span>(UpgradeableConnState::H2 &#123; conn &#125;);</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                UpgradeableConnStateProj::H1 &#123; conn &#125; =&gt; &#123;</span><br><span class="line">                    <span class="keyword">return</span> conn.<span class="title function_ invoke__">poll</span>(cx).<span class="title function_ invoke__">map_err</span>(<span class="built_in">Into</span>::into);</span><br><span class="line">                &#125;</span><br><span class="line">                UpgradeableConnStateProj::H2 &#123; conn &#125; =&gt; &#123;</span><br><span class="line">                    <span class="keyword">return</span> conn.<span class="title function_ invoke__">poll</span>(cx).<span class="title function_ invoke__">map_err</span>(<span class="built_in">Into</span>::into);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个状态机就是首先从header中读出http版本，然后创建对应协议解析的状态机Future ，然后直接poll。</p>
+<p>我们以1.1为例这个状态机长这样：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">struct</span> <span class="title class_">Conn</span>&lt;I, B, T&gt; &#123;</span><br><span class="line">    io: Buffered&lt;I, EncodedBuf&lt;B&gt;&gt;,</span><br><span class="line">    state: State,</span><br><span class="line">    _marker: PhantomData&lt;<span class="title function_ invoke__">fn</span>(T)&gt;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个状态机只负责连接的状态，那么处理服务的连接在后面封装：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">serve_connection</span>&lt;I, S&gt;(&amp;<span class="keyword">self</span>, io: I, service: S) <span class="punctuation">-&gt;</span> Connection&lt;I, S&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        S: HttpService&lt;IncomingBody&gt;,</span><br><span class="line">        S::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">        S::ResBody: <span class="symbol">&#x27;static</span>,</span><br><span class="line">        &lt;S::ResBody <span class="keyword">as</span> Body&gt;::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">        I: Read + Write + Unpin,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">conn</span> = proto::Conn::<span class="title function_ invoke__">new</span>(io);</span><br><span class="line">        conn.<span class="title function_ invoke__">set_timer</span>(<span class="keyword">self</span>.timer.<span class="title function_ invoke__">clone</span>());</span><br><span class="line">        <span class="keyword">if</span> !<span class="keyword">self</span>.h1_keep_alive &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">disable_keep_alive</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.h1_half_close &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">set_allow_half_close</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.h1_title_case_headers &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">set_title_case_headers</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.h1_preserve_header_case &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">set_preserve_header_case</span>();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(dur) = <span class="keyword">self</span></span><br><span class="line">            .timer</span><br><span class="line">            .<span class="title function_ invoke__">check</span>(<span class="keyword">self</span>.h1_header_read_timeout, <span class="string">&quot;header_read_timeout&quot;</span>)</span><br><span class="line">        &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">set_http1_header_read_timeout</span>(dur);</span><br><span class="line">        &#125;;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(writev) = <span class="keyword">self</span>.h1_writev &#123;</span><br><span class="line">            <span class="keyword">if</span> writev &#123;</span><br><span class="line">                conn.<span class="title function_ invoke__">set_write_strategy_queue</span>();</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                conn.<span class="title function_ invoke__">set_write_strategy_flatten</span>();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        conn.<span class="title function_ invoke__">set_flush_pipeline</span>(<span class="keyword">self</span>.pipeline_flush);</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(max) = <span class="keyword">self</span>.max_buf_size &#123;</span><br><span class="line">            conn.<span class="title function_ invoke__">set_max_buf_size</span>(max);</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">sd</span> = proto::h1::dispatch::Server::<span class="title function_ invoke__">new</span>(service);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">proto</span> = proto::h1::Dispatcher::<span class="title function_ invoke__">new</span>(sd, conn);</span><br><span class="line">        Connection &#123; conn: proto &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>在最后这个Connection中hyper把service和状态机封装在一起了。</p>
+<p>我们看看Dispatcher干了啥，到底是怎么poll的。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;D, Bs, I, T&gt; Future <span class="keyword">for</span> <span class="title class_">Dispatcher</span>&lt;D, Bs, I, T&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    D: Dispatch&lt;</span><br><span class="line">            PollItem = MessageHead&lt;T::Outgoing&gt;,</span><br><span class="line">            PollBody = Bs,</span><br><span class="line">            RecvItem = MessageHead&lt;T::Incoming&gt;,</span><br><span class="line">        &gt; + Unpin,</span><br><span class="line">    D::PollError: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">    I: Read + Write + Unpin,</span><br><span class="line">    T: Http1Transaction + Unpin,</span><br><span class="line">    Bs: Body + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    Bs::Error: <span class="built_in">Into</span>&lt;<span class="type">Box</span>&lt;<span class="keyword">dyn</span> StdError + <span class="built_in">Send</span> + <span class="built_in">Sync</span>&gt;&gt;,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = crate::<span class="type">Result</span>&lt;Dispatched&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[inline]</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll</span>(<span class="keyword">mut</span> <span class="keyword">self</span>: Pin&lt;&amp;<span class="keyword">mut</span> <span class="keyword">Self</span>&gt;, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        <span class="keyword">self</span>.<span class="title function_ invoke__">poll_catch</span>(cx, <span class="literal">true</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后就是poll_catch -&gt; poll_inner -&gt; poll_loop :</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">_</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">poll_read</span>(cx)?;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">_</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">poll_write</span>(cx)?;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">_</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">poll_flush</span>(cx)?;</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line">这里执行到实际的读写</span><br><span class="line"></span><br><span class="line">先看读:</span><br><span class="line"></span><br><span class="line">```rust</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll_read</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;crate::<span class="type">Result</span>&lt;()&gt;&gt; &#123;</span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">self</span>.is_closing &#123;</span><br><span class="line">                <span class="keyword">return</span> Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(()));</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">can_read_head</span>() &#123;</span><br><span class="line">                ready!(<span class="keyword">self</span>.<span class="title function_ invoke__">poll_read_head</span>(cx))?;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> <span class="keyword">let</span> <span class="variable">Some</span>(<span class="keyword">mut</span> body) = <span class="keyword">self</span>.body_tx.<span class="title function_ invoke__">take</span>() &#123;</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">can_read_body</span>() &#123;</span><br><span class="line">                    <span class="keyword">match</span> body.<span class="title function_ invoke__">poll_ready</span>(cx) &#123;</span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(())) =&gt; (),</span><br><span class="line">                        Poll::Pending =&gt; &#123;</span><br><span class="line">                            <span class="keyword">self</span>.body_tx = <span class="title function_ invoke__">Some</span>(body);</span><br><span class="line">                            <span class="keyword">return</span> Poll::Pending;</span><br><span class="line">                        &#125;</span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Err</span>(_canceled)) =&gt; &#123;</span><br><span class="line">                            <span class="comment">// user doesn&#x27;t care about the body</span></span><br><span class="line">                            <span class="comment">// so we should stop reading</span></span><br><span class="line">                            trace!(<span class="string">&quot;body receiver dropped before eof, draining or closing&quot;</span>);</span><br><span class="line">                            <span class="keyword">self</span>.conn.<span class="title function_ invoke__">poll_drain_or_close_read</span>(cx);</span><br><span class="line">                            <span class="keyword">continue</span>;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                    <span class="keyword">match</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">poll_read_body</span>(cx) &#123;</span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Ok</span>(chunk))) =&gt; <span class="keyword">match</span> body.<span class="title function_ invoke__">try_send_data</span>(chunk) &#123;</span><br><span class="line">                            <span class="title function_ invoke__">Ok</span>(()) =&gt; &#123;</span><br><span class="line">                                <span class="keyword">self</span>.body_tx = <span class="title function_ invoke__">Some</span>(body);</span><br><span class="line">                            &#125;</span><br><span class="line">                            <span class="title function_ invoke__">Err</span>(_canceled) =&gt; &#123;</span><br><span class="line">                                <span class="keyword">if</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">can_read_body</span>() &#123;</span><br><span class="line">                                    trace!(<span class="string">&quot;body receiver dropped before eof, closing&quot;</span>);</span><br><span class="line">                                    <span class="keyword">self</span>.conn.<span class="title function_ invoke__">close_read</span>();</span><br><span class="line">                                &#125;</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;,</span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(<span class="literal">None</span>) =&gt; &#123;</span><br><span class="line">                            <span class="comment">// just drop, the body will close automatically</span></span><br><span class="line">                        &#125;</span><br><span class="line">                        Poll::Pending =&gt; &#123;</span><br><span class="line">                            <span class="keyword">self</span>.body_tx = <span class="title function_ invoke__">Some</span>(body);</span><br><span class="line">                            <span class="keyword">return</span> Poll::Pending;</span><br><span class="line">                        &#125;</span><br><span class="line">                        Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Err</span>(e))) =&gt; &#123;</span><br><span class="line">                            body.<span class="title function_ invoke__">send_error</span>(crate::Error::<span class="title function_ invoke__">new_body</span>(e));</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// just drop, the body will close automatically</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">poll_read_keep_alive</span>(cx);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>终于看到了真正的解析Http协议的地方了。这里面poll_read_head 用于poll http请求头。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">poll_read_head</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, cx: &amp;<span class="keyword">mut</span> Context&lt;<span class="symbol">&#x27;_</span>&gt;) <span class="punctuation">-&gt;</span> Poll&lt;crate::<span class="type">Result</span>&lt;()&gt;&gt; &#123;</span><br><span class="line">        <span class="comment">// can dispatch receive, or does it still care about other incoming message?</span></span><br><span class="line">        <span class="keyword">match</span> ready!(<span class="keyword">self</span>.dispatch.<span class="title function_ invoke__">poll_ready</span>(cx)) &#123;</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(()) =&gt; (),</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(()) =&gt; &#123;</span><br><span class="line">                trace!(<span class="string">&quot;dispatch no longer receiving messages&quot;</span>);</span><br><span class="line">                <span class="keyword">self</span>.<span class="title function_ invoke__">close</span>();</span><br><span class="line">                <span class="keyword">return</span> Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(()));</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// dispatch is ready for a message, try to read one</span></span><br><span class="line">        <span class="keyword">match</span> ready!(<span class="keyword">self</span>.conn.<span class="title function_ invoke__">poll_read_head</span>(cx)) &#123;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Ok</span>((<span class="keyword">mut</span> head, body_len, wants))) =&gt; &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">body</span> = <span class="keyword">match</span> body_len &#123;</span><br><span class="line">                    DecodedLength::ZERO =&gt; IncomingBody::<span class="title function_ invoke__">empty</span>(),</span><br><span class="line">                    other =&gt; &#123;</span><br><span class="line">                        <span class="keyword">let</span> (tx, rx) =</span><br><span class="line">                            IncomingBody::<span class="title function_ invoke__">new_channel</span>(other, wants.<span class="title function_ invoke__">contains</span>(Wants::EXPECT));</span><br><span class="line">                        <span class="keyword">self</span>.body_tx = <span class="title function_ invoke__">Some</span>(tx);</span><br><span class="line">                        rx</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;;</span><br><span class="line">                <span class="keyword">if</span> wants.<span class="title function_ invoke__">contains</span>(Wants::UPGRADE) &#123;</span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">upgrade</span> = <span class="keyword">self</span>.conn.<span class="title function_ invoke__">on_upgrade</span>();</span><br><span class="line">                    <span class="built_in">debug_assert!</span>(!upgrade.<span class="title function_ invoke__">is_none</span>(), <span class="string">&quot;empty upgrade&quot;</span>);</span><br><span class="line">                    <span class="built_in">debug_assert!</span>(</span><br><span class="line">                        head.extensions.get::&lt;OnUpgrade&gt;().<span class="title function_ invoke__">is_none</span>(),</span><br><span class="line">                        <span class="string">&quot;OnUpgrade already set&quot;</span></span><br><span class="line">                    );</span><br><span class="line">                    head.extensions.<span class="title function_ invoke__">insert</span>(upgrade);</span><br><span class="line">                &#125;</span><br><span class="line">                <span class="keyword">self</span>.dispatch.<span class="title function_ invoke__">recv_msg</span>(<span class="title function_ invoke__">Ok</span>((head, body)))?;</span><br><span class="line">                Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(()))</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(<span class="title function_ invoke__">Err</span>(err)) =&gt; &#123;</span><br><span class="line">                debug!(<span class="string">&quot;read_head error: &#123;&#125;&quot;</span>, err);</span><br><span class="line">                <span class="keyword">self</span>.dispatch.<span class="title function_ invoke__">recv_msg</span>(<span class="title function_ invoke__">Err</span>(err))?;</span><br><span class="line">                <span class="comment">// if here, the dispatcher gave the user the error</span></span><br><span class="line">                <span class="comment">// somewhere else. we still need to shutdown, but</span></span><br><span class="line">                <span class="comment">// not as a second error.</span></span><br><span class="line">                <span class="keyword">self</span>.<span class="title function_ invoke__">close</span>();</span><br><span class="line">                Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(()))</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="literal">None</span> =&gt; &#123;</span><br><span class="line">                <span class="comment">// read eof, the write side will have been closed too unless</span></span><br><span class="line">                <span class="comment">// allow_read_close was set to true, in which case just do</span></span><br><span class="line">                <span class="comment">// nothing...</span></span><br><span class="line">                <span class="built_in">debug_assert!</span>(<span class="keyword">self</span>.conn.<span class="title function_ invoke__">is_read_closed</span>());</span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">self</span>.conn.<span class="title function_ invoke__">is_write_closed</span>() &#123;</span><br><span class="line">                    <span class="keyword">self</span>.<span class="title function_ invoke__">close</span>();</span><br><span class="line">                &#125;</span><br><span class="line">                Poll::<span class="title function_ invoke__">Ready</span>(<span class="title function_ invoke__">Ok</span>(()))</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">````</span><br><span class="line">poll_read_head这里调用conn的poll_read_head后能得到我们需要的header及body长度。</span><br><span class="line"></span><br><span class="line">最终在<span class="keyword">self</span>.dispatch.recv_msg中我们将最终调用用户代码:</span><br><span class="line"></span><br><span class="line">```rust</span><br><span class="line"></span><br><span class="line">        <span class="keyword">fn</span> <span class="title function_">recv_msg</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, msg: crate::<span class="type">Result</span>&lt;(<span class="keyword">Self</span>::RecvItem, IncomingBody)&gt;) <span class="punctuation">-&gt;</span> crate::<span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">            <span class="keyword">let</span> (msg, body) = msg?;</span><br><span class="line">            <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">req</span> = Request::<span class="title function_ invoke__">new</span>(body);</span><br><span class="line">            *req.<span class="title function_ invoke__">method_mut</span>() = msg.subject.<span class="number">0</span>;</span><br><span class="line">            *req.<span class="title function_ invoke__">uri_mut</span>() = msg.subject.<span class="number">1</span>;</span><br><span class="line">            *req.<span class="title function_ invoke__">headers_mut</span>() = msg.headers;</span><br><span class="line">            *req.<span class="title function_ invoke__">version_mut</span>() = msg.version;</span><br><span class="line">            *req.<span class="title function_ invoke__">extensions_mut</span>() = msg.extensions;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">fut</span> = <span class="keyword">self</span>.service.<span class="title function_ invoke__">call</span>(req);</span><br><span class="line">            <span class="keyword">self</span>.in_flight.<span class="title function_ invoke__">set</span>(<span class="title function_ invoke__">Some</span>(fut));</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>也就是这里的service.call，最终会走到#[handler]宏为我们展开的代码中。应该说我们探讨的有点超出poem的范围了。</p>
+<h3 id="Middleware"><a href="#Middleware" class="headerlink" title="Middleware"></a>Middleware</h3><p>中间件是web框架中的重要概念，poem中的中间件是这样定义的：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Middleware</span>&lt;E: Endpoint&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span>: Endpoint;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">transform</span>(&amp;<span class="keyword">self</span>, ep: E) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Output;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里Middleware接受一个Endpoint，返回一个Endpoint，做一个Endpoint的转换，我们来看poem的example：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">Log</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;E: Endpoint&gt; Middleware&lt;E&gt; <span class="keyword">for</span> <span class="title class_">Log</span> &#123;</span><br><span class="line">    <span class="comment">// 输出是一个endpoint</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = LogImpl&lt;E&gt;;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">transform</span>(&amp;<span class="keyword">self</span>, ep: E) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Output &#123;</span><br><span class="line">        <span class="title function_ invoke__">LogImpl</span>(ep)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">LogImpl</span>&lt;E&gt;(E);</span><br><span class="line"></span><br><span class="line"><span class="meta">#[async_trait]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;E: Endpoint&gt; Endpoint <span class="keyword">for</span> <span class="title class_">LogImpl</span>&lt;E&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = Response;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">call</span>(&amp;<span class="keyword">self</span>, req: Request) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;request: &#123;&#125;&quot;</span>, req.<span class="title function_ invoke__">uri</span>().<span class="title function_ invoke__">path</span>());</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">res</span> = <span class="keyword">self</span>.<span class="number">0</span>.<span class="title function_ invoke__">call</span>(req).<span class="keyword">await</span>;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">match</span> res &#123;</span><br><span class="line">            <span class="title function_ invoke__">Ok</span>(resp) =&gt; &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">resp</span> = resp.<span class="title function_ invoke__">into_response</span>();</span><br><span class="line">                <span class="built_in">println!</span>(<span class="string">&quot;response: &#123;&#125;&quot;</span>, resp.<span class="title function_ invoke__">status</span>());</span><br><span class="line">                <span class="title function_ invoke__">Ok</span>(resp)</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="title function_ invoke__">Err</span>(err) =&gt; &#123;</span><br><span class="line">                <span class="built_in">println!</span>(<span class="string">&quot;error: &#123;err&#125;&quot;</span>);</span><br><span class="line">                <span class="title function_ invoke__">Err</span>(err)</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这样实现后，我们就可以在任何一个Endpoint上加上Log中间件，这个中间件会打印出请求和响应的信息。想给一个Endpoint添加中间件只需引入:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">EndpointExt</span>: IntoEndpoint &#123;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">with</span>&lt;T&gt;(<span class="keyword">self</span>, middleware: T) <span class="punctuation">-&gt;</span> T::Output</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        T: Middleware&lt;<span class="keyword">Self</span>::Endpoint&gt;,</span><br><span class="line">        <span class="keyword">Self</span>: <span class="built_in">Sized</span>,</span><br><span class="line">    &#123;</span><br><span class="line">        middleware.<span class="title function_ invoke__">transform</span>(<span class="keyword">self</span>.<span class="title function_ invoke__">into_endpoint</span>())</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于poem为所有实现了Endpoint的类型T都实现了IntoEndpoint，那么相当于所有的类型都实现了EndpointExt，我们可以直接调用with方法。只需要添加EndpointExt即可。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">app</span> = Route::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">at</span>(<span class="string">&quot;/hello/:name&quot;</span>, <span class="title function_ invoke__">get</span>(hello)).<span class="title function_ invoke__">with</span>(Tracing);</span><br></pre></td></tr></table></figure>
+
+<p>IntoEndpoint长这样：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">IntoEndpoint</span> &#123;</span><br><span class="line">    <span class="comment">/// Represents the endpoint type.</span></span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Endpoint</span>: Endpoint;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Converts this object into endpoint.</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">into_endpoint</span>(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Endpoint;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T: Endpoint&gt; IntoEndpoint <span class="keyword">for</span> <span class="title class_">T</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Endpoint</span> = T;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">into_endpoint</span>(<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span>::Endpoint &#123;</span><br><span class="line">        <span class="keyword">self</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">````</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">还可以用around方法，把<span class="built_in">Fn</span>封装为中间件:</span><br><span class="line">```rust</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">around</span>&lt;F, Fut, R&gt;(<span class="keyword">self</span>, f: F) <span class="punctuation">-&gt;</span> Around&lt;<span class="keyword">Self</span>::Endpoint, F&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        F: <span class="title function_ invoke__">Fn</span>(Arc&lt;<span class="keyword">Self</span>::Endpoint&gt;, Request) <span class="punctuation">-&gt;</span> Fut + <span class="built_in">Send</span> + <span class="built_in">Sync</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">        Fut: Future&lt;Output = <span class="type">Result</span>&lt;R&gt;&gt; + <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">        R: IntoResponse,</span><br><span class="line">        <span class="keyword">Self</span>: <span class="built_in">Sized</span>,</span><br><span class="line">    &#123;</span><br><span class="line">        Around::<span class="title function_ invoke__">new</span>(<span class="keyword">self</span>.<span class="title function_ invoke__">into_endpoint</span>(), f)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这里接受一个Fn，Fn能接受上一层Endpoint和原始Request。返回一个Around，Around长这样：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Around</span>&lt;E, F&gt; &#123;</span><br><span class="line">    inner: Arc&lt;E&gt;,</span><br><span class="line">    f: F,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>同样的，Around也实现了Endpoint，Around的call函数长这样：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[async_trait::async_trait]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;E, F, Fut, T&gt; Endpoint <span class="keyword">for</span> <span class="title class_">Around</span>&lt;E, F&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    E: Endpoint,</span><br><span class="line">    F: <span class="title function_ invoke__">Fn</span>(Arc&lt;E&gt;, Request) <span class="punctuation">-&gt;</span> Fut + <span class="built_in">Send</span> + <span class="built_in">Sync</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    Fut: Future&lt;Output = <span class="type">Result</span>&lt;T&gt;&gt; + <span class="built_in">Send</span>,</span><br><span class="line">    T: IntoResponse,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Output</span> = T;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">async</span> <span class="keyword">fn</span> <span class="title function_">call</span>(&amp;<span class="keyword">self</span>, req: Request) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>::Output&gt; &#123;</span><br><span class="line">        (<span class="keyword">self</span>.f)(<span class="keyword">self</span>.inner.<span class="title function_ invoke__">clone</span>(), req).<span class="keyword">await</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其他的功能基本都是基于上面的trait扩展的。比如cookie。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T, E&gt; Endpoint <span class="keyword">for</span> <span class="title class_">ServerSessionEndpoint</span>&lt;T, E&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    T: SessionStorage,</span><br><span class="line">    E: Endpoint,</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line">  ...</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/web-like-poem/" title="读诗一样写web框架">https://fenixc9.github.io/web-like-poem/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/web/" rel="tag"># web</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/reading-files-the-hard-way-3/" rel="prev" title="【译】读取文件的困难模式 三">
+      <i class="fa fa-chevron-left"></i> 【译】读取文件的困难模式 三
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/consistency-in-zookeeper/" rel="next" title="zookeeper中的一致性">
+      zookeeper中的一致性 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%A1%B9%E7%9B%AE%E5%9C%B0%E5%9D%80"><span class="nav-number">1.</span> <span class="nav-text">项目地址</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFweb%E6%A1%86%E6%9E%B6"><span class="nav-number">2.</span> <span class="nav-text">什么是web框架</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88servlet%E8%BF%99%E4%B9%88%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.1.</span> <span class="nav-text">为什么servlet这么设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#poem%E7%9A%84%E8%AE%BE%E8%AE%A1"><span class="nav-number">2.2.</span> <span class="nav-text">poem的设计</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">解析</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Middleware"><span class="nav-number">2.3.1.</span> <span class="nav-text">Middleware</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '50e5b66364ba6e56940ae403b3a5b38d',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

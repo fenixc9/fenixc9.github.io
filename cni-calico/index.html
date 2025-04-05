@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="这个系列将介绍CNI及一些CNI的实现，本篇介绍calico">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CNI学习系列3 calico">
+<meta property="og:url" content="https://fenixc9.github.io/cni-calico/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="这个系列将介绍CNI及一些CNI的实现，本篇介绍calico">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/6.png">
+<meta property="article:published_time" content="2023-04-08T07:49:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.132Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="CNI">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/cni-calico/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/cni-calico/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>CNI学习系列3 calico | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/cni-calico/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          CNI学习系列3 calico
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-08 15:49:26" itemprop="dateCreated datePublished" datetime="2023-04-08T15:49:26+08:00">2023-04-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">这个系列将介绍CNI及一些CNI的实现，本篇介绍calico</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>calico也是一种非常流行的CNI实现。<br>项目地址：<br><a target="_blank" rel="noopener" href="https://github.com/projectcalico/calico">https://github.com/projectcalico/calico</a><br>calico并没有类似flannel构建了虚拟交换机，而是使用纯路由的方式。</p>
+<h2 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h2><p><img src="/cni-calico/1.png" alt="1"></p>
+<h4 id="存储后端"><a href="#存储后端" class="headerlink" title="存储后端"></a>存储后端</h4><p>这个图比较老，目前新版的架构中，calico在存储方面还支持一个中间层Typha。存储后端上支持三种：</p>
+<ol>
+<li>etcd</li>
+<li>CRD</li>
+<li>Typha</li>
+</ol>
+<p>对于小规模集群，使用1，2方式就可以了，对于大规模集群使用前两种方案会对etcd带来较大压力。官方推荐使用Typha。<br><img src="/cni-calico/3.png" alt="3"></p>
+<p>Typha自身维护一个对存储的链接就可以了，避免大量节点的felix对k8s Apiserver，etcd造成巨大压力。</p>
+<h4 id="路由后端"><a href="#路由后端" class="headerlink" title="路由后端"></a>路由后端</h4><p><code>calico_backend</code> bird&#x2F;vxlan </p>
+<ol>
+<li>bird 即BGP</li>
+<li>vxlan calico也支持这种方式在一些不支持ipip的常见下部署overlay网络。<br>通常在DaemonSet中</li>
+</ol>
+<h4 id="BGP下的传输后端"><a href="#BGP下的传输后端" class="headerlink" title="BGP下的传输后端"></a>BGP下的传输后端</h4><ol>
+<li>ipip模式 即ip in ip模式，有封装和解封装的损耗，可以跨子网。</li>
+<li>BGP模式 没有封装的损耗，配合BGP反射，可以支撑超大规模的集群。</li>
+</ol>
+<h4 id="节点"><a href="#节点" class="headerlink" title="节点"></a>节点</h4><p>每个节点将会安装calico-node，其中包含两个进程：</p>
+<ul>
+<li>Felix：calico的核心组件，运行在每个节点上。主要的功能有接口管理、路由规则、ACL规则和状态报告<ol>
+<li>接口管理：Felix为内核编写一些接口信息，以便让内核能正确的处理主机endpoint的流量。特别是主机之间的ARP请求和处理ip转发。</li>
+<li>路由规则：Felix负责主机之间路由信息写到linux内核的FIB（Forwarding Information Base）转发信息库，保证数据包可以在主机之间相互转发。</li>
+<li>ACL规则：Felix负责将ACL策略写入到linux内核中，保证主机endpoint的为有效流量不能绕过calico的安全措施。</li>
+<li>状态报告：Felix负责提供关于网络健康状况的数据。特别是，它报告配置主机时出现的错误和问题。这些数据被写入etcd，使其对网络的其他组件和操作人员可见。</li>
+</ol>
+</li>
+<li>BIRD ：BGP客户端，Calico在每个节点上的都会部署一个BGP客户端，它的作用是将Felix的路由信息读入内核，并通过BGP协议在集群中分发。<br>当Felix将路由插入到Linux内核FIB中时，BGP客户端将获取这些路由并将它们分发到部署中的其他节点。这可以确保在部署时有效地路由流量。</li>
+</ul>
+<h4 id="Calico-Controller"><a href="#Calico-Controller" class="headerlink" title="Calico-Controller"></a>Calico-Controller</h4><p>Calico-Controller的主要作用为，负责识别Kubernetes对象中影响路由的变化。比如新建Pod和新增节点都需要Calico参与相关网络配置。这里需要Controller watch到对应的event后将变更保存到calico自己IDE存储中。并通知到对应的组件。</p>
+<h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>对于测试学习场景，我们直接部署默认配置就可以了。<br>如果之前有安装过别的插件需先删除&#x2F;etc&#x2F;cni&#x2F;net.d下相关配置，并删除相关设备。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl apply -f https://docs.projectcalico.org/manifests/calico.yaml</span><br></pre></td></tr></table></figure>
+<p>默认情况下，calico使用的是ipip隧道模式</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">2021-10-02 05:04:26.657 [INFO][9] startup/startup.go 651: CALICO_IPV4POOL_NAT_OUTGOING is true (defaulted) through environment variable</span><br><span class="line">2021-10-02 05:04:26.657 [INFO][9] startup/startup.go 992: Ensure default IPv4 pool is created. IPIP mode: Always, VXLAN mode: Never</span><br><span class="line">2021-10-02 05:04:26.718 [INFO][9] startup/startup.go 1002: Created default IPv4 pool (10.244.0.0/16) with NAT outgoing true. IPIP mode: Always, VXLAN mode: Never</span><br></pre></td></tr></table></figure>
+<h4 id="生产部署"><a href="#生产部署" class="headerlink" title="生产部署"></a>生产部署</h4><p>对于生产部署官方的建议是：</p>
+<ol>
+<li>安装 Typha 以确保数据存储可扩展性。</li>
+<li>对单个子网集群不使用封装。</li>
+<li>对于多子网集群，在 CrossSubnet 模式下使用 IP-in-IP。</li>
+<li>根据网络 MTU 和选择的路由模式配置 Calico MTU。</li>
+<li>为能够增长到 50 个以上节点的集群添加全局路由反射器。</li>
+</ol>
+<h2 id="ipip模式"><a href="#ipip模式" class="headerlink" title="ipip模式"></a>ipip模式</h2><p><img src="/cni-calico/4.png" alt="4"><br>需要注意的是ipip模式也需要bird的存在，来告知每个节点的ip段。<br>容器内部可以看到的设备</p>
+<p>节点上看到的路由信息</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@node3 ~]# route -n</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">0.0.0.0         192.168.31.1    0.0.0.0         UG    100    0        0 enp0s3</span><br><span class="line">10.233.90.0     192.168.31.170  255.255.255.0   UG    0      0        0 tunl0</span><br><span class="line">10.233.92.0     0.0.0.0         255.255.255.0   U     0      0        0 *</span><br><span class="line">10.233.92.3     0.0.0.0         255.255.255.255 UH    0      0        0 calib8bf7d77053</span><br><span class="line">10.233.92.4     0.0.0.0         255.255.255.255 UH    0      0        0 cali57c3e1bd0c7</span><br><span class="line">10.233.92.5     0.0.0.0         255.255.255.255 UH    0      0        0 cali48737a02ab9</span><br><span class="line">10.233.96.0     192.168.31.171  255.255.255.0   UG    0      0        0 tunl0</span><br><span class="line">172.17.0.0      0.0.0.0         255.255.0.0     U     0      0        0 docker0</span><br><span class="line">192.168.31.0    0.0.0.0         255.255.255.0   U     100    0        0 enp0s3</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>node3的节点ip为192.168.31.172，cni网段为10.233.92.0&#x2F;24。<br>节点192.168.31.171 被分配了10.233.96.0&#x2F;24 网段，192.168.31.170 被分配了 10.233.90.0&#x2F;24网段。<br>podip根据网段，下一条选择对应节点IP，和tunl0这个设备。如果是本节点网段则会直接路由到对应设备，他们都是calixxxx开头的。这个设备直接映射到容器内的veth 名字是eth0。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue qlen 1000</span><br><span class="line">    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00</span><br><span class="line">    inet 127.0.0.1/8 scope host lo</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">3: eth0@if8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu 1480 qdisc noqueue </span><br><span class="line">    link/ether 1a:99:14:82:20:14 brd ff:ff:ff:ff:ff:ff</span><br><span class="line">    inet 10.233.92.4/32 scope global eth0</span><br><span class="line">       valid_lft forever preferred_lft forever</span><br><span class="line">4: tunl0@NONE: &lt;NOARP&gt; mtu 1480 qdisc noop qlen 1000</span><br><span class="line">    link/ipip 0.0.0.0 brd 0.0.0.0</span><br></pre></td></tr></table></figure>
+<p>路由全部走eth0</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"># route -n</span><br><span class="line">Kernel IP routing table</span><br><span class="line">Destination     Gateway         Genmask         Flags Metric Ref    Use Iface</span><br><span class="line">0.0.0.0         169.254.1.1     0.0.0.0         UG    0      0        0 eth0</span><br><span class="line">169.254.1.1     0.0.0.0         255.255.255.255 UH    0      0        0 eth0</span><br></pre></td></tr></table></figure>
+
+<p>如果是10.233.92.0&#x2F;24中其他ip不在本地的，则会走到blackhole 10.233.92.0&#x2F;24 proto bird 这条黑洞规则。<br>所以即使一个节点访问另一个节点并没有分配的ip，也会走tunl0到对应节点才会走到黑洞中。</p>
+<h4 id="同节点访问"><a href="#同节点访问" class="headerlink" title="同节点访问"></a>同节点访问</h4><p>从前面的路由表看，同节点访问会直接路由到对应的calixxxx设备。</p>
+<h4 id="跨节点访问流程"><a href="#跨节点访问流程" class="headerlink" title="跨节点访问流程"></a>跨节点访问流程</h4><ol>
+<li>容器中的网卡用的是veth的pair虚拟网卡，一端连接到容器，另一端连着宿主机。</li>
+<li>容器中的报文通过calixxx到达宿主机。然后根据宿主机的路由，报文发往tunl0设备。</li>
+<li>报文到达tunl0时，会再次封装一层ip报文头，把目标node的ip作为目的ip，然后通过宿主网卡机将报文发出。</li>
+<li>对端node收到报文后，解开外层ip报文头，发现是ipip报文，会转交给tunl0</li>
+<li>tunl0查找路由，就发送给calixxxxxx，对端容器就收到了报文。</li>
+</ol>
+<h2 id="BGP模式"><a href="#BGP模式" class="headerlink" title="BGP模式"></a>BGP模式</h2><p>bgp工作模式和flannel的host-gw模式非常类似；<br>限制：和flannel的host-gw限制一样，要求物理机在二层是连能的，不能跨网段；<br>配置方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">- name: CALICO_IPV4POOL_IPIP</span><br><span class="line">  value: &quot;Never&quot;    </span><br><span class="line">- name: CALICO_IPV4POOL_VXLAN</span><br><span class="line">  value: &quot;Never&quot;</span><br></pre></td></tr></table></figure>
+<p><img src="/cni-calico/5.png" alt="5"><br>BGP网络相比较IPIP网络，最大的不同之处就是没有了隧道设备 tunl0。 前面介绍过IPIP网络pod之间的流量发送到 tunl0，然后tunl0发送对端设备。BGP网络中，pod之间的流量直接从网卡发送目的地，减少了tunl0这个环节。这种模式下每个节点都相当于一个能通过BGP协议交换路由信息的虚拟路由。</p>
+<h4 id="arp代理"><a href="#arp代理" class="headerlink" title="arp代理"></a>arp代理</h4><p>Calico在BGP模式下使用了 ARP代理（ARP proxy）的方式解决了 ARP广播域的问题，实现了跨节点的通信。在ARP代理模式下，每个节点上都有一个 ARP代理，节点之间不再进行 ARP广播，而是由 ARP代理响应 ARP请求。</p>
+<p>在 ARP代理模式下，节点A发送ARP请求时，ARP请求会被拦截并转发到目标节点所在的节点B，节点B的 ARP代理会响应 ARP请求，将自己的 MAC地址返回给节点A。节点A收到节点B的 MAC地址后，就可以向节点B发送数据了。</p>
+<p>需要注意的是，ARP代理模式只适用于同一个网络内的节点通信，如果两个节点在不同的网络内，则需要使用其他方式，如路由器进行通信。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[13:39:56 root@node-3 ~]#cat /proc/sys/net/ipv4/conf/cali385152345a1/proxy_arp</span><br><span class="line">1   #proxy_arp代理是启用状态</span><br><span class="line">#容器在没有任何网络请求时查看arp</span><br></pre></td></tr></table></figure>
+
+<h4 id="BGP原理"><a href="#BGP原理" class="headerlink" title="BGP原理"></a>BGP原理</h4><ul>
+<li>路由反射器RR（Route Reflector）：允许把从IBGP对等体学到的路由反射到其他IBGP对等体的BGP设备，类似OSPF网络中的DR。</li>
+<li>客户机（Client）：与RR形成反射邻居关系的IBGP设备。在AS内部客户机只需要与RR直连。</li>
+<li>非客户机（Non-Client）：既不是RR也不是客户机的IBGP设备。在AS内部非客户机与RR之间，以及所有的非客户机之间仍然必须建立全连接关系。</li>
+<li>始发者（Originator）：在AS内部始发路由的设备。Originator_ID属性用于防止集群内产生路由环路。</li>
+<li>集群（Cluster）：路由反射器及其客户机的集合。Cluster_List属性用于防止集群间产生路由环路。</li>
+</ul>
+<h4 id="calico的BGP"><a href="#calico的BGP" class="headerlink" title="calico的BGP"></a>calico的BGP</h4><p>calico的IPIP与不使用封装会使用到BGP进行组网，保证不同node节点的Pod互相通信，默认情况下calico所有的node节点都是以对等方式进行BGP的互相连接，如果集群node节点数量大于50以上这种方式会造成每个节点的BGP连接指数级增多，所以需要引入<em>BGP RR</em>即路由反射器。即一部分node与RR进行对等连接之后RR之间在进行对等连接，以减少默认模式下的node全对等连接。如果集群规模超过200个节点需要配置实际的底层网络集成BGP进行相关配置。</p>
+<h4 id="配置BGP-Peer"><a href="#配置BGP-Peer" class="headerlink" title="配置BGP Peer"></a>配置BGP Peer</h4><p><img src="/cni-calico/6.png" alt="6"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">[17:06:18 root@node-1 ~]#cat BGPPeer-rr.yml</span><br><span class="line">apiVersion: projectcalico.org/v3</span><br><span class="line">kind: BGPPeer</span><br><span class="line">metadata:</span><br><span class="line">  name: rr-to-node</span><br><span class="line">spec:</span><br><span class="line">  # 规则1：普通 bgp node 与 rr 建立连接</span><br><span class="line">  nodeSelector: &quot;!has(calico-rr)&quot; </span><br><span class="line">  peerSelector: has(calico-rr)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">apiVersion: projectcalico.org/v3</span><br><span class="line">kind: BGPPeer</span><br><span class="line">metadata:</span><br><span class="line">  name: rr-to-rr</span><br><span class="line">spec:</span><br><span class="line">  # 规则2：route reflectors 之间也建立连接</span><br><span class="line">  nodeSelector: has(calico-rr)</span><br><span class="line">  peerSelector: has(calico-rr)</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line">#应用</span><br><span class="line">[17:15:41 root@node-1 ~]#calicoctl apply -f BGPPeer-rr.yml</span><br><span class="line"></span><br><span class="line">#之后需要导出node1与node4的配置，进行修改</span><br><span class="line">[17:17:09 root@node-1 ~]#calicoctl get node 192.168.10.11 -oyaml --export &gt;11.yml</span><br><span class="line">spec:</span><br><span class="line">  bgp:</span><br><span class="line">    ipv4Address: 192.168.10.11/24</span><br><span class="line">    ipv4IPIPTunnelAddr: 172.20.36.128</span><br><span class="line">    routeReflectorClusterID: 224.0.0.1    #要充当路由反射器的每个节点都必须有一个集群ID，通常是一个未使用的IPv4地址，如果多个路由反射器是高可用的他们的集群id应该一致，用于冗余和防环</span><br><span class="line">  orchRefs:</span><br><span class="line">  - nodeName: 192.168.10.11</span><br><span class="line">    orchestrator: k8s </span><br><span class="line">status:</span><br><span class="line">  podCIDRs:</span><br><span class="line">  - &quot;&quot;</span><br><span class="line">  - 172.20.4.0/24</span><br><span class="line"></span><br><span class="line">#给node1与node4节点打标签</span><br><span class="line">[17:22:59 root@node-1 ~]#kubectl label nodes 192.168.10.11 calico-rr=true</span><br><span class="line">[17:22:59 root@node-1 ~]#kubectl label nodes 192.168.10.14 calico-rr=true</span><br><span class="line"></span><br><span class="line">#之后在node2查看node对等状态</span><br><span class="line">[17:14:51 root@node-2 ~]#calicoctl node status</span><br><span class="line">Calico process is running.</span><br><span class="line"></span><br><span class="line">IPv4 BGP status</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line">| PEER ADDRESS  |   PEER TYPE   | STATE |  SINCE   |    INFO     |</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line">| 192.168.10.11 | node specific | up    | 09:14:47 | Established |   #这里可以看到node2与node1和node4为对等状态</span><br><span class="line">| 192.168.10.14 | node specific | up    | 09:23:12 | Established |</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line"></span><br><span class="line">IPv6 BGP status</span><br><span class="line">No IPv6 peers found.</span><br><span class="line"></span><br><span class="line">#在node1或node4查看</span><br><span class="line">[17:23:11 root@node-1 ~]#calicoctl node status</span><br><span class="line">Calico process is running.</span><br><span class="line"></span><br><span class="line">IPv4 BGP status</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line">| PEER ADDRESS  |   PEER TYPE   | STATE |  SINCE   |    INFO     |</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line">| 192.168.10.12 | node specific | up    | 09:14:48 | Established |   #node1和node4与没有calico-rr=true的节点都建立了对等连接</span><br><span class="line">| 192.168.10.13 | node specific | up    | 09:14:48 | Established |</span><br><span class="line">| 192.168.10.15 | node specific | up    | 09:14:50 | Established |</span><br><span class="line">| 192.168.10.16 | node specific | up    | 09:14:48 | Established |</span><br><span class="line">| 192.168.10.14 | node specific | up    | 09:23:02 | Established |</span><br><span class="line">+---------------+---------------+-------+----------+-------------+</span><br><span class="line"></span><br><span class="line">IPv6 BGP status</span><br><span class="line">No IPv6 peers found.</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/cni-calico/" title="CNI学习系列3 calico">https://fenixc9.github.io/cni-calico/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+              <a href="/tags/CNI/" rel="tag"># CNI</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/try-apisix/" rel="prev" title="云原生网关apisix">
+      <i class="fa fa-chevron-left"></i> 云原生网关apisix
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/rust-existential-type/" rel="next" title="如何理解existential types">
+      如何理解existential types <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BB%8B%E7%BB%8D"><span class="nav-number">1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9E%B6%E6%9E%84%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">架构图</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E5%90%8E%E7%AB%AF"><span class="nav-number">2.0.1.</span> <span class="nav-text">存储后端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B7%AF%E7%94%B1%E5%90%8E%E7%AB%AF"><span class="nav-number">2.0.2.</span> <span class="nav-text">路由后端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BGP%E4%B8%8B%E7%9A%84%E4%BC%A0%E8%BE%93%E5%90%8E%E7%AB%AF"><span class="nav-number">2.0.3.</span> <span class="nav-text">BGP下的传输后端</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%8A%82%E7%82%B9"><span class="nav-number">2.0.4.</span> <span class="nav-text">节点</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Calico-Controller"><span class="nav-number">2.0.5.</span> <span class="nav-text">Calico-Controller</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2"><span class="nav-number">3.</span> <span class="nav-text">部署</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%94%9F%E4%BA%A7%E9%83%A8%E7%BD%B2"><span class="nav-number">3.0.1.</span> <span class="nav-text">生产部署</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ipip%E6%A8%A1%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">ipip模式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%90%8C%E8%8A%82%E7%82%B9%E8%AE%BF%E9%97%AE"><span class="nav-number">4.0.1.</span> <span class="nav-text">同节点访问</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E8%B7%A8%E8%8A%82%E7%82%B9%E8%AE%BF%E9%97%AE%E6%B5%81%E7%A8%8B"><span class="nav-number">4.0.2.</span> <span class="nav-text">跨节点访问流程</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#BGP%E6%A8%A1%E5%BC%8F"><span class="nav-number">5.</span> <span class="nav-text">BGP模式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#arp%E4%BB%A3%E7%90%86"><span class="nav-number">5.0.1.</span> <span class="nav-text">arp代理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#BGP%E5%8E%9F%E7%90%86"><span class="nav-number">5.0.2.</span> <span class="nav-text">BGP原理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#calico%E7%9A%84BGP"><span class="nav-number">5.0.3.</span> <span class="nav-text">calico的BGP</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEBGP-Peer"><span class="nav-number">5.0.4.</span> <span class="nav-text">配置BGP Peer</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'aea8ea1afed5208948cfb7e5178b7961',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

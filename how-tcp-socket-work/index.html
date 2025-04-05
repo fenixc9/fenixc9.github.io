@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="在这篇文章中，我将从较高层次上解释 TCP&#x2F;IP 堆栈在 Linux 上的工作原理。特别是，我将探讨套接字系统调用如何与内核数据结构交互，以及内核如何与实际网络交互。写这篇文章的部分动机是解释监听队列溢出（listen queue）机制是如何工作的，因为它与我在工作中一直在处理的问题有关。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】Tcp-Socket是怎么工作的">
+<meta property="og:url" content="https://fenixc9.github.io/how-tcp-socket-work/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="在这篇文章中，我将从较高层次上解释 TCP&#x2F;IP 堆栈在 Linux 上的工作原理。特别是，我将探讨套接字系统调用如何与内核数据结构交互，以及内核如何与实际网络交互。写这篇文章的部分动机是解释监听队列溢出（listen queue）机制是如何工作的，因为它与我在工作中一直在处理的问题有关。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-13T13:18:07.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.157Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="IO">
+<meta property="article:tag" content="网络">
+<meta property="article:tag" content="C">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/how-tcp-socket-work/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】Tcp-Socket是怎么工作的 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/how-tcp-socket-work/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】Tcp-Socket是怎么工作的
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-13 21:18:07" itemprop="dateCreated datePublished" datetime="2023-01-13T21:18:07+08:00">2023-01-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/linux/" itemprop="url" rel="index"><span itemprop="name">linux</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在这篇文章中，我将从较高层次上解释 TCP&#x2F;IP 堆栈在 Linux 上的工作原理。特别是，我将探讨套接字系统调用如何与内核数据结构交互，以及内核如何与实际网络交互。写这篇文章的部分动机是解释监听队列溢出（<code>listen queue</code>）机制是如何工作的，因为它与我在工作中一直在处理的问题有关。</p>
+<span id="more"></span>
+
+<h1 id="已建立的连接如何工作"><a href="#已建立的连接如何工作" class="headerlink" title="已建立的连接如何工作"></a>已建立的连接如何工作</h1><p>这个解释将自上而下，所以我们将从已经建立的连接（Established Connections）如何工作开始。稍后我将解释新建立的连接是如何工作的。</p>
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><p>对于内核持续跟踪的每个 TCP 文件描述符，都有一个<code>套接字结构体</code>用于保存一些 TCP 特定信息（例如序列号、当前窗口大小等），以及一个接收缓冲区（或“队列（queue）”）和一个写缓冲区（或“队列(queue)”）。我将交替使用术语缓冲区(buffer)和队列(queue)。如果您对更多细节感到好奇，可以在 Linux 内核的 <code>net/sock.h</code> 中查看套接字结构的实现。</p>
+<h2 id="接受"><a href="#接受" class="headerlink" title="接受"></a>接受</h2><p>当新数据包进入网络接口 (NIC) 时，内核会通过被 NIC 中断或通过轮询 NIC 获取数据来得到通知。通常内核是<code>中断驱动</code>还是<code>轮询模式</code>取决于发生的网络流量。当 NIC 非常忙时，内核轮询（poll）效率更高；但如果 NIC 不忙，则可以通过使用中断来节省 CPU 周期和功率。Linux 将这种技术称为 NAPI，字面意思是“New API”。</p>
+<p>当内核从 NIC 获取数据包时，它会解码数据包并根据源 IP、源端口、目标 IP 和目标端口找出数据包与哪个 TCP 连接相关联。这些信息用于查找与该连接关联的内存中的<code>套接字结构体</code> 。假设数据包是按顺序的，然后数据有效负载被复制到套接字的接收缓冲区中。此时，内核将唤醒任何执行阻塞 <code>read(2)</code> 的进程，或者正在使用 I&#x2F;O 多路复用系统调用（如 <code>select(2)</code> 或 <code>epoll_wait(2)</code> ）等待套接字的进程。</p>
+<p>当用户空间进程实际调用文件描述符上的 <code>read(2)</code> 时，它会导致内核从其接收缓冲区中<em>删除</em>数据，并将该数据<em>复制</em>到提供给 <code>read(2)</code> 系统调用的缓冲区中。</p>
+<h2 id="发送"><a href="#发送" class="headerlink" title="发送"></a>发送</h2><p>发送数据（Send）的工作方式类似。当应用程序调用 <code>write(2)</code> 时，它将数据从用户提供的缓冲区 <em>复制</em> 到内核写队列中。随后内核会将写入队列中的数据复制到网卡中，并真正发送数据。如果网络繁忙、TCP 发送窗口已满、流量整形策略生效等情况下，实际向 NIC 传输数据可能会比用户实际调用 <code>write(2)</code> 时有所延迟。</p>
+<h2 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h2><p>这种设计的一个结果是，如果应用程序读取速度太慢或写入速度太快，内核的接收和写入队列可能会填满。因此，内核为读写队列设置了最大大小。这确保了行为不佳的应用程序使用有限数量的内存。例如，内核可能将每个接收和写入队列的上限限制为 100 KB。那么每个 TCP 套接字可以使用的最大内核内存量大约为 200 KB（因为与队列的大小相比，其他 TCP 数据结构的大小可以忽略不计）。</p>
+<h2 id="Read-Semantics读语义"><a href="#Read-Semantics读语义" class="headerlink" title="Read Semantics读语义"></a>Read Semantics读语义</h2><ul>
+<li>如果接收缓冲区为空并且用户调用 <code>read(2)</code>，则系统调用将阻塞直到数据可用。</li>
+<li>如果接收缓冲区非空并且用户调用 <code>read(2)</code>，系统调用将立即返回任何可用的数据。</li>
+<li>如果读取队列中准备就绪的数据量小于用户提供的缓冲区的大小，则可能会发生部分读取。调用者可以通过检查 <code>read(2)</code> 的返回值来检测这一点。</li>
+<li>如果接收缓冲区已满并且 TCP 连接的另一端尝试发送额外的数据，内核将拒绝确认数据包。这就是常规的 <code>TCP 拥塞控制</code>。</li>
+</ul>
+<h2 id="Write-Semantics-写语义"><a href="#Write-Semantics-写语义" class="headerlink" title="Write Semantics 写语义"></a>Write Semantics 写语义</h2><p>如果写队列未满，用户调用<code>write(2)</code>，系统调用就会成功。如果写队列有足够的空间，所有数据将被复制。如果写入队列只有部分数据的空间，那么将发生部分写入，并且只有部分数据将被复制到缓冲区。调用者通过检查 <code>write(2)</code> 的返回值来检查这一点。</p>
+<p>如果写队列已满并且用户调用 write(2)，系统调用将阻塞。</p>
+<h1 id="新建立的连接如何工作"><a href="#新建立的连接如何工作" class="headerlink" title="新建立的连接如何工作"></a>新建立的连接如何工作</h1><p>在上一节中，我们看到已建立的连接如何使用接收和写入队列来限制为每个连接分配的内核内存量。类似的技术用于限制为新连接保留的内核内存量。<br>从用户空间的角度来看，新建立的 TCP 连接是通过在侦听套接字上调用 <code>accept(2)</code> 创建的。监听套接字是使用 <code>listen(2)</code> 系统调用指定的套接字。</p>
+<p><code>accept(2)</code> 的原型采用一个套接字和两个存储有关套接字另一端信息的字段。<code>accept(2)</code> 返回的值是一个整数，表示新建立的连接的文件描述符：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">accept</span><span class="params">(<span class="type">int</span> sockfd, <span class="keyword">struct</span> sockaddr *addr, <span class="type">socklen_t</span> *addrlen)</span>;</span><br></pre></td></tr></table></figure>
+
+<p><code>listen(2)</code> 的原型采用套接字文件描述符和积压参数：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> <span class="title function_">listen</span><span class="params">(<span class="type">int</span> sockfd, <span class="type">int</span> backlog)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>backlog 是一个参数，它控制当用户没有足够快地调用 <code>accept(2)</code> 时内核将为新连接保留多少内存。</p>
+<p>例如，假设您有一个阻塞的单线程 HTTP 服务器，每个 HTTP 请求大约需要 100 毫秒。在这种情况下，HTTP 服务器将花费 100 毫秒处理每个请求，然后才能再次调用 <code>accept(2)</code>。这意味着在高达 10 rps 时将不会排队。如果超过 10 rps 进来，内核有两个选择。</p>
+<p>内核的第一个选择是根本<strong>不接受连接</strong>。例如，内核可以拒绝 ACK 传入的 SYN 数据包。更常见的情况是内核将完成 TCP 三向握手，然后使用RST终止连接。无论哪种方式，结果都是一样的：如果连接被拒绝，则不需要分配接收或写入缓冲区。这样做的理由是，如果用户空间进程接受连接的速度不够快，正确的做法是让新请求失败。反对这样做的理由是它非常激进，尤其是当新连接随着时间的推移“突发”时。</p>
+<p>内核的第二个选择是<strong>接受连接并为其分配套接字结构</strong>（包括接收&#x2F;写入缓冲区），然后将套接字对象排队以备后用。下次用户调用 accept(2) 时，不会阻塞系统调用，而是会立即获得已分配的套接字。</p>
+<p>第二种行为的论点是，当处理速率或连接速率趋于爆发时，它会更宽容。例如，在我们刚刚描述的服务器中，假设一下子有 10 个新连接进入，然后在接下来的一秒内不再有连接进入。如果内核对新连接进行排队，那么所有请求都将在第二个过程中得到处理。如果内核一直在拒绝新连接，那么只有一个连接会成功，即使该进程能够跟上总请求率。</p>
+<p>反对排队的论据有两个。首先是过度排队会导致分配大量内核内存。如果内核分配了数千个具有大接收缓冲区的套接字，那么内存使用量会快速增长，用户空间进程甚至可能无法处理所有这些请求。反对排队的另一个论据是，它使应用程序在连接的另一端（客户端）看来很慢。客户端会看到它可以建立新的 TCP 连接，但是当它尝试使用它们时，服务器的响应速度会很慢。争论点是，在这种情况下，最好让新连接失败，因为这会提供更明显的服务器不健康反馈。此外，如果服务器积极地使新连接失败，则客户端可以知道要退出；<strong>这是另一种形式的拥塞控制</strong>。</p>
+<h2 id="监听队列溢出"><a href="#监听队列溢出" class="headerlink" title="监听队列溢出"></a>监听队列溢出</h2><p>您可能会怀疑，内核实际上结合了这两种方法。内核将对新连接进行排队，但只有一定数量的连接。内核排队的连接数量由 <code>listen(2)</code> 的 backlog 参数控制。通常这被设置为一个相对较小的值。在 Linux 上，socket.h 头文件将 SOMAXCONN 的值设置为 128，在内核 2.4.25 之前，这是允许的最大值。如今，最大值在 <code>/proc/sys/net/core/somaxconn</code> 中指定，但通常您会发现程序仍然使用 <code>SOMAXCONN</code>（或更小的硬编码值）。</p>
+<p><strong>当监听队列填满时，新的连接将被拒绝</strong>。这称为监听队列溢出。您可以通过阅读 &#x2F;proc&#x2F;net&#x2F;netstat 并检查 ListenOverflows 的值来观察何时发生这种情况。这是整个内核的全局计数器。据我所知，您无法获得每个监听套接字的监听溢出统计信息。</p>
+<p>在编写网络服务器时监视监听溢出很重要，<strong>因为从服务器的角度来看监听溢出不会触发任何用户可见的行为</strong>。服务器将全天愉快地接受 (2) 个连接，而不会返回任何连接正在被丢弃的指示。例如，假设您在 Python 应用程序前使用 Nginx 作为代理。如果 Python 应用程序太慢，则可能导致 Nginx 侦听套接字溢出。发生这种情况时，您不会在 Nginx 日志中看到任何相关指示——您将像往常一样继续看到 200 状态代码等。因此，如果您只是监视应用程序的 HTTP 状态代码，您将看不到 TCP 错误正在阻止将请求转发到应用程序。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/how-tcp-socket-work/" title="【译】Tcp-Socket是怎么工作的">https://fenixc9.github.io/how-tcp-socket-work/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/IO/" rel="tag"># IO</a>
+              <a href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag"># 网络</a>
+              <a href="/tags/C/" rel="tag"># C</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/impl-trait/" rel="prev" title="Rust的impl trait">
+      <i class="fa fa-chevron-left"></i> Rust的impl trait
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/course-schedule-problem/" rel="next" title="课程表问题">
+      课程表问题 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%B7%B2%E5%BB%BA%E7%AB%8B%E7%9A%84%E8%BF%9E%E6%8E%A5%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C"><span class="nav-number">1.</span> <span class="nav-text">已建立的连接如何工作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">1.1.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%A5%E5%8F%97"><span class="nav-number">1.2.</span> <span class="nav-text">接受</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%91%E9%80%81"><span class="nav-number">1.3.</span> <span class="nav-text">发送</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">1.4.</span> <span class="nav-text">结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Read-Semantics%E8%AF%BB%E8%AF%AD%E4%B9%89"><span class="nav-number">1.5.</span> <span class="nav-text">Read Semantics读语义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Write-Semantics-%E5%86%99%E8%AF%AD%E4%B9%89"><span class="nav-number">1.6.</span> <span class="nav-text">Write Semantics 写语义</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%96%B0%E5%BB%BA%E7%AB%8B%E7%9A%84%E8%BF%9E%E6%8E%A5%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C"><span class="nav-number">2.</span> <span class="nav-text">新建立的连接如何工作</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9B%91%E5%90%AC%E9%98%9F%E5%88%97%E6%BA%A2%E5%87%BA"><span class="nav-number">2.1.</span> <span class="nav-text">监听队列溢出</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '5e472d762d5f66f91a8ed8d0d8fe02b1',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="java.lang.String，字符串，我们最常用到的类之一。由于它实在过于常用，你的代码，你依赖的库的代码，jdk的代码，甚至jvm自身都和String息息相关。String的实现的优劣，对JVM的稳定，对Java的性能，以及程序员的使用体验影响很深。本文将探讨Java string的一些细节及我们开发中可能会踩到的坑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解Java的字符串">
+<meta property="og:url" content="https://fenixc9.github.io/string-in-java/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="java.lang.String，字符串，我们最常用到的类之一。由于它实在过于常用，你的代码，你依赖的库的代码，jdk的代码，甚至jvm自身都和String息息相关。String的实现的优劣，对JVM的稳定，对Java的性能，以及程序员的使用体验影响很深。本文将探讨Java string的一些细节及我们开发中可能会踩到的坑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/1.webp">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/2.webp">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/3.webp">
+<meta property="article:published_time" content="2023-02-21T17:37:47.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.198Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="数据结构">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/string-in-java/1.webp">
+
+<link rel="canonical" href="https://fenixc9.github.io/string-in-java/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>深入理解Java的字符串 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/string-in-java/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          深入理解Java的字符串
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-22 01:37:47" itemprop="dateCreated datePublished" datetime="2023-02-22T01:37:47+08:00">2023-02-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">java.lang.String，字符串，我们最常用到的类之一。由于它实在过于常用，你的代码，你依赖的库的代码，jdk的代码，甚至jvm自身都和String息息相关。String的实现的优劣，对JVM的稳定，对Java的性能，以及程序员的使用体验影响很深。本文将探讨Java string的一些细节及我们开发中可能会踩到的坑。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h1><p>Java8及之前的String保存的方法是这样的:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">String</span></span><br><span class="line">    <span class="keyword">implements</span> <span class="title class_">java</span>.io.Serializable, Comparable&lt;String&gt;, CharSequence &#123;</span><br><span class="line">    <span class="comment">/** The value is used for character storage. */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">char</span> value[];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注释中这样描述：</p>
+<p>A String represents a string in the UTF-16 format in which supplementary characters are represented by surrogate pairs (see the section Unicode Character Representations in the Character class for more information). Index values refer to char code units, so a supplementary character uses two positions in a String。</p>
+<p>即Java使用UTF16编码构建String，对于扩展字符，String将使用2个char这非常好验证:</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">a</span> <span class="operator">=</span> <span class="string">&quot;🐎&quot;</span>;</span><br><span class="line">        System.out.println(a.length());</span><br><span class="line">        System.out.println(a.codePoints().count());</span><br><span class="line">    &#125;</span><br><span class="line">输出</span><br><span class="line"><span class="number">2</span></span><br><span class="line"><span class="number">1</span> </span><br></pre></td></tr></table></figure>
+
+<p>上例可知，对于想要获取字符串长度的场景，如果存在扩展字符的情况下我们使用length()，将得到错误的结果。想要得到正确的结果应使用codePoint().count(),这个方法将是o(n)复杂度了。对于需要估算String占用空间的场合来说，length似乎没什么问题，但是对于需要真正计算字符个数的情况，比如造个富文本框的轮子时，length将导致问题。</p>
+<p>同理还有charAt也不能得到正确的结果 :</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">b</span> <span class="operator">=</span> <span class="string">&quot;🐎q🐎&quot;</span>;</span><br><span class="line">System.out.println(b.charAt(<span class="number">1</span>));</span><br><span class="line">输出 ? </span><br></pre></td></tr></table></figure>
+<p>那codePointAt可以随机访问吗，从注释来看这里返回的是unicode单元？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">System.out.println((<span class="type">char</span>) b.codePointAt(<span class="number">1</span>));</span><br><span class="line">System.out.println((<span class="type">char</span>) b.codePointAt(<span class="number">2</span>));</span><br><span class="line"></span><br><span class="line">输出</span><br><span class="line">?</span><br><span class="line">q </span><br></pre></td></tr></table></figure>
+
+<p>从字符来看q是第二个字符，但是用1访问是？，我们访问第三个字符，用2访问才是q。总之在存在扩展字符的情况下，我们无法在不遍历的前提下定位到自己需要的字符，无法在 o(1) 复杂度下随机访问字符。</p>
+<p>当然，新型的语言大多用utf8存储字符串了（Go，Rust），Java，C#，python（3.3之前）的做法固然有一些历史局限性和妥协，尤其是在ascii为主的字符串场景下，utf16存储效率还是太低了。很多较老的实现倾向于以牺牲空间和一定程度上扩展字符的兼容性来换取高速随机访问字符。不过在以ascii为主的web大行其道的当下,以及越来越多的语言字符,以及emoji加入双字节Unicode越来越难以满足兼容性需求,人们才会倾向于选择utf8为默认字符串实现</p>
+<p>所以,java9String改为这样：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">String</span></span><br><span class="line">    <span class="keyword">implements</span> <span class="title class_">java</span>.io.Serializable, Comparable&lt;String&gt;, CharSequence,</span><br><span class="line">               Constable, ConstantDesc &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * The value is used for character storage.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@implNote</span> This field is trusted by the VM, and is a subject to</span></span><br><span class="line"><span class="comment">     * constant folding if String instance is constant. Overwriting this</span></span><br><span class="line"><span class="comment">     * field after construction will cause problems.</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * Additionally, it is marked with &#123;<span class="doctag">@link</span> Stable&#125; to trust the contents</span></span><br><span class="line"><span class="comment">     * of the array. No other facility in JDK provides this functionality (yet).</span></span><br><span class="line"><span class="comment">     * &#123;<span class="doctag">@link</span> Stable&#125; is safe here, because value is never null.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">byte</span>[] value;</span><br><span class="line">               &#125; </span><br></pre></td></tr></table></figure>
+
+<p>java9确实改用byte数组保存字符串了。</p>
+<p>代码中这个地方将标记此字符串的编码方式</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">final</span> <span class="type">byte</span> coder; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>coder可以取值为LATIN1（0）和UTF16（1），Latin1每个字符占用一个字节，debug可以看到 :<br><img src="/string-in-java/1.webp" alt="1"></p>
+<p>非ascii字符仍将使用UTF16编码</p>
+<p><img src="/string-in-java/2.webp" alt="2"><br>那么调用toChar这个api时如果是latin1编码就需要将其膨胀为2字节。如果是UTF16则需要将相邻byte高低位合并为char。</p>
+<p>对于ascii字符为主的应用，加入字符串压缩确实可以节约不少内存，但是也会引入一定的cpu损耗，用户这里可以权衡一下。</p>
+<p>创建String时会根据配置 -XX:-CompactStrings 决定是否开启字符串压缩。</p>
+<p>String的编码更多的是考虑内存占用，访问效率等因素下做出的权衡。在传输，持久化的场景下就是另一回事了，事实上在这些场景上，大多数开发者会选择UTF-8，这些场景下随机访问不再是用户考虑的因素，占用空间，兼容性将是考虑的重点。关于UTF8和UTF16的争论，这里有个关于utf8的有趣的宣言   <a target="_blank" rel="noopener" href="http://utf8everywhere.org/zh-cn">http://utf8everywhere.org/zh-cn</a></p>
+<h1 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h1><p>那么String保存在哪里呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">System.out.println(System.identityHashCode(<span class="string">&quot;aa&quot;</span>));</span><br><span class="line">System.out.println(System.identityHashCode(<span class="string">&quot;aa&quot;</span>));</span><br><span class="line">System.out.println(<span class="string">&quot;============&quot;</span>);</span><br><span class="line">System.out.println(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>).equals(<span class="string">&quot;aa&quot;</span>));</span><br><span class="line">System.out.println(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>)==<span class="string">&quot;aa&quot;</span>);</span><br><span class="line">System.out.println(<span class="string">&quot;============&quot;</span>);</span><br><span class="line">System.out.println(System.identityHashCode(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>)));</span><br><span class="line">System.out.println(System.identityHashCode(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>).intern()));</span><br><span class="line">System.out.println(System.identityHashCode(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>))));</span><br><span class="line">System.out.println(System.identityHashCode(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="keyword">new</span> <span class="title class_">String</span>(<span class="string">&quot;aa&quot;</span>)).intern()));</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">输出</span><br><span class="line"><span class="number">1551870003</span></span><br><span class="line"><span class="number">1551870003</span></span><br><span class="line">============</span><br><span class="line"><span class="literal">true</span></span><br><span class="line"><span class="literal">false</span></span><br><span class="line">============</span><br><span class="line"><span class="number">967765295</span></span><br><span class="line"><span class="number">1551870003</span></span><br><span class="line"><span class="number">1917513796</span></span><br><span class="line"><span class="number">1551870003</span> </span><br></pre></td></tr></table></figure>
+
+<p>嗯，我们初步观察上面的实验结果：</p>
+<p>“aa” 这个字符串不管在代码中声明多少次都指向了同一字符串对象。</p>
+<p>new String(“aa”) 可以生成一个新的String对象，但是这个对象继承原String所有的参数，所有新老String的hashCode相同，equals方法也会返回true，但是如果用&#x3D;&#x3D;比较的话，实际比较的是两个对象的oop指针，所以&#x3D;&#x3D;是返回false的。</p>
+<p>但是intern方法会穿透你套的这层对象，取出底层的字符串对象，而且套多少层都能正确取出。</p>
+<p>实际上JVM内部会维护常量池，大概是这样的关系</p>
+<p><img src="/string-in-java/3.webp" alt="3"><br>intern 则是直接从常量池取String对象 Java8 HostSpot中流程如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">oop StringTable::intern(Handle string_or_null, jchar* name,</span><br><span class="line">                        <span class="type">int</span> len, TRAPS) &#123;</span><br><span class="line">  unsigned <span class="type">int</span> <span class="variable">hashValue</span> <span class="operator">=</span> hash_string(name, len);</span><br><span class="line">  <span class="type">int</span> <span class="variable">index</span> <span class="operator">=</span> the_table()-&gt;hash_to_index(hashValue);</span><br><span class="line">  <span class="type">oop</span> <span class="variable">found_string</span> <span class="operator">=</span> the_table()-&gt;lookup(index, name, len, hashValue);</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Found</span></span><br><span class="line">  <span class="keyword">if</span> (found_string != NULL) <span class="keyword">return</span> found_string;</span><br><span class="line"></span><br><span class="line">  debug_only(StableMemoryChecker <span class="title function_">smc</span><span class="params">(name, len * sizeof(name[<span class="number">0</span>])</span>));</span><br><span class="line">  <span class="keyword">assert</span>(!Universe::heap()-&gt;is_in_reserved(name),</span><br><span class="line">         <span class="string">&quot;proposed name of symbol must be stable&quot;</span>);</span><br><span class="line"></span><br><span class="line">  Handle string;</span><br><span class="line">  <span class="comment">// try to reuse the string if possible</span></span><br><span class="line">  <span class="keyword">if</span> (!string_or_null.is_null()) &#123;</span><br><span class="line">    string = string_or_null;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    string = java_lang_String::create_from_unicode(name, len, CHECK_NULL);</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Grab the StringTable_lock before getting the_table() because it could</span></span><br><span class="line">  <span class="comment">// change at safepoint.</span></span><br><span class="line">  MutexLocker <span class="title function_">ml</span><span class="params">(StringTable_lock, THREAD)</span>;</span><br><span class="line"></span><br><span class="line">  <span class="comment">// Otherwise, add to symbol to table</span></span><br><span class="line">  <span class="keyword">return</span> the_table()-&gt;basic_add(index, string, name, len,</span><br><span class="line">                                hashValue, CHECK_NULL);</span><br><span class="line">&#125; </span><br></pre></td></tr></table></figure>
+
+<p>String常量池是Hash表加链表。在代码中通过ldc这个指令生成的字符串会尝试写入常量池，所以在代码中反复用ldc指令声明同一个字符串会指向同一个对象，这样能最大程度的节约内存空间。而对于运行时生成的字符串，用户使用byte数组和相应编码生成的对象则完全在堆里，将随着gc被释放。</p>
+<p>那啥时应该用intern呢？当你非常明确某段高频执行的代码会反复产生String对象却指向相同的常量池对象时：比如某些序列化，日志框架的实现。</p>
+<h1 id="“-”-应该怎么用？"><a href="#“-”-应该怎么用？" class="headerlink" title="“+” 应该怎么用？"></a>“+” 应该怎么用？</h1><p>Java程序员经常被告知的一条优化就是，不要在密集循环中使用+号拼接字符串。实际上 + 拼接是Javac会进行脱糖，每次使用+号会产生一个全新的StringBuilder对象，编译器无法替用户将StringBuilder提到循环外，用户手动创建StringBuilder在循环中append效率会高很多。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/string-in-java/" title="深入理解Java的字符串">https://fenixc9.github.io/string-in-java/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag"># 数据结构</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/directory-tree-in-rust/" rel="prev" title="Rust实现的文件目录树">
+      <i class="fa fa-chevron-left"></i> Rust实现的文件目录树
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/ebpf-in-rust-1/" rel="next" title="用Rust玩eBPF —— RedBpf">
+      用Rust玩eBPF —— RedBpf <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BC%96%E7%A0%81"><span class="nav-number">1.</span> <span class="nav-text">编码</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%86%85%E5%AD%98"><span class="nav-number">2.</span> <span class="nav-text">内存</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E2%80%9C-%E2%80%9D-%E5%BA%94%E8%AF%A5%E6%80%8E%E4%B9%88%E7%94%A8%EF%BC%9F"><span class="nav-number">3.</span> <span class="nav-text">“+” 应该怎么用？</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'd3ce8370192306fab8e423bda3913e76',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

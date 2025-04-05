@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】读取文件的困难模式 二">
+<meta property="og:url" content="https://fenixc9.github.io/reading-files-the-hard-way-2/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/1.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/2.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/3.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/4.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/5.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/6.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/7.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/8.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/9.svg">
+<meta property="article:published_time" content="2023-12-17T13:56:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.182Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/1.svg">
+
+<link rel="canonical" href="https://fenixc9.github.io/reading-files-the-hard-way-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】读取文件的困难模式 二 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/reading-files-the-hard-way-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】读取文件的困难模式 二
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-12-17 21:56:26" itemprop="dateCreated datePublished" datetime="2023-12-17T21:56:26+08:00">2023-12-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>原文链接 <a target="_blank" rel="noopener" href="https://fasterthanli.me/series/reading-files-the-hard-way/part-2">https://fasterthanli.me/series/reading-files-the-hard-way/part-2</a></p>
+<p>看看最新的模型，感觉有点可疑。<em>每个程序</em> 最终调用同一组函数。这几乎就像是不同的东西 调用这些时会发生。</p>
+<p>这些是常规函数吗？我们可以使用调试器单步调试它们吗？</p>
+<p>如果我们在 gdb 中运行由 stdio 驱动的 C 程序，并在 <code>read</code> 处中断，我们可以 确认我们确实最终调用了一个 <code>read</code> 函数（称为 <code>__GI___libc_read</code> 在这里，但是哦，好吧）：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -g -O0 readfile-f.c -o readfile-f</span><br><span class="line"></span><br><span class="line">$ gdb --silent ./readfile-f</span><br><span class="line">Reading symbols from ./readfile-f...</span><br><span class="line">(gdb) break read</span><br><span class="line">Function &quot;read&quot; not defined.</span><br><span class="line">Make breakpoint pending on future shared library load? (y or [n]) y</span><br><span class="line">Breakpoint 1 (read) pending.</span><br><span class="line">(gdb) r</span><br><span class="line">Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile-f </span><br><span class="line">[Thread debugging using libthread_db enabled]</span><br><span class="line">Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.</span><br><span class="line"></span><br><span class="line">Breakpoint 1, __GI___libc_read (fd=3, buf=0x5555555594a0, nbytes=4096) at ../sysdeps/unix/sysv/linux/read.c:25</span><br><span class="line">25      ../sysdeps/unix/sysv/linux/read.c: No such file or directory.</span><br><span class="line">(gdb) bt</span><br><span class="line">#0  __GI___libc_read (fd=3, buf=0x5555555594a0, nbytes=4096) at ../sysdeps/unix/sysv/linux/read.c:25</span><br><span class="line">#1  0x00007ffff7c88596 in _IO_new_file_underflow (fp=0x5555555592a0) at ./libio/libioP.h:947</span><br><span class="line">#2  0x00007ffff7c86e00 in __GI__IO_file_xsgetn (fp=0x5555555592a0, data=&lt;optimized out&gt;, n=15) at ./libio/fileops.c:1321</span><br><span class="line">#3  0x00007ffff7c7b709 in __GI__IO_fread (buf=0x555555559480, size=1, count=15, fp=0x5555555592a0) at ./libio/iofread.c:38</span><br><span class="line">#4  0x0000555555555288 in main (argc=1, argv=0x7fffffffdb98) at readfile-f.c:16</span><br><span class="line">(gdb)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<pre><code>酷熊的热心小贴士
+GDB 是一个开源调试器，可在 Linux、macOS和 Windows 上运行 （有一些限制）。
+除了许多其他功能之外，它还允许设置断点和单步执行代码。
+我们会大量使用它。
+</code></pre>
+<p>Rust 程序也是如此：</p>
+<p>Shell session</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">rust-gdb --silent target/debug/readfile-rs</span></span><br><span class="line">Reading symbols from target/debug/readfile-rs...</span><br><span class="line">(gdb) break read</span><br><span class="line">Breakpoint 1 at 0x1ea73: file library/std/src/fs.rs, line 872.</span><br><span class="line">(gdb) r</span><br><span class="line">Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile-rs/target/debug/readfile-rs </span><br><span class="line">[Thread debugging using libthread_db enabled]</span><br><span class="line">Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.</span><br><span class="line"></span><br><span class="line">Breakpoint 1, std::sys::unix::fs::OpenOptions::read () at library/std/src/sys/unix/fs.rs:893</span><br><span class="line">893     library/std/src/sys/unix/fs.rs: No such file or directory.</span><br><span class="line">(gdb) c</span><br><span class="line">Continuing.</span><br><span class="line"></span><br><span class="line">Breakpoint 1, __GI___libc_read (fd=3, buf=0x5555555a8ba0, nbytes=220) at ../sysdeps/unix/sysv/linux/read.c:25</span><br><span class="line">25      ../sysdeps/unix/sysv/linux/read.c: No such file or directory.</span><br><span class="line">(gdb) bt</span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">0  __GI___libc_read (fd=3, buf=0x5555555a8ba0, nbytes=220) at ../sysdeps/unix/sysv/linux/read.c:25</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">1  0x000055555557454f <span class="keyword">in</span> std::sys::unix::fd::FileDesc::read_buf () at library/std/src/sys/unix/fd.rs:136</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">2  std::sys::unix::fs::File::read_buf () at library/std/src/sys/unix/fs.rs:1062</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">3  std::fs::&#123;impl<span class="comment">#5&#125;::read_buf () at library/std/src/fs.rs:737</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">4  std::io::default_read_to_end&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:376</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">5  0x000055555557297d <span class="keyword">in</span> std::io::default_read_to_string::&#123;closure<span class="comment">#0&#125;&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:430</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">6  std::io::append_to_string&lt;std::io::default_read_to_string::&#123;closure_env<span class="comment">#0&#125;&lt;std::fs::File&gt;&gt; () at library/std/src/io/mod.rs:338</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">7  std::io::default_read_to_string&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:430</span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">8  std::fs::&#123;impl<span class="comment">#5&#125;::read_to_string () at library/std/src/fs.rs:754</span></span></span><br><span class="line"><span class="meta prompt_">#</span><span class="language-bash">9  0x000055555555c899 <span class="keyword">in</span> readfile_rs::main () at src/main.rs:9</span></span><br></pre></td></tr></table></figure>
+<p>然而，当我们尝试逐步完成它时……什么也没有。为了探索这些细节，我克隆了 glibc 存储库（因为那是读取函数似乎所在的位置）， 并发现了这个：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// in `glibc/sysdeps/unix/sysv/linux/read.c`</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/* Read NBYTES into BUF from FD.  Return the number read or -1.  */</span></span><br><span class="line"><span class="type">ssize_t</span></span><br><span class="line">__libc_read (<span class="type">int</span> fd, <span class="type">void</span> *buf, <span class="type">size_t</span> nbytes)</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">return</span> SYSCALL_CANCEL (read, fd, buf, nbytes);</span><br><span class="line">&#125;</span><br><span class="line">libc_hidden_def (__libc_read)</span><br><span class="line"></span><br><span class="line">libc_hidden_def (__read)</span><br><span class="line">weak_alias (__libc_read, __read)</span><br><span class="line">libc_hidden_def (read)</span><br><span class="line">weak_alias (__libc_read, read)</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+glibc 的源代码（如上所示）可以在 此 git 存储库（https://sourceware.org/git/?p=glibc.git;a=summary） 或 此中找到非官方 GitHub 镜像（https://github.com/bminor/glibc）。
+由于许多历史和实际原因，libc 是一个非常复杂的软件。还有其他流行的，例如 musl。
+</code></pre>
+<p>我们之所以找不到可读的代码是因为……它完全生活在另一片大陆上：</p>
+<p><img src="/reading-files-the-hard-way-2/1.svg" alt="1"></p>
+<pre><code>酷熊的热心小贴士
+strace中的“s”正是代表了“系统调用(syscall)”。
+</code></pre>
+<p>它不仅仅是两套不同的软件。他们以不同的特权运行。 Linux 内核（及其设备驱动程序）在<code>Ring 0</code>中运行，这里一切都被允许。 然而，用户态应用程序在<code>Ring 3</code>中运行。</p>
+<p><img src="/reading-files-the-hard-way-2/2.svg" alt="2"></p>
+<p>这个图太经典了，所以我不得不在这里展示它，但我不认为它非常符合直觉。我更喜欢这样：</p>
+<p><img src="/reading-files-the-hard-way-2/3.svg" alt="3"></p>
+<p>因为你从<code>Ring 0</code> 可以做的事情是你在<code>Ring 3</code>可以做的事情的<strong>严格超集</strong>。<code>Ring 3</code>就像一个监狱。<code>Ring 0</code> 中的任何人都可以访问，但<code>Ring 3</code>只能发送信件（即进行系统调用）。</p>
+<p><img src="/reading-files-the-hard-way-2/4.svg" alt="4"></p>
+<p>所以内核处理诸如读取和写入之类的事情。但它也处理进程一类的事情。当我们启动应用程序时，它在进程和内核中运行 决定哪个进程运行以及何时运行。它中断进程并恢复它们， 给重要的更高的优先级 - 而且还给人一种错觉，即单个CPU核心以同时做多件事（当它实际上一次只能做一件事情时）。</p>
+<pre><code>酷熊的热心小贴士
+现实要复杂得多。 CPU 核心做做多种事情 立刻，只是不是以一种容易观察的方式。
+</code></pre>
+<p>内核负责很多，但让我们重点关注文件。 进程具有与其关联的资源 - 例如文件描述符！当我们打开 一个文件（带有 open 系统调用），内核将会：</p>
+<ul>
+<li>决定是否允许这样做</li>
+<li>询问 VFS 谁负责这条特定路径</li>
+<li>保留一个文件描述符，即：<ul>
+<li>只是一个数字，真的</li>
+<li>每个进程唯一的</li>
+</ul>
+</li>
+<li>记下该编号对应于该资源</li>
+<li>告诉我们号码是多少</li>
+</ul>
+<p>在我们与内核的进一步沟通中，每当我们想要 引用该资源，我们将只使用该号码。</p>
+<p>这回答了您读这篇文章时此时可能想到的问题之一：在大多数程序的 strace 输出中，我们看到了对close的调用（这会关闭一个文件描述符-但在我们的示例C程序中，<strong>我们从来没有费心去调用它</strong>！</p>
+<p>这是因为内核以其无限的智慧<strong>记录了打开的文件描述符，并在进程退出后将它们全部清除</strong>。</p>
+<p>“这一切都有点理论化了”有人在后面低声说道。 “我很高兴 他没有向我们展示内核代码，但是……我们是否应该相信内核真的在清理文件描述符？”</p>
+<p>好问题！ 是列出特定路径的打开文件描述符的命令， 所以我们可以用一个简单的 C 程序快速验证这一点：</p>
+<p>C code<br>&#x2F;&#x2F; in <code>open.c</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> &#123;</span><br><span class="line">    <span class="type">int</span> fd = open(<span class="string">&quot;/etc/hosts&quot;</span>, O_RDONLY);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Our file descriptor for /etc/hosts is %d\n&quot;</span>, fd);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Press enter to exit...\n&quot;</span>);</span><br><span class="line">    getc(<span class="built_in">stdin</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ gcc open.c -o open</span><br><span class="line"></span><br><span class="line">$ lsof /etc/hosts <span class="number">2</span>&gt; /dev/null</span><br><span class="line"></span><br><span class="line">$ ./open</span><br><span class="line">Our file descriptor <span class="keyword">for</span> /etc/hosts is <span class="number">3</span></span><br><span class="line">Press enter to <span class="built_in">exit</span>...</span><br><span class="line">^Z</span><br><span class="line">[<span class="number">1</span>]+  Stopped                 ./open</span><br><span class="line"></span><br><span class="line">$ lsof /etc/hosts <span class="number">2</span>&gt; /dev/null</span><br><span class="line">COMMAND     PID USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME</span><br><span class="line">open    <span class="number">1917875</span> amos    <span class="number">3</span>r   REG    <span class="number">8</span>,<span class="number">3</span>      <span class="number">220</span> <span class="number">16253092</span> /etc/hosts</span><br><span class="line"></span><br><span class="line">$ fg</span><br><span class="line">./open</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$ lsof /etc/hosts <span class="number">2</span>&gt; /dev/null</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<pre><code>我们学到了什么？
+内核是万能的。它决定进程如何运行、管理访问 到所有设备（包括磁盘），并负责执行安全性。
+
+常规函数调用只是“跳转”。到代码的另一部分。系统调用 不是常规函数调用。它们是Ring 3 之间的安全接口 （用户层，我们的应用程序）和Ring 0（内核）。
+
+进行系统调用涉及将参数写入可访问的地方 用户态，并礼貌地要求内核考虑我们的请求。内核 可以出于各种原因拒绝它：该文件可能不存在，我们可能不存在 有权阅读它等
+</code></pre>
+<h1 id="进行系统调用"><a href="#进行系统调用" class="headerlink" title="进行系统调用"></a>进行系统调用</h1><p>我们需要消除潜在的混乱根源。我们看到了一个 read() 函数 在 glibc（大多数 Linux 发行版附带的 C 库）的源代码中， 但它与实际的 read 系统调用不同。</p>
+<p>看起来 大多数 Unix 都是用 C 编写的，但是我们可以进行系统调用吗 不使用libc？像这样的事情：</p>
+<p><img src="/reading-files-the-hard-way-2/5.svg" alt="5"></p>
+<p>嘿，Go 不是 C - Go 使用 libc 进行系统调用吗？让我们找出答案。</p>
+<p>这是一个简单的 Go 程序的源代码，该程序打印 &#x2F;etc&#x2F;hosts的内容：</p>
+<p>Go code</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">  <span class="string">&quot;io/ioutil&quot;</span></span><br><span class="line">  <span class="string">&quot;fmt&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">  payload, err := ioutil.ReadFile(<span class="string">&quot;/etc/hosts&quot;</span>)</span><br><span class="line">  <span class="keyword">if</span> err != <span class="literal">nil</span> &#123;</span><br><span class="line">    <span class="built_in">panic</span>(err)</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  fmt.Printf(<span class="string">&quot;%s\n&quot;</span>, <span class="type">string</span>(payload))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它确实有效，但它似乎没有与 libc 链接：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ go build main.go</span><br><span class="line"></span><br><span class="line">$ ./main | head -3</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">127.0.1.1       sonic</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">$ ldd main</span><br><span class="line">        not a dynamic executable</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+ldd是一个“打印共享对象依赖关系”的工具。
+
+ldd 手册页(https://manpage.me/?q=ldd) 有更多信息。
+
+在我们的例子中，确保我们的程序不使用 glibc。 Go 程序通常是静态链接的，除非它们 使用不起眼的包，例如 net 或 os/user。
+
+好吧，我猜 Go 程序通常都是动态的，但你可以修复它（https://dominik.honnef.co/posts/2015/06/statically_compiled_go_programs__always__even_with_cgo__using_musl/）。
+</code></pre>
+<p>尝试在 gdb 中中断 read 也没有任何结果。好吧，我们能确定一下吗 它至少仍然使用 openat 和 read 系统调用？让我们追踪一下：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">$ strace -e openat,read,write ./main</span><br><span class="line">openat(AT_FDCWD, &quot;/sys/kernel/mm/transparent_hugepage/hpage_pmd_size&quot;, O_RDONLY) = 3</span><br><span class="line">read(3, &quot;2097152\n&quot;, 20)                = 8</span><br><span class="line">--- SIGURG &#123;si_signo=SIGURG, si_code=SI_TKILL, si_pid=1923780, si_uid=1000&#125; ---</span><br><span class="line">--- SIGURG &#123;si_signo=SIGURG, si_code=SI_TKILL, si_pid=1923780, si_uid=1000&#125; ---</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY|O_CLOEXEC) = 3</span><br><span class="line">read(3, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 512) = 220</span><br><span class="line">read(3, &quot;&quot;, 292)                        = 0</span><br><span class="line">write(1, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 221127.0.0.1 localhost</span><br><span class="line">127.0.1.1       sonic</span><br><span class="line"></span><br><span class="line"># The following lines are desirable for IPv6 capable hosts</span><br><span class="line">::1     ip6-localhost ip6-loopback</span><br><span class="line">fe00::0 ip6-localnet</span><br><span class="line">ff00::0 ip6-mcastprefix</span><br><span class="line">ff02::1 ip6-allnodes</span><br><span class="line">ff02::2 ip6-allrouters</span><br><span class="line"></span><br><span class="line">) = 221</span><br><span class="line">+++ exited with 0 +++</span><br></pre></td></tr></table></figure>
+<p>确实如此！因此不需要 libc 来进行系统调用。终于解脱了。</p>
+<pre><code>我们学到了什么？
+尽管在某些方面，Go 是比 C 更高级的语言 （它有一个垃圾收集器，它带有并发原语等）， 它不依赖 libc 来进行系统调用。
+
+这与 Node.js 运行时和 Rust 标准库形成对比，后者 两者都使用 libc 进行系统调用。
+</code></pre>
+<h1 id="在-x86-64-上进行-Linux-系统调用"><a href="#在-x86-64-上进行-Linux-系统调用" class="headerlink" title="在 x86_64 上进行 Linux 系统调用"></a>在 x86_64 上进行 Linux 系统调用</h1><p>所以我们已经看到，几乎所有语言，无论使用多少层抽象，最终都将会以某种方式进行系统调用。</p>
+<p>但是如何进行系统调用呢？到目前为止，我们一直在使用以下语言：</p>
+<ul>
+<li>使用 libc 通过包装函数（Node.js、Rust、C）进行系统调用</li>
+<li>手动构建系统调用 (Go)</li>
+</ul>
+<p>让我们尝试在汇编中自己创建一个系统调用。</p>
+<pre><code>酷熊的热心小贴士
+汇编是大多数编译程序成为完整可执行文件之前的中间形式之一。
+
+用非常简单的话来说：C 编译器将 C 翻译为汇编，即汇编器 将汇编语言翻译成机器代码，链接器将多个汇编语言粘合在一起 将机器代码片段转换为可执行文件。
+</code></pre>
+<p>我们将使用yasm，因为其他的工具都让我血压升高。我们的代码将位于 readfile.asm 中，并且我们 将使用此 makefile 构建它：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Makefile</span><br><span class="line">.PHONY: all</span><br><span class="line"></span><br><span class="line">all:</span><br><span class="line">	yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">	ld readfile.o -o readfile</span><br></pre></td></tr></table></figure>
+<p>yasm 调用将我们的程序集组装成一个目标文件，并且 ld 调用将其链接到完整的可执行文件。</p>
+<p>我们将从一个非常简单的程序开始，让我们将其放入readfile.asm：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">            global _start ; _start is our entry point - this is its declaration...</span><br><span class="line"></span><br><span class="line">            section .text ; the text section is where we&#x27;ll put executable code</span><br><span class="line">_start:     xor rdi, rdi  ; ...and this is its definition. we just set rdi to 0.</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+rdi是一个寄存器。
+
+寄存器是 CPU 中的内存位置，可用于多种用途： 临时存储，将参数传递给函数，返回值 函数等。您可以将它们视为全局变量。
+
+每个架构都有自己的一组寄存器。我们在 x86_64，所以我们将使用一些 64 位通用寄存器，如 rax、rdi、rsi。我们会 也可以使用堆栈指针，rsp。
+
+编译和链接都很好，但是当我们运行它时会出现段错误：
+</code></pre>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">ld readfile.o -o readfile</span><br><span class="line"></span><br><span class="line">$ ./readfile </span><br><span class="line">Segmentation fault (core dumped)</span><br></pre></td></tr></table></figure>
+<p>为了让我们的程序干净地退出，我们需要..进行系统调用。</p>
+<p>我们需要进行系统调用的第一件事是它的编号。以 Ubuntu 为例， 你可以在头文件中找到它：</p>
+<p>C code<br>&#x2F;&#x2F; in <code>/usr/include/x86_64-linux-gnu/asm/unistd_64.h</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">// (cut)</span><br><span class="line">#define __NR_exit 60</span><br><span class="line">// (cut)</span><br></pre></td></tr></table></figure>
+<p>但是你也可以在网上找到一些系统调用表，比如 Filippo’s (<a target="_blank" rel="noopener" href="https://filippo.io/linux-syscall-table/)%EF%BC%8C%E5%8F%AF%E6%90%9C%E7%B4%A2%E3%80%82">https://filippo.io/linux-syscall-table/)，可搜索。</a></p>
+<p>我们需要做的第二件事是..数一下我们的幸运星，因为在 x86_64 上， 有一条专门的指令来进行系统调用。 （它被称为syscall）。</p>
+<p>所以现在我们只需要将系统调用号 60 放入 rax 寄存器中， 并使用 syscall 指令，我们应该可以：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">            global _start</span><br><span class="line"></span><br><span class="line">            section .text</span><br><span class="line">_start:     mov rax, 60</span><br><span class="line">            syscall</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">ld readfile.o -o readfile</span><br><span class="line"></span><br><span class="line">$ ldd ./readfile</span><br><span class="line">        not a dynamic executable</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>就像这样，我们在不使用 libc 的情况下进行了系统调用！那并不难。</p>
+<pre><code>酷熊的热心小贴士
+如果在没有 libc 的情况下进行系统调用并不困难，为什么这么多语言都使用 libc 进行系统调用？
+
+嗯，在 x86_64 上进行 Linux 系统调用很容易。 32 位架构有 进行系统调用的不同方式。其他操作系统已经完全 不同的系统调用集。
+
+您可以在 syscall(2) 的手册页中了解其中一些差异。 您可以使用 man 2 syscall 命令从 Linux 系统中提取它，或者 在线阅读(https://man7.org/linux/man-pages/man2/syscall.2.html#NOTES)
+</code></pre>
+<p>我们可以在汇编中重新实现整个readfile应用程序吗？让我们看看。</p>
+<p>日志记录不会像使用 Node.js、Rust、C 或 Go 那样简单。所以我们是 必须稍微依赖调试器。感谢 -g dwarf2 标志 我们传递给 yasm，我们有很好的调试信息：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ gdb --silent ./readfile</span><br><span class="line">Reading symbols from ./readfile...</span><br><span class="line">(gdb) break _start</span><br><span class="line">Breakpoint 1 at 0x401000: file readfile.asm, line 4.</span><br><span class="line">(gdb) r</span><br><span class="line">Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile </span><br><span class="line"></span><br><span class="line">Breakpoint 1, _start () at readfile.asm:4</span><br><span class="line">4       _start:     mov rax, 60</span><br><span class="line">(gdb) s</span><br><span class="line">5                   syscall</span><br><span class="line">(gdb) s</span><br><span class="line">[Inferior 1 (process 1843089) exited normally]</span><br><span class="line">(gdb) </span><br></pre></td></tr></table></figure>
+<p>那么，让我们尝试一下 open 系统调用。它需要与 C 中相同的参数： 首先是一条路径，然后是一组标志。我们将路径存储在 data 部分。</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">            global _start</span><br><span class="line"></span><br><span class="line">            section .text</span><br><span class="line">_start:     mov     rax, 2      ; &quot;open&quot; syscall</span><br><span class="line">            mov     rdi, path   ; arg 1: path</span><br><span class="line">            xor     rsi, rsi    ; arg 2: flags (0 = O_RDONLY)</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            mov     rax, 60     ; &quot;exit&quot; syscall</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            section .data</span><br><span class="line">path:       db      &quot;/etc/hosts&quot;, 0 ; null-terminated</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+您不需要需要精通汇编才能阅读本文 - 最好 甚至接触我们不完全理解的语言。大多数人从来没有接受汇编的“正式培训”，只是多年来学了一些零碎的东西。
+
+如果您想在继续之前了解更多汇编知识，您可能需要 查看 YASM 文档（https://yasm.tortall.net/Guide.html） 或此 首先是这个 NASM 教程（https://cs.lmu.edu/~ray/notes/nasmtutorial/）。
+</code></pre>
+<p>使用 gdb 逐步执行此操作，我们可以确保open 成功， 在另一个终端中使用 lsof：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"># GDB session</span><br><span class="line">$ gdb --silent ./readfile</span><br><span class="line">Reading symbols from ./readfile...</span><br><span class="line">(gdb) starti</span><br><span class="line">Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile </span><br><span class="line"></span><br><span class="line">Program stopped.</span><br><span class="line">_start () at readfile.asm:4</span><br><span class="line">4       _start:     mov     rax, 2      ; &quot;open&quot; syscall</span><br><span class="line">(gdb) s</span><br><span class="line">5                   mov     rdi, path   ; arg 1: path</span><br><span class="line">(gdb) </span><br><span class="line">6                   xor     rsi, rsi    ; arg 2: flags (0 = O_RDONLY)</span><br><span class="line">(gdb) </span><br><span class="line">7                   syscall</span><br><span class="line">(gdb) </span><br><span class="line">9                   mov     rax, 60     ; &quot;exit&quot; syscall</span><br><span class="line">(gdb) </span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"># In another shell</span><br><span class="line">$ lsof /etc/hosts</span><br><span class="line">COMMAND      PID USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME</span><br><span class="line">readfile 1846055 amos    3r   REG    8,3      220 16253092 /etc/hosts</span><br></pre></td></tr></table></figure>
+<p>我们还可以在生成的二进制文件上使用strace。它显示是否有系统调用 成功或失败，这样效果就很好：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ strace ./readfile </span><br><span class="line">execve(&quot;./readfile&quot;, [&quot;./readfile&quot;], 0x7fffb827f0f0 /* 63 vars */) = 0</span><br><span class="line">open(&quot;/etc/hosts&quot;, O_RDONLY)            = 3</span><br><span class="line">exit(4202496)                           = ?</span><br><span class="line">+++ exited with 0 +++</span><br></pre></td></tr></table></figure>
+<p>糟糕，看起来我们没有以状态代码 0 退出，让我们解决这个问题：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">mov     rax, 60</span><br><span class="line">xor     rdi, rdi    ; &lt;--- exit with code 0</span><br><span class="line">syscall</span><br></pre></td></tr></table></figure>
+<p>这样更好。现在让我们尝试从此文件描述符中读取一些字节。 与所有其他系统调用一样，open 的返回值存储在 rax 中。</p>
+<p>我们将使用 rax 进行下一个系统调用，因此我们需要 使用 push 将其保存到堆栈中。另外，我们还需要分配内存 我们的缓冲区 - 让我们在堆栈上分配 16 个字节。</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">global _start</span><br><span class="line"></span><br><span class="line">            section .text</span><br><span class="line">_start:     mov     rax, 2      ; &quot;open&quot;</span><br><span class="line">            mov     rdi, path   ; </span><br><span class="line">            xor     rsi, rsi    ; O_RDONLY</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            push rax            ; push file descriptor onto stack</span><br><span class="line">            sub rsp, 16         ; reserve 16 bytes of memory</span><br><span class="line"></span><br><span class="line">            xor     rax, rax    ; &quot;read&quot;</span><br><span class="line">            mov     rdi, [rsp+16] ; file descriptor</span><br><span class="line">            mov     rsi, rsp    ; address of buffer</span><br><span class="line">            mov     rdx, 16     ; size of buffer</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            mov     rax, 60     ; &quot;exit&quot; syscall</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            section .data</span><br><span class="line">path:       db      &quot;/etc/hosts&quot;, 0 ; null-terminated</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+堆栈是我们可以用来存储数据的区域。虽然尺寸有限，但是 比堆更容易使用。
+
+为了保留内存，我们只需从 rsp 中减去，该寄存器包含 “堆栈顶部”的地址。
+
+这是一个方便的图表，显示了我们调用 read 之前堆栈发生的情况：
+</code></pre>
+<p><img src="/reading-files-the-hard-way-2/6.svg" alt="6"></p>
+<p>到目前为止，运行我们的程序仍然没有打印任何内容，但 strace 让我们知道 一切顺利：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">ld readfile.o -o readfile</span><br><span class="line"></span><br><span class="line">$ ./readfile </span><br><span class="line"></span><br><span class="line">$ strace ./readfile </span><br><span class="line">execve(&quot;./readfile&quot;, [&quot;./readfile&quot;], 0x7ffc3dfee7d0 /* 60 vars */) = 0</span><br><span class="line">open(&quot;/etc/hosts&quot;, O_RDONLY)            = 3</span><br><span class="line">read(3, &quot;127.0.0.1\tlocalh&quot;, 16)        = 16</span><br><span class="line">exit(3)                                 = ?</span><br><span class="line">+++ exited with 3 +++</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>现在让我们使用 write 调用将该缓冲区打印到标准输出。</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">xor     rax, rax    ; &quot;read&quot;</span><br><span class="line">mov     rdi, [rsp+16] ; file descriptor</span><br><span class="line">mov     rsi, rsp    ; address of buffer</span><br><span class="line">mov     rdx, 16     ; size of buffer</span><br><span class="line">syscall</span><br><span class="line"></span><br><span class="line">; `rax` contains the number of bytes read</span><br><span class="line">; write takes the number of bytes to write via `rdx`</span><br><span class="line">mov     rdx, rax    ; number of bytes</span><br><span class="line">mov     rax, 1      ; &quot;write&quot;</span><br><span class="line">mov     rdi, 1      ; file descriptor (stdout)</span><br><span class="line">mov     rsi, rsp    ; address of buffer</span><br><span class="line">syscall</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们终于看到了一些输出：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">ld readfile.o -o readfile</span><br><span class="line"></span><br><span class="line">$ ./readfile </span><br><span class="line">127.0.0.1       localh</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>最后我们只需要重复读写，直到read返回0 读取的字节数。 （我们不会进行任何错误检查）。</p>
+<p>这是我们的最终程序：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line">            global _start</span><br><span class="line"></span><br><span class="line">            section .text</span><br><span class="line">_start:     mov     rax, 2      ; &quot;open&quot;</span><br><span class="line">            mov     rdi, path   ; </span><br><span class="line">            xor     rsi, rsi    ; O_RDONLY</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            push rax            ; push file descriptor onto stack</span><br><span class="line">            sub rsp, 16         ; reserve 16 bytes of memory</span><br><span class="line"></span><br><span class="line">read_buffer:</span><br><span class="line">            xor     rax, rax    ; &quot;read&quot;</span><br><span class="line">            mov     rdi, [rsp+16] ; file descriptor</span><br><span class="line">            mov     rsi, rsp    ; address of buffer</span><br><span class="line">            mov     rdx, 16     ; size of buffer</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            test    rax, rax</span><br><span class="line">            ; jz means &#x27;jump if zero&#x27;</span><br><span class="line">            jz      exit</span><br><span class="line"></span><br><span class="line">            mov     rdx, rax    ; number of bytes</span><br><span class="line">            mov     rax, 1      ; &quot;write&quot;</span><br><span class="line">            mov     rdi, 1      ; file descriptor (stdout)</span><br><span class="line">            mov     rsi, rsp    ; address of buffer</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            jmp read_buffer</span><br><span class="line"></span><br><span class="line">exit:</span><br><span class="line">            mov     rax, 60     ; &quot;exit&quot;</span><br><span class="line">            xor     rdi, rdi    ; return code 0</span><br><span class="line">            syscall</span><br><span class="line"></span><br><span class="line">            section .data</span><br><span class="line">path:       db      &quot;/etc/hosts&quot;, 0 ; null-terminated</span><br></pre></td></tr></table></figure>
+<pre><code>我们学到了什么？
+在 Linux x86_64 上进行系统调用涉及将值放入某些寄存器中， 然后使用 syscall 指令。
+
+我们可以使用栈（向下增长）作为临时存储空间。
+
+
+酷熊的热心小贴士
+本文中有关系统调用的信息是仅限于Linux平台的。
+
+例如，Windows 系统调用编号会随着操作系统版本的不同而变化 - 有时 甚至服务包。如果您好奇，看看这个表。
+
+虽然可以在不使用操作系统库的情况下进行系统调用，但它是 并不总是实用。
+</code></pre>
+<p>读书累了？<br>我们不都是这样吗？换个视频怎么样？</p>
+<p>内存映射文件<br>让我们尝试在另一个程序上使用 strace： ripgrep。</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ strace rg &#x27;localhost&#x27; /etc/hosts</span><br><span class="line">(cut)</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY|O_CLOEXEC) = 3</span><br><span class="line">statx(3, &quot;&quot;, AT_STATX_SYNC_AS_STAT|AT_EMPTY_PATH, STATX_ALL, &#123;stx_mask=STATX_ALL|STATX_MNT_ID, stx_attributes=0, stx_mode=S_IFREG|0644, stx_size=220, ...&#125;) = 0</span><br><span class="line">mmap(NULL, 220, PROT_READ, MAP_SHARED, 3, 0) = 0x7fd3a694a000</span><br><span class="line">write(1, &quot;\33[0m\33[32m1\33[0m:127.0.0.1\t\33[0m\33[1&quot;..., 511:127.0.0.1        localhost) = 51</span><br><span class="line">write(1, &quot;\n&quot;, 1</span><br><span class="line">)                       = 1</span><br><span class="line">write(1, &quot;\33[0m\33[32m5\33[0m:::1     ip6-\33[0m\33&quot;..., 665:::1     ip6-localhost ip6-loopback) = 66</span><br><span class="line">write(1, &quot;\n&quot;, 1</span><br><span class="line">)                       = 1</span><br><span class="line">munmap(0x7fd3a694a000, 220)             = 0</span><br><span class="line">close(3)                                = 0</span><br><span class="line">(cut)</span><br></pre></td></tr></table></figure>
+<p>我们识别 openat 系统调用，也识别 statx - 但是..它不使用read。这里发生了什么？</p>
+<p>好吧，还记得我们说过内核是全能的监督者吗？ 控制用户空间交互的一切？这也适用于内存！</p>
+<p>在 Linux 这样的操作系统中，每个进程都有自己的<code>虚拟地址空间</code>(virtual address space)。其中一些通过MMU(全称内存管理单元)内存管理映射到物理内存。</p>
+<p><img src="/reading-files-the-hard-way-2/7.svg" alt="7"></p>
+<pre><code>酷熊的热心小贴士
+物理内存被划分为“页”，以便更容易寻址。页数 通常是 4KiB，但并非总是如此！
+
+例如，Apple Silicon 处理器（例如 M1）有 16KiB 页。
+</code></pre>
+<p>当进程启动时，会为其堆栈保留一些页面。当在堆上分配内存时，例如使用 malloc， glibc 的分配器向内核请求更多页面，并跟踪所有页面分配，以便<code>free()</code>正常工作。</p>
+<p>首先，让我们检查每个进程是否确实有一个单独的地址空间。</p>
+<p>我们可以制作第一个程序，write.c：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> &#123;</span><br><span class="line">  <span class="comment">// allocate 4 bytes</span></span><br><span class="line">  <span class="type">int</span> *ptr = <span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="type">int</span>));</span><br><span class="line">  <span class="comment">// write a very specific value to it</span></span><br><span class="line">  *ptr = <span class="number">0xFEEDFACE</span>;</span><br><span class="line">  <span class="comment">// read back the value, and print the address</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;Wrote %x to %p\n&quot;</span>, *ptr, ptr);</span><br><span class="line">  <span class="comment">// wait for user input</span></span><br><span class="line">  getc(<span class="built_in">stdin</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>该程序很有可能打印出不同的内容 每次都输入地址，但是当我运行它时，它打印出以下内容：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ gcc write.c -o write</span><br><span class="line">$ ./write</span><br><span class="line">Wrote feedface to 0x56459a9c7260</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们可以用它来编写第二个程序，read.c：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> &#123;</span><br><span class="line">    <span class="type">int</span> *ptr = (<span class="type">int</span> *) <span class="number">0x56459a9c7260</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Read %x to %p\n&quot;</span>, *ptr, ptr);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>并运行它：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ gcc read.c -o read</span><br><span class="line">$ ./read</span><br><span class="line">[1]   6429 segmentation fault (core dumped)   ./read</span><br></pre></td></tr></table></figure>
+<p>发生了什么？ 0x56459a9c7260 是 write 虚拟地址中的有效地址 地址空间，但不在 read 中。尝试从中读取数据是一种访问 违规，这会导致内核向我们的进程发送信号，并且 该信号的默认处理程序会终止该进程。</p>
+<pre><code>酷熊的热心小贴士
+我们在第 1 部分中使用它来让我们的 stdio 支持的 C 程序出现段错误！
+</code></pre>
+<p>访问冲突只是一种缺页（page fault）。当我们尝试读取或写入当前不是的（虚拟）地址时 映射到物理内存就会发生缺页。</p>
+<p>这正是<code>mmap</code>背后的技巧。当我们第一次映射一个文件时， 内核可能会急切地将文件的前4K读入自己的缓冲区中， 并设置页表以便（用户态）进程可以直接读取该缓冲区：</p>
+<p><img src="/reading-files-the-hard-way-2/8.svg" alt="8"></p>
+<p>但是一旦进程读取过去第一个 4K，那就是缺页！</p>
+<p>请记住，内核可以做任何事情来响应页面错误：它可能确定这是访问冲突，并向进程发送信号。在这种情况下，它选择简单地履行其承诺“这个虚拟地址范围包含文件的内容”，只是……直到需要它为止。</p>
+<p><img src="/reading-files-the-hard-way-2/9.svg" alt="9"></p>
+<p>文件的请求部分被实际读取，设置一个新的页面映射：</p>
+<p>内核对于一段时间没有被访问过的页，当然可以自由地“调出”页面（或者只要它想要，真的！）。</p>
+<pre><code>酷熊的热心小贴士
+执行程序时，其映像是内存映射的。
+
+这允许程序在从磁盘完全读取出来之前开始执行，尤其当可执行文件很大，或者 I/O 设备很慢时，这点非常重要。
+</code></pre>
+<h1 id="在汇编中使用mmap"><a href="#在汇编中使用mmap" class="headerlink" title="在汇编中使用mmap"></a>在汇编中使用mmap</h1><p>我们可以在汇编程序中使用它吗？我们当然可以！</p>
+<p>因为我们不确定<code>mmap</code>需要什么参数（以及要放置哪些寄存器） ），我们将使用这个 x86 的可搜索 Linux 系统调用表 x86_64 通过 @FiloSottile。</p>
+<p>首先，像往常一样，我们需要打开文件：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">_start:     mov     rax, 2          ; &quot;open&quot;</span><br><span class="line">            mov     rdi, path       ; </span><br><span class="line">            xor     rsi, rsi        ; O_RDONLY</span><br><span class="line">            syscall</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>接下来，我们想要找到文件的大小（以字节为单位），因此我们可以通过 它到 mmap。我们将使用 fstat 系统调用来实现此目的，该系统调用需要 fd (a 文件描述符）在寄存器 rdi 中，以及 struct stat __user* statbuf 在寄存器rsi中。</p>
+<p>为了帮助我编写下一部分，我编写了一个简单的 C 程序来转储 结构体的大小，以及 st_size 字段的偏移量，以及两个 常量：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;size of stat struct: %zu\n&quot;</span>, <span class="keyword">sizeof</span>(<span class="keyword">struct</span> stat));</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;offset of st_size  : %zu\n&quot;</span>, offsetof(<span class="keyword">struct</span> stat, st_size));</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;PROT_READ   = 0x%x\n&quot;</span>, PROT_READ);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;MAP_PRIVATE = 0x%x\n&quot;</span>, MAP_PRIVATE);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>哪个输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">size of stat struct: 144</span><br><span class="line">offset of st_size  : 48</span><br><span class="line">PROT_READ   = 0x1</span><br><span class="line">MAP_PRIVATE = 0x2</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>因此，看起来我们需要在堆栈上分配 144 个字节：</p>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mov     rdi, rax        ; fd (returned from open)</span><br><span class="line">sub     rsp, 144        ; allocate stat struct</span><br><span class="line">mov     rsi, rsp        ; address of &#x27;struct stat&#x27;</span><br><span class="line">mov     rax, 5          ; &quot;fstat&quot; syscall</span><br><span class="line">syscall</span><br></pre></td></tr></table></figure>
+<p>然后我们可以将文件描述符、文件大小和标志提供给 mmap。 请注意，我们可以指定一个地址（但 NULL 也可以）和一个偏移量 （但是 0 就可以了，因为我们想要整个文件）。</p>
+<pre><code>酷熊的热心小贴士
+mmap 系统调用需要：
+
+addr in %rdi
+len in %rsi
+prot（protection）in %rdx
+flags in %r10
+fd in %r8
+off（offset）in %r9
+</code></pre>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mov     rsi, [rsp+48]   ; len = file size (from &#x27;struct stat&#x27;)</span><br><span class="line">add     rsp, 144        ; free &#x27;struct stat&#x27;</span><br><span class="line">mov     r8, rdi         ; fd (still in rdi from last syscall)</span><br><span class="line">xor     rdi, rdi        ; address = 0</span><br><span class="line">mov     rdx, 0x1        ; protection = PROT_READ</span><br><span class="line">mov     r10, 0x2        ; flags = MAP_PRIVATE</span><br><span class="line">xor     r9, r9          ; offset = 0</span><br><span class="line">mov     rax, 9          ; &quot;mmap&quot; syscall</span><br><span class="line">syscall</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>最后，我们可以在一个 write 系统调用中写出整个文件：</p>
+<pre><code>酷熊的热心小贴士
+write 系统调用需要：
+
+fd in %rdi
+buf in %rsi
+count in%rdx
+</code></pre>
+<p>x86 assembly</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">mov     rdx, rsi        ; count (file size from last call)</span><br><span class="line">mov     rsi, rax        ; buffer address (returned from mmap)</span><br><span class="line">mov     rdi, 1          ; fd = stdout</span><br><span class="line">mov     rax, 1          ; &quot;write&quot; syscall</span><br><span class="line">syscall</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们终于得到它了：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ make</span><br><span class="line">yasm -f elf64 -g dwarf2 readfile.asm</span><br><span class="line">ld readfile.o -o readfile</span><br><span class="line"></span><br><span class="line">$ strace ./readfile &gt; /dev/null</span><br><span class="line">execve(&quot;./readfile&quot;, [&quot;./readfile&quot;], 0x7ffffc6ddbf0 /* 60 vars */) = 0</span><br><span class="line">open(&quot;/etc/hosts&quot;, O_RDONLY)            = 3</span><br><span class="line">fstat(3, &#123;st_mode=S_IFREG|0644, st_size=220, ...&#125;) = 0</span><br><span class="line">mmap(NULL, 220, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7f11fbe5a000</span><br><span class="line">write(1, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 220) = 220</span><br><span class="line">exit(0)                                 = ?</span><br><span class="line">+++ exited with 0 +++</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<pre><code>我们学到了什么？
+进程的地址空间指的是虚拟内存，那么 通过页表映射到物理内存。当访问未映射的范围时， 它会导致页面错误。
+
+我们可以通过mmap将它们映射到虚拟地址空间，而不是使用`read`读文件。在mmap的范围中read将会使内核实际读那部分文件。
+
+可执行文件在运行时是内存映射的（即使在 Windows 上）。
+</code></pre>
+<p>在下一部分中，我们将看看内核内部，看看如何 文件的组织和读取 - 以及我们如何通过使用来查找和读取它们 这些知识，我们可以绕过尽可能多的抽象。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/reading-files-the-hard-way-2/" title="【译】读取文件的困难模式 二">https://fenixc9.github.io/reading-files-the-hard-way-2/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/rust/" rel="tag"># rust</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/dove-in-memory/" rel="prev" title="我记忆中的那只鸽子">
+      <i class="fa fa-chevron-left"></i> 我记忆中的那只鸽子
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/reading-files-the-hard-way-3/" rel="next" title="【译】读取文件的困难模式 三">
+      【译】读取文件的困难模式 三 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E8%A1%8C%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">1.</span> <span class="nav-text">进行系统调用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8-x86-64-%E4%B8%8A%E8%BF%9B%E8%A1%8C-Linux-%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">在 x86_64 上进行 Linux 系统调用</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E6%B1%87%E7%BC%96%E4%B8%AD%E4%BD%BF%E7%94%A8mmap"><span class="nav-number">3.</span> <span class="nav-text">在汇编中使用mmap</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '00319bf1b397acb4ea557cefc3f1dc8b',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

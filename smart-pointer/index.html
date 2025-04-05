@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="如何理解并使用Rust智能指针">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust智能指针">
+<meta property="og:url" content="https://fenixc9.github.io/smart-pointer/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="如何理解并使用Rust智能指针">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-24T17:36:48.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.197Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/smart-pointer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Rust智能指针 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/smart-pointer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Rust智能指针
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-12-25 01:36:48" itemprop="dateCreated datePublished" datetime="2022-12-25T01:36:48+08:00">2022-12-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">如何理解并使用Rust智能指针</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="官方文档"><a href="#官方文档" class="headerlink" title="官方文档"></a>官方文档</h1><p>在《The Book》第15章中如此描述：</p>
+<p>A pointer is a general concept for a variable that contains an address in memory</p>
+<p>这句话表明：指针是一个<strong>指向地址的变量</strong>。</p>
+<p>在Rust中我们最常用到的<strong>引用</strong>就是指针。引用不会带来额外损耗，只会借用数据。</p>
+<p>Smart pointers, on the other hand, are data structures that act like a pointer but also have additional metadata and capabilities</p>
+<p>与引用不同的是，智能指针表现为具有额外元数据，能力的指针。</p>
+<p>Rust, with its concept of ownership and borrowing, has an additional difference between references and smart pointers: while references only borrow data, in many cases, smart pointers own the data they point to.</p>
+<p>引用和智能指针一个重要区别是，引用借用数据，智能指针大多情况下拥有数据。</p>
+<p>Smart pointers are usually implemented using structs. Unlike an ordinary struct, smart pointers implement the Deref and Drop traits。</p>
+<p>从官方定义来看，智能指针重要特征是实现了<code>Deref</code>和<code>Drop</code>。</p>
+<p>我们先分析下Deref。</p>
+<h1 id="Deref解引用"><a href="#Deref解引用" class="headerlink" title="Deref解引用"></a>Deref解引用</h1><p>解引用deref(*)是引用(&amp;)的反操作。如果我们对一个<code>引用</code> 使用<code>*</code>操作符，将读到地址指向的内存。相关trait：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="meta">#[rustc_const_unstable(feature = <span class="string">&quot;const_deref&quot;</span>, issue = <span class="string">&quot;88955&quot;</span>)]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span>&gt; <span class="keyword">const</span> Deref <span class="keyword">for</span> &amp;T &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Target</span> = T;</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[rustc_diagnostic_item = <span class="string">&quot;noop_method_deref&quot;</span>]</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">deref</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;T &#123;</span><br><span class="line">        *<span class="keyword">self</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是：上面实现Deref的是<code>&amp;T</code> ，而 <code>&amp;self</code> 脱糖后为 <code>self: &amp;Self</code> 所以self实际的含义是<code>&amp;&amp;T</code> 。因此返回：<code>*self -&gt; &amp;T</code> 。</p>
+<p>deref这个操作对应的trait如下：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">trait</span> <span class="title class_">Deref</span> &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Target</span>: ?<span class="built_in">Sized</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">deref</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="keyword">Self</span>::Target;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>将返回<strong>Target的引用，而不是Target</strong>。</p>
+<h2 id="那么-操作符和deref有什么区别吗"><a href="#那么-操作符和deref有什么区别吗" class="headerlink" title="那么*操作符和deref有什么区别吗"></a>那么*操作符和deref有什么区别吗</h2><ul>
+<li><code>*</code> 操作符 &#x3D;&gt; <code>*Deref::deref(&amp;g)</code></li>
+<li>deref &#x3D;&gt; <code>Deref::deref(&amp;g)</code></li>
+</ul>
+<p><code>*</code>操作符在deref调用后转为Target的引用，再调用其调用<code>*</code> 操作符。</p>
+<p>我们测试一个自定义的指针。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::ops::Deref;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">MyPointer</span>&lt;T&gt; &#123;</span><br><span class="line">    t: T,</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; Deref <span class="keyword">for</span> <span class="title class_">MyPointer</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Target</span> = T;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">deref</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> &amp;<span class="keyword">Self</span>::Target &#123;</span><br><span class="line">        &amp;<span class="keyword">self</span>.t</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">g</span> = MyPointer&#123;</span><br><span class="line">        t: <span class="type">String</span>::<span class="title function_ invoke__">from</span>(<span class="string">&quot;hello&quot;</span>),</span><br><span class="line">    &#125;;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">h</span> = g.<span class="title function_ invoke__">deref</span>();</span><br><span class="line">    <span class="built_in">assert_eq!</span>(h, <span class="string">&quot;hello&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>DerefMut的唯一区别是返回的是&amp;mut型引用，不过多做介绍了。</p>
+<h2 id="自动解引用"><a href="#自动解引用" class="headerlink" title="自动解引用"></a>自动解引用</h2><p>比如如下的行为：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">i</span> = <span class="type">Box</span>::<span class="title function_ invoke__">new</span>(<span class="number">9</span>);</span><br><span class="line">dbg!(i.<span class="title function_ invoke__">add</span>(<span class="number">3</span>));</span><br></pre></td></tr></table></figure>
+<p>Box似乎没有实现过add方法，这里实际是调用的i32的add。所谓自动解引用，实际上是某种<strong>连续</strong>隐式转换，直到找到想要的方法为止。这种隐式转换可以避免写出非常hack的代码，但是却会让代码可读性降低。<br>此外，有时我们确实会不需要这种解引用。比如，我们想对<code>Arc&lt;T&gt;</code> 调用<code>clone()</code> ，最终却clone了T。此时我们可以检查标准库这类智能指针是否实现了对应的function，Arc::clone()可以解决我们的问题。</p>
+<h1 id="Drop"><a href="#Drop" class="headerlink" title="Drop"></a>Drop</h1><p>Drop trait 类似结构体生命周期结束的回调。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span>;</span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;droped&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>那么问题来了</p>
+<h2 id="1-如果我不实现这个Trait，难道这个struct就不回收了吗？"><a href="#1-如果我不实现这个Trait，难道这个struct就不回收了吗？" class="headerlink" title="1. 如果我不实现这个Trait，难道这个struct就不回收了吗？"></a>1. 如果我不实现这个Trait，难道这个struct就不回收了吗？</h2><p>这里是一个例证</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A &#123; c: C, b: B &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    c: C,</span><br><span class="line">    b: B,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">B</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">C</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">B</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;drop B&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">C</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;drop C&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>上面代码可以打印出</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">drop C</span><br><span class="line">drop B</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-如果我实现了这个Trait，但是在里面什么都不做，那他还能顺利回收吗？"><a href="#2-如果我实现了这个Trait，但是在里面什么都不做，那他还能顺利回收吗？" class="headerlink" title="2. 如果我实现了这个Trait，但是在里面什么都不做，那他还能顺利回收吗？"></a>2. 如果我实现了这个Trait，但是在里面什么都不做，那他还能顺利回收吗？</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">#[test]</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">f</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">a</span> = A &#123; c: C, b: B &#125;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    c: C,</span><br><span class="line">    b: B,</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Drop A&quot;</span>);       </span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">B</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">C</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">B</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;drop B&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">C</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;drop C&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>上面的代码可以会打印出:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Drop A</span><br><span class="line">drop C</span><br><span class="line">drop B</span><br></pre></td></tr></table></figure>
+
+<p>我们的结论是：Drop Trait实现与否都不会影响字段回收，先执行当前struct的Drop（如果实现了的话），然后按照：</p>
+<ul>
+<li>变量级别，按照逆序的方式</li>
+<li>结构体内部，按照顺序的方式<br>的顺序，调用字段的drop，并递归执行字段的回收。</li>
+</ul>
+<p>一个常见的坑是：Copy Trait和Drop Trait冲突</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug,Clone, Copy)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    a: <span class="type">i32</span>,</span><br><span class="line">    b: <span class="type">i32</span>,</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Drop</span> <span class="keyword">for</span> <span class="title class_">A</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;droped &#123;&#125; &#123;&#125;&quot;</span>, <span class="keyword">self</span>.a,<span class="keyword">self</span>.b);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">error[E0184]: the trait `Copy` may not be implemented for this type; the type has a destructor</span><br><span class="line">  --&gt; src/smart_pointer.rs:41:23</span><br><span class="line">   |</span><br><span class="line">41 | #[derive(Debug,Clone, Copy)]</span><br><span class="line">   |                       ^^^^ `Copy` not allowed on types with destructors</span><br><span class="line">   |</span><br></pre></td></tr></table></figure>
+<p>Explicitly implementing both Drop and Copy trait on a type is currently disallowed. This feature can make some sense in theory, but the current implementation is incorrect and can lead to memory unsafety (see issue #20126), so it has been disabled for now.</p>
+<p>简而言之，Copy Drop共存理论上是能共存的，但是当前实现不正确，会导致内存不安全，已经关闭了。</p>
+<h1 id="Box"><a href="#Box" class="headerlink" title="Box"></a>Box</h1><p>将数据保存在堆上，最常见的智能指针。</p>
+<h2 id="1-使用场景"><a href="#1-使用场景" class="headerlink" title="1. 使用场景"></a>1. 使用场景</h2><h3 id="1-避免栈上大量数据的拷贝"><a href="#1-避免栈上大量数据的拷贝" class="headerlink" title="1. 避免栈上大量数据的拷贝"></a>1. 避免栈上大量数据的拷贝</h3><pre><code>1. 有时我们需要申请大块内存时如果直接分配在栈上，如果发生所有权转移将会造成数据深拷贝。
+2. 如果分配在堆上，则只是Box智能指针的转移
+</code></pre>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">arr</span> = <span class="type">Box</span>::<span class="title function_ invoke__">new</span>([<span class="number">0</span>;<span class="number">1000</span>]);</span><br><span class="line">   <span class="keyword">let</span> <span class="variable">arr1</span> = arr;</span><br><span class="line">   <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, arr1.<span class="title function_ invoke__">len</span>());</span><br></pre></td></tr></table></figure>
+<h3 id="2-可以将动态大小的数据封装为固定大小"><a href="#2-可以将动态大小的数据封装为固定大小" class="headerlink" title="2. 可以将动态大小的数据封装为固定大小"></a>2. 可以将动态大小的数据封装为固定大小</h3><p>当我们执行let 语句时就意味着在栈上分配内存，而对于Rust要求栈分配时内存必须是编译器可知的，因此对于切片，trait object类对象必须经过Box封装后才能在栈上分配。</p>
+<h2 id="2-堆上的内存什么时候释放呢？"><a href="#2-堆上的内存什么时候释放呢？" class="headerlink" title="2. 堆上的内存什么时候释放呢？"></a>2. 堆上的内存什么时候释放呢？</h2><figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;<span class="meta">#[may_dangle]</span> T: ?<span class="built_in">Sized</span>, A: Allocator&gt; <span class="built_in">Drop</span> <span class="keyword">for</span> <span class="title class_">Box</span>&lt;T, A&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">// <span class="doctag">FIXME:</span> Do nothing, drop is currently performed by compiler.</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看起来Box指针的释放由编译器优化，并没有将实际执行逻辑写在alloc库中。但是查阅文档来看，这里实际上就是执行逻辑就是调用Drop并释放内存。</p>
+<h2 id="3-Box中的数据如何取出？"><a href="#3-Box中的数据如何取出？" class="headerlink" title="3. Box中的数据如何取出？"></a>3. Box中的数据如何取出？</h2><p>如果我们的目的是将box中的数据move出来。使用<code>*</code> 解引用即可。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">i</span> = <span class="type">Box</span>::<span class="title function_ invoke__">new</span>(<span class="number">5</span>);</span><br><span class="line"><span class="built_in">assert_eq!</span>(*i, <span class="number">5</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-裸指针和Box"><a href="#4-裸指针和Box" class="headerlink" title="4. 裸指针和Box"></a>4. 裸指针和Box</h2><p>裸指针和Box可以互转</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">r</span> = <span class="type">Box</span>::<span class="title function_ invoke__">into_raw</span>(<span class="type">Box</span>::<span class="title function_ invoke__">new</span>(<span class="type">String</span>::<span class="title function_ invoke__">from</span>(<span class="string">&quot;abc&quot;</span>)));</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">n</span> = <span class="keyword">unsafe</span> &#123; <span class="type">Box</span>::<span class="title function_ invoke__">from_raw</span>(r) &#125;;</span><br></pre></td></tr></table></figure>
+<p>获取裸指针safe，将裸指针转为box则是unsafe。</p>
+<h2 id="Rc和Arc"><a href="#Rc和Arc" class="headerlink" title="Rc和Arc"></a>Rc和Arc</h2><p>引用计数智能指针。当我们需要将某个对象供程序的多个部分同时使用时，使用此类指针可以让我们避免内存泄露。</p>
+<p>简而言之，当我们clone Rc&#x2F;Arc时，我们并不会clone其内部数据，而在Rc指针的元信息上包含引用计数，clone只是增加了引用计数1；</p>
+<p>同理Drop也不会释放其包含的数据，只是将其计数减1。当其引用计数为0时，才会释放其数据，释放内存。</p>
+<h3 id="Rc"><a href="#Rc" class="headerlink" title="Rc"></a>Rc</h3><p>相对于Arc，Rc没有实现Send，因此无法将Rc move到另一个线程。</p>
+<h3 id="弱引用"><a href="#弱引用" class="headerlink" title="弱引用"></a>弱引用</h3><p>为了避免引用计数可能导致的循环引用问题，weak指针不能像强引用一样阻止Rc包含的数据Drop。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">g</span> = Rc::<span class="title function_ invoke__">new</span>(S &#123; i: <span class="number">0</span> &#125;);</span><br><span class="line"><span class="built_in">assert_eq!</span>(Rc::<span class="title function_ invoke__">strong_count</span>(&amp;g), <span class="number">1</span>);</span><br><span class="line"><span class="built_in">assert_eq!</span>(Rc::<span class="title function_ invoke__">weak_count</span>(&amp;g),<span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+<p>使用downgrade 可以获取弱引用Weak</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">let</span> <span class="variable">h</span> = Rc::<span class="title function_ invoke__">downgrade</span>(&amp;g);</span><br><span class="line"><span class="built_in">assert_eq!</span>(h.<span class="title function_ invoke__">upgrade</span>().<span class="title function_ invoke__">unwrap</span>().i,<span class="number">0</span>);</span><br></pre></td></tr></table></figure>
+<p>weak想要重新变回Rc则需调用upgrade，由于weak不能确认此时Rc有足够的强引用，数据可能已Drop，此时从弱引用变回强引用则是Option。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/smart-pointer/" title="Rust智能指针">https://fenixc9.github.io/smart-pointer/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-mod-detail/" rel="prev" title="【译】Rust模块系统的清晰解释">
+      <i class="fa fa-chevron-left"></i> 【译】Rust模块系统的清晰解释
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/rust-pin/" rel="next" title="Rust的Pin是咋回事?">
+      Rust的Pin是咋回事? <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%98%E6%96%B9%E6%96%87%E6%A1%A3"><span class="nav-number">1.</span> <span class="nav-text">官方文档</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Deref%E8%A7%A3%E5%BC%95%E7%94%A8"><span class="nav-number">2.</span> <span class="nav-text">Deref解引用</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%82%A3%E4%B9%88-%E6%93%8D%E4%BD%9C%E7%AC%A6%E5%92%8Cderef%E6%9C%89%E4%BB%80%E4%B9%88%E5%8C%BA%E5%88%AB%E5%90%97"><span class="nav-number">2.1.</span> <span class="nav-text">那么*操作符和deref有什么区别吗</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%87%AA%E5%8A%A8%E8%A7%A3%E5%BC%95%E7%94%A8"><span class="nav-number">2.2.</span> <span class="nav-text">自动解引用</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Drop"><span class="nav-number">3.</span> <span class="nav-text">Drop</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E5%A6%82%E6%9E%9C%E6%88%91%E4%B8%8D%E5%AE%9E%E7%8E%B0%E8%BF%99%E4%B8%AATrait%EF%BC%8C%E9%9A%BE%E9%81%93%E8%BF%99%E4%B8%AAstruct%E5%B0%B1%E4%B8%8D%E5%9B%9E%E6%94%B6%E4%BA%86%E5%90%97%EF%BC%9F"><span class="nav-number">3.1.</span> <span class="nav-text">1. 如果我不实现这个Trait，难道这个struct就不回收了吗？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%A6%82%E6%9E%9C%E6%88%91%E5%AE%9E%E7%8E%B0%E4%BA%86%E8%BF%99%E4%B8%AATrait%EF%BC%8C%E4%BD%86%E6%98%AF%E5%9C%A8%E9%87%8C%E9%9D%A2%E4%BB%80%E4%B9%88%E9%83%BD%E4%B8%8D%E5%81%9A%EF%BC%8C%E9%82%A3%E4%BB%96%E8%BF%98%E8%83%BD%E9%A1%BA%E5%88%A9%E5%9B%9E%E6%94%B6%E5%90%97%EF%BC%9F"><span class="nav-number">3.2.</span> <span class="nav-text">2. 如果我实现了这个Trait，但是在里面什么都不做，那他还能顺利回收吗？</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Box"><span class="nav-number">4.</span> <span class="nav-text">Box</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="nav-number">4.1.</span> <span class="nav-text">1. 使用场景</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-%E9%81%BF%E5%85%8D%E6%A0%88%E4%B8%8A%E5%A4%A7%E9%87%8F%E6%95%B0%E6%8D%AE%E7%9A%84%E6%8B%B7%E8%B4%9D"><span class="nav-number">4.1.1.</span> <span class="nav-text">1. 避免栈上大量数据的拷贝</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%8F%AF%E4%BB%A5%E5%B0%86%E5%8A%A8%E6%80%81%E5%A4%A7%E5%B0%8F%E7%9A%84%E6%95%B0%E6%8D%AE%E5%B0%81%E8%A3%85%E4%B8%BA%E5%9B%BA%E5%AE%9A%E5%A4%A7%E5%B0%8F"><span class="nav-number">4.1.2.</span> <span class="nav-text">2. 可以将动态大小的数据封装为固定大小</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%A0%86%E4%B8%8A%E7%9A%84%E5%86%85%E5%AD%98%E4%BB%80%E4%B9%88%E6%97%B6%E5%80%99%E9%87%8A%E6%94%BE%E5%91%A2%EF%BC%9F"><span class="nav-number">4.2.</span> <span class="nav-text">2. 堆上的内存什么时候释放呢？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-Box%E4%B8%AD%E7%9A%84%E6%95%B0%E6%8D%AE%E5%A6%82%E4%BD%95%E5%8F%96%E5%87%BA%EF%BC%9F"><span class="nav-number">4.3.</span> <span class="nav-text">3. Box中的数据如何取出？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E8%A3%B8%E6%8C%87%E9%92%88%E5%92%8CBox"><span class="nav-number">4.4.</span> <span class="nav-text">4. 裸指针和Box</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Rc%E5%92%8CArc"><span class="nav-number">4.5.</span> <span class="nav-text">Rc和Arc</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Rc"><span class="nav-number">4.5.1.</span> <span class="nav-text">Rc</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%B1%E5%BC%95%E7%94%A8"><span class="nav-number">4.5.2.</span> <span class="nav-text">弱引用</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'd71edf55f551d55a000292ef7465eaeb',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="我们常见的任务调度系统都是如何实现高效地定时调度的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何理解和实现时间轮算法">
+<meta property="og:url" content="https://fenixc9.github.io/time-wheel/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="我们常见的任务调度系统都是如何实现高效地定时调度的">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/time-wheel/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/time-wheel/2.png">
+<meta property="article:published_time" content="2023-03-22T15:34:48.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.198Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/time-wheel/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/time-wheel/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>如何理解和实现时间轮算法 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/time-wheel/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          如何理解和实现时间轮算法
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-22 23:34:48" itemprop="dateCreated datePublished" datetime="2023-03-22T23:34:48+08:00">2023-03-22</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%AE%97%E6%B3%95/" itemprop="url" rel="index"><span itemprop="name">算法</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">我们常见的任务调度系统都是如何实现高效地定时调度的</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在web开发中，一些复杂的高负载的中间件常常需要追踪数万个链接。我们应该如何高效地追踪这些链接，并管理他们的超时呢？<br><a target="_blank" rel="noopener" href="https://blog.acolyer.org/2015/11/23/hashed-and-hierarchical-timing-wheels/">https://blog.acolyer.org/2015/11/23/hashed-and-hierarchical-timing-wheels/</a><br>这篇论文介绍了一些管理计时器的方法。首先对我们的计时器建模：计时器共需满足4个操作</p>
+<ol>
+<li>启动定时器，指定定时器在多久会触发，指定相关回调。</li>
+<li>停止定时器</li>
+<li>我们的定时器能够 按照时间最小粒度回调 tick</li>
+<li>回调时间到了能够触发相应回调。</li>
+</ol>
+<p>我们先看一些方案</p>
+<ol>
+<li><p>无序计时器列表<br>将所有计时器都无脑塞到同一列表，每次tick触发都必须遍历完整列表，将每个计时器都减少tick时长。如果遇到减少到0，则调用回调并将计时器删除。启动计时器的时间复杂度是<code>O(1)</code> ，停止（删除）计时器的复杂度是<code>O(1)</code> 每次tick检查回调的复杂度则是 <code>O(n)</code> 。</p>
+</li>
+<li><p>有序计时器列表<br>这里将离到期最近的放在列表头，按照时间近远排序，如果我们的实现是链表，我们的tick将是<code>O(1)</code> 复杂度，启动是<code>O(n)</code> ，停止是O(1)。如果我们使用数组+ringbuffer实现，则tick是 <code>O(1)</code>，启动是O(lgn)，停止是O(1) ，但是会带来数组扩容时O(n)复制损耗。 </p>
+</li>
+<li><p>定时器树<br>将定时器改为树状结构存储，比如红黑树，可以保证我们的启停，tick都是O(lgn)。</p>
+</li>
+<li><p>简单的时间轮<br>如果计时器最大计时比较小，那么一个环上n个槽，每个槽都是最小时间单位，每次tick移动一位并执行回调，此时启动，停止，tick都是O(1)。</p>
+</li>
+<li><p>带有有序定时器列表的哈希轮<br>如果需要计时的周期较长，简单时间轮会消耗大量内存。我们一个可行的优化方案是使用一哈希时间轮，我们将计时器同合理的轮长度取模，并在时间轮上标记其时间。如果哈希冲突后将计时器按照顺序放到槽位的链表中。最好的情况下，启动，停止都是<code>O(1)</code> 最坏是<code>O(n)</code> 明显哈希冲突，tick则是bucket数 ，常量级。<br><img src="/time-wheel/1.png" alt="1"></p>
+</li>
+<li><p>方案5的优化<br>由于方案5存的是绝对时间没有存具体需要转几轮<br><img src="/time-wheel/2.png" alt="2"> 所以可以做这样的优化，避免无谓的轮转。<br>需计算轮数 c &#x3D; j &#x2F; num-buckets_ 和 每轮增量 s &#x3D; j % num-buckets。<br>启动一个计时器现在有最坏情况和平均情况 O(1)，并且每次记账的最坏情况为 O(n)，但平均为 O(1)。</p>
+</li>
+</ol>
+<p>7.分层时间轮<br>另一种处理由简单计时轮方法引起的内存问题的方法是在层次结构中使用多个计时轮。假设我们要存储具有第二粒度的计时器，可以将其设置为未来最多 100 天。我们可以构造四个轮子：<br>● 有 100个槽的日轮<br>● 带 24 个槽的时轮<br>● 带 60 个槽的分钟轮<br>● 带 60 个槽的秒轮<br>这总共有 244 个槽，用于处理总共 864 万个可能的定时器值。每次我们在一个轮子上转一整圈，我们就会将下一个最大的轮子前进一个槽（论文描述了分钟、小时和星期滴答时钟的轻微变化，但效果是相同的）。</p>
+<h2 id="时间轮的实现"><a href="#时间轮的实现" class="headerlink" title="时间轮的实现"></a>时间轮的实现</h2><p>前面我们聊完了大量定时器如何高效的存储和访问，后面我们要看看一些常见的语言和运行时在这个问题上是如何实现和取舍的。</p>
+<h4 id="JDK-Timer"><a href="#JDK-Timer" class="headerlink" title="JDK - Timer"></a>JDK - Timer</h4><p>Timer 属于 JDK 比较早期版本的实现，它可以实现固定周期的任务，以及延迟任务。Timer 会起动一个异步线程去执行到期的任务，任务可以只被调度执行一次，也可以周期性反复执行多次。我们先来看下 Timer 是如何使用的，示例代码如下。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Timer</span> <span class="variable">timer</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Timer</span>();</span><br><span class="line"></span><br><span class="line">timer.scheduleAtFixedRate(<span class="keyword">new</span> <span class="title class_">TimerTask</span>() &#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">run</span><span class="params">()</span> &#123;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// do something</span></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;, <span class="number">10000</span>, <span class="number">1000</span>);  <span class="comment">// 10s 后调度一个周期为 1s 的定时任务</span></span><br></pre></td></tr></table></figure>
+<p>可以看出，任务是由 TimerTask 类实现，TimerTask 是实现了 Runnable 接口的抽象类，Timer 负责调度和执行 TimerTask。接下来我们看下 Timer 的内部构造。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">Timer</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">TaskQueue</span> <span class="variable">queue</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TaskQueue</span>();</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">TimerThread</span> <span class="variable">thread</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">TimerThread</span>(queue);</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">Timer</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        thread.setName(name);</span><br><span class="line">        thread.start();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>TaskQueue 是<code>小根堆</code>，deadline 最近的任务位于堆顶，queue[1] 始终是最优先被执行的任务。所以使用小根堆的数据结构，启动时间复杂度 O(1)，新增 Schedule 和取消 Cancel 操作的时间复杂度都是 O(logn)。</p>
+<p>Timer 内部启动了一个 <code>TimerThread</code> 异步线程，不论有多少任务被加入数组，始终都是由 <code>TimerThread</code> 负责处理。<code>TimerThread</code> 会定时轮询 TaskQueue 中的任务，如果堆顶的任务的 deadline 已到，那么执行任务；如果是周期性任务，执行完成后重新计算下一次任务的 deadline，并再次放入小根堆；如果是单次执行的任务，执行结束后会从 TaskQueue 中删除。</p>
+<h4 id="JDK-ScheduledThreadPoolExecutor"><a href="#JDK-ScheduledThreadPoolExecutor" class="headerlink" title="JDK - ScheduledThreadPoolExecutor"></a>JDK - ScheduledThreadPoolExecutor</h4><p>ScheduledThreadPoolExecutor是Java中的一个线程池，可以用来执行定时任务或周期性任务。它是ThreadPoolExecutor的子类，继承了ThreadPoolExecutor的大部分特性，并添加了定时执行任务的功能。</p>
+<h2 id="异步"><a href="#异步" class="headerlink" title="异步"></a>异步</h2><p>在一些异步体系中，比如java的netty或者rust的tokio，为了避免使用标准库实现时间轮<br>阻塞掉异步运行时，这些异步体系都会自己实现时间轮算法。</p>
+<h4 id="Netty-HashedWheelTimer"><a href="#Netty-HashedWheelTimer" class="headerlink" title="Netty HashedWheelTimer"></a>Netty HashedWheelTimer</h4><p>基本数据结构</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">HashedWheelTimer</span> <span class="keyword">implements</span> <span class="title class_">Timer</span> &#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="type">long</span> tickDuration;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> HashedWheelBucket[] wheel;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="keyword">class</span> <span class="title class_">HashedWheelBucket</span> &#123;</span><br><span class="line">        <span class="keyword">private</span> HashedWheelTimeout head;</span><br><span class="line">        <span class="keyword">private</span> HashedWheelTimeout tail;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p>这里netty的实现是我们前面提到的第六种，hash + 双向链表。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> Timeout <span class="title function_">newTimeout</span><span class="params">(TimerTask task, <span class="type">long</span> delay, TimeUnit unit)</span> &#123;</span><br><span class="line">    ObjectUtil.checkNotNull(task, <span class="string">&quot;task&quot;</span>);</span><br><span class="line">    ObjectUtil.checkNotNull(unit, <span class="string">&quot;unit&quot;</span>);</span><br><span class="line">    <span class="type">long</span> <span class="variable">pendingTimeoutsCount</span> <span class="operator">=</span> <span class="built_in">this</span>.pendingTimeouts.incrementAndGet();</span><br><span class="line">    <span class="keyword">if</span> (<span class="built_in">this</span>.maxPendingTimeouts &gt; <span class="number">0L</span> &amp;&amp; pendingTimeoutsCount &gt; <span class="built_in">this</span>.maxPendingTimeouts) &#123;</span><br><span class="line">        <span class="built_in">this</span>.pendingTimeouts.decrementAndGet();</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">RejectedExecutionException</span>(<span class="string">&quot;Number of pending timeouts (&quot;</span> + pendingTimeoutsCount + <span class="string">&quot;) is greater than or equal to maximum allowed pending timeouts (&quot;</span> + <span class="built_in">this</span>.maxPendingTimeouts + <span class="string">&quot;)&quot;</span>);</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.start();</span><br><span class="line">        <span class="type">long</span> <span class="variable">deadline</span> <span class="operator">=</span> System.nanoTime() + unit.toNanos(delay) - <span class="built_in">this</span>.startTime;</span><br><span class="line">        <span class="keyword">if</span> (delay &gt; <span class="number">0L</span> &amp;&amp; deadline &lt; <span class="number">0L</span>) &#123;</span><br><span class="line">            deadline = Long.MAX_VALUE;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="type">HashedWheelTimeout</span> <span class="variable">timeout</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HashedWheelTimeout</span>(<span class="built_in">this</span>, task, deadline);</span><br><span class="line">        <span class="built_in">this</span>.timeouts.add(timeout);</span><br><span class="line">        <span class="keyword">return</span> timeout;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>构造函数</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="title function_">HashedWheelTimer</span><span class="params">(</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        ThreadFactory threadFactory,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">long</span> tickDuration, </span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        TimeUnit unit, </span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">int</span> ticksPerWheel, </span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">boolean</span> leakDetection,</span></span><br><span class="line"><span class="params"></span></span><br><span class="line"><span class="params">        <span class="type">long</span> maxPendingTimeouts)</span> &#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 省略其他代码</span></span><br><span class="line">    wheel = createWheel(ticksPerWheel); <span class="comment">// 创建时间轮的环形数组结构</span></span><br><span class="line"></span><br><span class="line">    mask = wheel.length - <span class="number">1</span>; <span class="comment">// 用于快速取模的掩码</span></span><br><span class="line"></span><br><span class="line">    <span class="type">long</span> <span class="variable">duration</span> <span class="operator">=</span> unit.toNanos(tickDuration); <span class="comment">// 转换成纳秒处理</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 省略其他代码</span></span><br><span class="line"></span><br><span class="line">    workerThread = threadFactory.newThread(worker); <span class="comment">// 创建工作线程</span></span><br><span class="line"></span><br><span class="line">    leak = leakDetection || !workerThread.isDaemon() ? leakDetector.track(<span class="built_in">this</span>) : <span class="literal">null</span>; <span class="comment">// 是否开启内存泄漏检测</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">this</span>.maxPendingTimeouts = maxPendingTimeouts; <span class="comment">// 最大允许等待任务数，HashedWheelTimer 中任务超出该阈值时会抛出异常</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 如果 HashedWheelTimer 的实例数超过 64，会打印错误日志</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (INSTANCE_COUNTER.incrementAndGet() &gt; INSTANCE_COUNT_LIMIT &amp;&amp;</span><br><span class="line"></span><br><span class="line">        WARNED_TOO_MANY_INSTANCES.compareAndSet(<span class="literal">false</span>, <span class="literal">true</span>)) &#123;</span><br><span class="line"></span><br><span class="line">        reportTooManyInstances();</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<ul>
+<li>threadFactory，线程池，但是只创建了一个线程；</li>
+<li>tickDuration，时针每次 tick 的时间，相当于时针间隔多久走到下一个 slot；</li>
+<li>unit，表示 tickDuration 的时间单位；</li>
+<li>ticksPerWheel，时间轮上一共有多少个 slot，默认 512 个。分配的 slot 越多，占用的内存空间就越大；</li>
+<li>leakDetection，是否开启内存泄漏检测；</li>
+<li>maxPendingTimeouts，最大允许等待任务数。</li>
+</ul>
+<p>有趣的是netty为了降低冲突，新建的任务并不会直接入bucket。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Queue&lt;HashedWheelTimeout&gt; timeouts;</span><br><span class="line"><span class="keyword">public</span> Timeout <span class="title function_">newTimeout</span><span class="params">(TimerTask task, <span class="type">long</span> delay, TimeUnit unit)</span> &#123;</span><br><span class="line">        ObjectUtil.checkNotNull(task, <span class="string">&quot;task&quot;</span>);</span><br><span class="line">        ObjectUtil.checkNotNull(unit, <span class="string">&quot;unit&quot;</span>);</span><br><span class="line">        <span class="type">long</span> <span class="variable">pendingTimeoutsCount</span> <span class="operator">=</span> <span class="built_in">this</span>.pendingTimeouts;</span><br><span class="line">        ...</span><br><span class="line">            <span class="built_in">this</span>.timeouts.add(timeout);</span><br><span class="line"></span><br><span class="line">        ...</span><br><span class="line">            <span class="keyword">return</span> timeout;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>而是放入一个队列中</p>
+<p>在worker启动时，一次从队列中取一大批任务自己慢慢执行。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">transferTimeoutsToBuckets</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">for</span>(<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">100000</span>; ++i) &#123;</span><br><span class="line">        <span class="type">HashedWheelTimeout</span> <span class="variable">timeout</span> <span class="operator">=</span> (HashedWheelTimeout)HashedWheelTimer.<span class="built_in">this</span>.timeouts.poll();</span><br><span class="line">        <span class="keyword">if</span> (timeout == <span class="literal">null</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (timeout.state() != <span class="number">1</span>) &#123;</span><br><span class="line">            <span class="type">long</span> <span class="variable">calculated</span> <span class="operator">=</span> timeout.deadline / HashedWheelTimer.<span class="built_in">this</span>.tickDuration;</span><br><span class="line">            timeout.execRound = calculated / (<span class="type">long</span>)HashedWheelTimer.<span class="built_in">this</span>.wheel.length;</span><br><span class="line">            <span class="type">long</span> <span class="variable">ticks</span> <span class="operator">=</span> Math.max(calculated, <span class="built_in">this</span>.tick);</span><br><span class="line">            <span class="type">int</span> <span class="variable">stopIndex</span> <span class="operator">=</span> (<span class="type">int</span>)(ticks &amp; (<span class="type">long</span>)HashedWheelTimer.<span class="built_in">this</span>.mask);</span><br><span class="line">            <span class="type">HashedWheelBucket</span> <span class="variable">bucket</span> <span class="operator">=</span> HashedWheelTimer.<span class="built_in">this</span>.wheel[stopIndex];</span><br><span class="line">            bucket.addTimeout(timeout);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h4 id="tokio-timer"><a href="#tokio-timer" class="headerlink" title="tokio-timer"></a>tokio-timer</h4><p>0.2采用了分层时间轮算法<br><a target="_blank" rel="noopener" href="https://tokio.rs/blog/2018-03-timers">https://tokio.rs/blog/2018-03-timers</a></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Timer</span>&lt;T, N = SystemNow&gt; &#123;</span><br><span class="line">    <span class="comment">/// Shared state</span></span><br><span class="line">    inner: Arc&lt;Inner&gt;,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Timer wheel</span></span><br><span class="line">    wheel: wheel::Wheel&lt;Stack&gt;,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Thread parker. The `Timer` park implementation delegates to this.</span></span><br><span class="line">    park: T,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Source of &quot;now&quot; instances</span></span><br><span class="line">    now: N,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="title function_ invoke__">pub</span>(<span class="keyword">crate</span>) <span class="keyword">struct</span> <span class="title class_">Wheel</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">/// The number of milliseconds elapsed since the wheel started.</span></span><br><span class="line">    elapsed: <span class="type">u64</span>,</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// Timer wheel.</span></span><br><span class="line">    <span class="comment">///</span></span><br><span class="line">    <span class="comment">/// Levels:</span></span><br><span class="line">    <span class="comment">///</span></span><br><span class="line">    <span class="comment">/// * 1 ms slots / 64 ms range</span></span><br><span class="line">    <span class="comment">/// * 64 ms slots / ~ 4 sec range</span></span><br><span class="line">    <span class="comment">/// * ~ 4 sec slots / ~ 4 min range</span></span><br><span class="line">    <span class="comment">/// * ~ 4 min slots / ~ 4 hr range</span></span><br><span class="line">    <span class="comment">/// * ~ 4 hr slots / ~ 12 day range</span></span><br><span class="line">    <span class="comment">/// * ~ 12 day slots / ~ 2 yr range</span></span><br><span class="line">    levels: <span class="type">Vec</span>&lt;Level&lt;T&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>这里Stack是一个双向链表组成的栈。</p>
+<h4 id="Go"><a href="#Go" class="headerlink" title="Go"></a>Go</h4><p>Golang默认全异步，目前Golang的运行时将网络轮询和计时器二和一深捆绑度了，但是运行时计时器并不能为了节约空间牺牲精度，所以不会采用时间轮算法。</p>
+<ul>
+<li>Go 1.9 版本之前，所有的计时器由全局唯一的四叉堆维护1；</li>
+<li>Go 1.10 ~ 1.13，全局使用 64 个四叉堆维护全部的计时器，每个处理器（P）创建的计时器会由对应的四叉堆维护2；</li>
+<li>Go 1.14 版本之后，每个处理器单独管理计时器并通过网络轮询器触发；</li>
+</ul>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/time-wheel/" title="如何理解和实现时间轮算法">https://fenixc9.github.io/time-wheel/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/%E7%AE%97%E6%B3%95/" rel="tag"># 算法</a>
+              <a href="/tags/Java/" rel="tag"># Java</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/remote-development-with-rust-on-fly-io/" rel="prev" title="【译】在 fly.io 上使用 Rust 进行远程开发">
+      <i class="fa fa-chevron-left"></i> 【译】在 fly.io 上使用 Rust 进行远程开发
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/cni-and-flannel/" rel="next" title="CNI学习系列1 认识CNI">
+      CNI学习系列1 认识CNI <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4%E8%BD%AE%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">1.</span> <span class="nav-text">时间轮的实现</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#JDK-Timer"><span class="nav-number">1.0.1.</span> <span class="nav-text">JDK - Timer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#JDK-ScheduledThreadPoolExecutor"><span class="nav-number">1.0.2.</span> <span class="nav-text">JDK - ScheduledThreadPoolExecutor</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%82%E6%AD%A5"><span class="nav-number">2.</span> <span class="nav-text">异步</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Netty-HashedWheelTimer"><span class="nav-number">2.0.1.</span> <span class="nav-text">Netty HashedWheelTimer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#tokio-timer"><span class="nav-number">2.0.2.</span> <span class="nav-text">tokio-timer</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Go"><span class="nav-number">2.0.3.</span> <span class="nav-text">Go</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'fad734d29e8af2e08533731c7b564eb7',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

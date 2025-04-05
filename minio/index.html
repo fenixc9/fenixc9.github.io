@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="MinIO 是在 GNU Affero 通用公共许可证 v3.0 下发布的高性能对象存储。它与 Amazon S3 云存储服务 API 兼容。使用 MinIO 为机器学习、分析和应用程序数据工作负载构建高性能基础架构。。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="开源轻量对象存储minio">
+<meta property="og:url" content="https://fenixc9.github.io/minio/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="MinIO 是在 GNU Affero 通用公共许可证 v3.0 下发布的高性能对象存储。它与 Amazon S3 云存储服务 API 兼容。使用 MinIO 为机器学习、分析和应用程序数据工作负载构建高性能基础架构。。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/minio/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/minio/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/minio/5.png">
+<meta property="article:published_time" content="2023-02-04T15:36:06.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.162Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="中间件">
+<meta property="article:tag" content="对象存储">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/minio/3.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/minio/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>开源轻量对象存储minio | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/minio/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          开源轻量对象存储minio
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-04 23:36:06" itemprop="dateCreated datePublished" datetime="2023-02-04T23:36:06+08:00">2023-02-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E5%AD%98%E5%82%A8/" itemprop="url" rel="index"><span itemprop="name">存储</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">MinIO 是在 GNU Affero 通用公共许可证 v3.0 下发布的高性能对象存储。它与 Amazon S3 云存储服务 API 兼容。使用 MinIO 为机器学习、分析和应用程序数据工作负载构建高性能基础架构。。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="为什么要对象存储？"><a href="#为什么要对象存储？" class="headerlink" title="为什么要对象存储？"></a>为什么要对象存储？</h2><p>传统上我们使用基于块的存储和文件系统。基于块的文件系统使用偏移表（对于linux体系就是superblock + inode）来存储文件位置，它们将每个文件分成小块(linux体系的page，通常大小为 4KB)，并将每个块的字节偏移量存储在一个大表中。在目前数据量要扩展到PB级的情况下。这种方式缺乏扩展性。</p>
+<p>为了解决这个问题，一些组织已经部署了可横向扩展的文件系统，例如 HDFS。 这一定程度上解决了可扩展性问题，但这类文件系统大多数都依赖于复制来保护数据。通常需要保存 3 个副本才能保证足够的可靠性。10 PBs 级的数据通常需要大量的磁盘和服务器设备，总体成本比较高。</p>
+<p>对象存储为访问时延无极端苛刻要求的海量数据文件存储提供了一个<code>高吞吐量</code>、<code>高可扩展</code>、<code>低成本</code>的方案。对象存储将数据本身与元数据标记和唯一标识符绑定在一起，存储在<code>扁平的地址空间</code>中，从而更容易跨区域查找和检索数据，而且还有助于提高可扩展性。对象存储可以在单个命名空间中扩展到 10~100 PBs。 对象存储不使用数据复制，而是使用<code>纠删码</code>等技术来保护数据、最大化可用的磁盘空间，从而降低成本。</p>
+<table>
+<thead>
+<tr>
+<th>对象存储</th>
+<th>(基于块的)文件存储</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>大数据量和高流吞吐量要求场景性能最佳</td>
+<td>更适合小数据量随机访问</td>
+</tr>
+<tr>
+<td>数据可以跨多个区域存储</td>
+<td>数据通常在本地共享</td>
+</tr>
+<tr>
+<td>轻松扩展到 10 PBs 以上</td>
+<td>可能扩展到数百万个文件，容量很难达到 PB</td>
+</tr>
+</tbody></table>
+<p><img src="/minio/3.png" alt="3"><br>这里是ceph的架构图可以用来参考对象存储和块存储，文件存储的关系。</p>
+<h2 id="Minio-简介"><a href="#Minio-简介" class="headerlink" title="Minio 简介"></a>Minio 简介</h2><p>Mino 是基于 Apache License v2.0 协议完全开源、兼容 Amazon S3 API、高性能、可扩展、低成本的对象存储软件，并提供包括故障诊断、安全更新和bug修复、7x24小时支持等在内的订阅服务。</p>
+<h3 id="Minio-的架构"><a href="#Minio-的架构" class="headerlink" title="Minio 的架构"></a>Minio 的架构</h3><p>Minio 采用分布式的架构，把数据分片和纠删码编码后的校验数据分片一起均匀存储到多个服务器上的 <code>JBOD(just a bunch of disks)</code> 磁盘中，不需要磁盘RAID。在存储和读取对象数据的同时存储和读取校验Hash值，自动纠正服务器或磁盘故障、静默数据坏块。对象存储目标是降低成本，对象存储更倾向于直接面向磁盘部署，而不是面向文件系统或者Raid。<br><img src="/minio/4.png" alt="4"></p>
+<h2 id="特点"><a href="#特点" class="headerlink" title="特点"></a>特点</h2><p>Minio 主要有以下特点：</p>
+<ul>
+<li>纠删码分布式对象存储<ul>
+<li>缺省数据分片和编码分片数相同，即 k&#x3D;m，磁盘占比为 2.00(低于 HDFS 的 3.00)，能容错 50% 的服务器故障</li>
+<li>可以设置全局或对象级的数据和校验分片数，2 &lt;&#x3D; m &lt;&#x3D; n&#x2F;2，磁盘占比在 1.14~2.00 之间</li>
+</ul>
+</li>
+<li>SHA-512 Hash 检测静默数据坏块</li>
+<li>针对 x64 和 ARM CPU 的 SIMD 指令优化</li>
+<li>兼容AWS S3 API<ul>
+<li>还提供“先写后读”的严格一致性</li>
+</ul>
+</li>
+<li>作为其他存储的 S3 协议网关<ul>
+<li>AWS&#x2F;GCS&#x2F;Azure&#x2F;OSS</li>
+<li>HDFS&#x2F;NAS</li>
+</ul>
+</li>
+</ul>
+<h2 id="可靠性"><a href="#可靠性" class="headerlink" title="可靠性"></a>可靠性</h2><p>minio基于纠正删码来保护数据。为了保证分布式存储的性能，Mino 把每 n(受环境变量 MINIO_ERASURE_SET_DRIVE_COUNT 控制，必须是 4~16 之间，缺省取尽可能大的值)块磁盘构成一个纠删组(相当于stripe)。对象的原始数据和校验数据被分片后存储在每个纠删组的各个磁盘上与对象同名的目录中(下图中的part.n)，并附上对象的元数据(下图中的xl.json)。第一块数据磁盘序号由对象名称的 Hash 值确定，这样就可以把多个对象的原始数据分片均匀分布在所有磁盘上，从而均衡地利用所有磁盘的读写能力和容量。</p>
+<h2 id="基本概念"><a href="#基本概念" class="headerlink" title="基本概念"></a>基本概念</h2><ul>
+<li>S3——Simple Storage Service，简单存储服务，这个概念是Amazon在2006年推出的，对象存储就是从那个时候诞生的。S3提供了一个简单Web服务接口，可用于随时在Web上的任何位置存储和检索任何数量的数据。</li>
+<li>Object——存储到 Minio 的基本对象，如文件、字节流，Anything…</li>
+<li>Bucket——用来存储 Object 的逻辑空间。每个 Bucket 之间的数据是相互隔离的。</li>
+<li>Drive——部署 Minio 时设置的磁盘，Minio 中所有的对象数据都会存储在 Drive 里。</li>
+<li>Set——一组 Drive 的集合，分布式部署根据集群规模自动划分一个或多个 Set ，每个 Set 中的 Drive 分布在不同位置。<ul>
+<li>一个对象存储在一个Set上</li>
+<li>一个集群划分为多个Set</li>
+<li>一个Set包含的Drive数量是固定的，默认由系统根据集群规模自动计算得出</li>
+<li>一个SET中的Drive尽可能分布在不同的节点上</li>
+</ul>
+</li>
+</ul>
+<h1 id="单机部署"><a href="#单机部署" class="headerlink" title="单机部署"></a>单机部署</h1><p>我们可以使用podman&#x2F;docker简单部署一个单节点单磁盘实例：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">podman run -p 9000:9000  -p 9001:9001 --name minio \</span><br><span class="line">-d --restart=always \</span><br><span class="line">-e &quot;MINIO_ACCESS_KEY=admin&quot; \</span><br><span class="line">-e &quot;MINIO_SECRET_KEY=admin123456&quot; \</span><br><span class="line"> bitnami/minio</span><br></pre></td></tr></table></figure>
+
+<p>启动完毕后，即可在本地9001端口访问console，使用admin&#x2F;admin123456登录。<br><img src="/minio/5.png" alt="5"></p>
+<p>我们可以在这里创建bucket，创建accesskey。</p>
+<h2 id="使用awscli"><a href="#使用awscli" class="headerlink" title="使用awscli"></a>使用awscli</h2><p>如前面描述的minio兼容s3协议，所以我们可以使用awscli来使用minio。</p>
+<h3 id="安装awscli"><a href="#安装awscli" class="headerlink" title="安装awscli"></a>安装awscli</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip3 install awscli</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置awscli"><a href="#配置awscli" class="headerlink" title="配置awscli"></a>配置awscli</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws configure</span><br></pre></td></tr></table></figure>
+<p>里面会让我们配置ak，sk，配上我们前面创建的ak。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws configure set default.s3.signature_version s3v4</span><br></pre></td></tr></table></figure>
+<p>这个命令调整签名算法适配minio。</p>
+<h3 id="列出bucket"><a href="#列出bucket" class="headerlink" title="列出bucket"></a>列出bucket</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws --endpoint-url https://node9:32000 s3 ls</span><br></pre></td></tr></table></figure>
+
+<h3 id="列出bk1这个bucket下的Object"><a href="#列出bk1这个bucket下的Object" class="headerlink" title="列出bk1这个bucket下的Object"></a>列出bk1这个bucket下的Object</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws --endpoint-url https://node9:32000 s3 ls s3://bk1/</span><br></pre></td></tr></table></figure>
+
+<h3 id="上传Object"><a href="#上传Object" class="headerlink" title="上传Object"></a>上传Object</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws --endpoint-url https://node9:32000 s3 cp abc.txt s3://bk1/</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="生成签名url"><a href="#生成签名url" class="headerlink" title="生成签名url"></a>生成签名url</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aws --endpoint-url http://node9:32000 s3 presign s3://bk1/abc.txt</span><br></pre></td></tr></table></figure>
+
+<h3 id="存储背后"><a href="#存储背后" class="headerlink" title="存储背后"></a>存储背后</h3><p>当我们进入容器后可以看到：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">bash-4.4$ ls</span><br><span class="line">bk1</span><br><span class="line">bash-4.4$ ls bk1/</span><br><span class="line">a.jpg  abc.txt</span><br><span class="line">bash-4.4$ ls bk1/a.jpg/</span><br><span class="line">edfb6f9f-c634-4b0f-852f-0c6c77003d39  xl.meta</span><br><span class="line">bash-4.4$ ls bk1/a.jpg/edfb6f9f-c634-4b0f-852f-0c6c77003d39/</span><br><span class="line">part.1</span><br></pre></td></tr></table></figure>
+
+<p>这里可以看到其基本存储结构：<br>{bucket} -&gt; {object} -&gt; {元信息}<br>                        {数据}  -&gt; {分片}</p>
+<p>假设我们部署三个节点，这里即使删除一个节点的数据文件，依然能正常访问数据。</p>
+<h2 id="多节点部署"><a href="#多节点部署" class="headerlink" title="多节点部署"></a>多节点部署</h2><p>基本能满足需求了，那么如何部署集群呢？我们这里直接使用helm部署了。<br>添加仓库</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">helm repo add minio https://charts.min.io/</span><br></pre></td></tr></table></figure>
+
+<p>先pull到本地改下value配置</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">helm pull minio/minio</span><br></pre></td></tr></table></figure>
+
+<p>console的初始密码</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">rootUser: &quot;admin&quot;</span><br><span class="line">rootPassword: &quot;admin123456&quot;</span><br></pre></td></tr></table></figure>
+
+<p>副本数，我这里启动了三节点，每节点一个磁盘</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> # Number of drives attached to a node</span><br><span class="line">118 drivesPerNode: 1</span><br><span class="line">119 # Number of MinIO containers running</span><br><span class="line">120 replicas: 3</span><br><span class="line">121 # Number of expanded MinIO clusters</span><br><span class="line">122 pools: 1</span><br></pre></td></tr></table></figure>
+
+<p>创建namespace</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">kubectl create ns</span><br></pre></td></tr></table></figure>
+
+<p>启动集群</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">helm install minio . -n minio</span><br></pre></td></tr></table></figure>
+
+<p>启动完成</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">fenix@thisway:/tmp/minio$ kubectl get all -nminio</span><br><span class="line">NAME                     READY   STATUS    RESTARTS   AGE</span><br><span class="line">pod/minio-minio-demo-0   1/1     Running   0          3h25m</span><br><span class="line">pod/minio-minio-demo-1   1/1     Running   0          3h25m</span><br><span class="line">pod/minio-minio-demo-2   1/1     Running   0          3h25m</span><br><span class="line"></span><br><span class="line">NAME                               TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE</span><br><span class="line">service/minio-minio-demo           NodePort    10.98.244.183   &lt;none&gt;        9000:32000/TCP   3h25m</span><br><span class="line">service/minio-minio-demo-console   NodePort    10.106.77.229   &lt;none&gt;        9001:32001/TCP   3h25m</span><br><span class="line">service/minio-minio-demo-svc       ClusterIP   None            &lt;none&gt;        9000/TCP         3h25m</span><br><span class="line"></span><br><span class="line">NAME                                READY   AGE</span><br><span class="line">statefulset.apps/minio-minio-demo   3/3     3h25m</span><br><span class="line"></span><br><span class="line">NAME                                  COMPLETIONS   DURATION   AGE</span><br><span class="line">job.batch/minio-1675518560-post-job   0/1           23h        23h</span><br></pre></td></tr></table></figure>
+
+<p>和单机集群一样，登录控制台，配置ak即可使用s3api访问。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/minio/" title="开源轻量对象存储minio">https://fenixc9.github.io/minio/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+              <a href="/tags/%E4%B8%AD%E9%97%B4%E4%BB%B6/" rel="tag"># 中间件</a>
+              <a href="/tags/%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8/" rel="tag"># 对象存储</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/monotonic-stack/" rel="prev" title="单调栈的一些应用">
+      <i class="fa fa-chevron-left"></i> 单调栈的一些应用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/lunarvim/" rel="next" title="lunarvim + neovide的炫酷开发环境">
+      lunarvim + neovide的炫酷开发环境 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E5%AF%B9%E8%B1%A1%E5%AD%98%E5%82%A8%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">为什么要对象存储？</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Minio-%E7%AE%80%E4%BB%8B"><span class="nav-number">2.</span> <span class="nav-text">Minio 简介</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Minio-%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="nav-number">2.1.</span> <span class="nav-text">Minio 的架构</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E7%82%B9"><span class="nav-number">3.</span> <span class="nav-text">特点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8F%AF%E9%9D%A0%E6%80%A7"><span class="nav-number">4.</span> <span class="nav-text">可靠性</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%A6%82%E5%BF%B5"><span class="nav-number">5.</span> <span class="nav-text">基本概念</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8D%95%E6%9C%BA%E9%83%A8%E7%BD%B2"><span class="nav-number"></span> <span class="nav-text">单机部署</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8awscli"><span class="nav-number">1.</span> <span class="nav-text">使用awscli</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%89%E8%A3%85awscli"><span class="nav-number">1.1.</span> <span class="nav-text">安装awscli</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEawscli"><span class="nav-number">1.2.</span> <span class="nav-text">配置awscli</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%87%BAbucket"><span class="nav-number">1.3.</span> <span class="nav-text">列出bucket</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%97%E5%87%BAbk1%E8%BF%99%E4%B8%AAbucket%E4%B8%8B%E7%9A%84Object"><span class="nav-number">1.4.</span> <span class="nav-text">列出bk1这个bucket下的Object</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%8A%E4%BC%A0Object"><span class="nav-number">1.5.</span> <span class="nav-text">上传Object</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%94%9F%E6%88%90%E7%AD%BE%E5%90%8Durl"><span class="nav-number">1.6.</span> <span class="nav-text">生成签名url</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E8%83%8C%E5%90%8E"><span class="nav-number">1.7.</span> <span class="nav-text">存储背后</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%9A%E8%8A%82%E7%82%B9%E9%83%A8%E7%BD%B2"><span class="nav-number">2.</span> <span class="nav-text">多节点部署</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '127c45499a6661c57fcfb2545dbad230',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

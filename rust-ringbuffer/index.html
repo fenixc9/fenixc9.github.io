@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="用Rust实现一个无锁RingBuffer">
+<meta property="og:type" content="article">
+<meta property="og:title" content="rust实现的ringbuffer">
+<meta property="og:url" content="https://fenixc9.github.io/rust-ringbuffer/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="用Rust实现一个无锁RingBuffer">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2025-04-05T05:30:48.000Z">
+<meta property="article:modified_time" content="2025-04-05T12:44:39.671Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="数据结构">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/rust-ringbuffer/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>rust实现的ringbuffer | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/rust-ringbuffer/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          rust实现的ringbuffer
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2025-04-05 13:30:48 / 修改时间：20:44:39" itemprop="dateCreated datePublished" datetime="2025-04-05T13:30:48+08:00">2025-04-05</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">用Rust实现一个无锁RingBuffer</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>RingBuffer在网络通信，消息队列中都有广泛的应用。今天，我们尝试在AI的辅助下，逐步从0实现一个好用的RingBuffer。</p>
+<p>RingBuffer是一个循环数组结构，包含两个逻辑指针。维基百科中更倾向于称之为”Circular buffer”，环形缓冲区：</p>
+<p>*圆形缓冲区（circular buffer），也称作圆形队列（circular queue），循环缓冲区（cyclic buffer），环形缓冲区（ring buffer），是一种用于表示一个固定尺寸、头尾相连的缓冲区的数据结构，适合缓存数据流。</p>
+<p>RingBuffer中不需要调整其容量，生成后则后续只移动其读写指针。</p>
+<p>首先我们需要确定数据容器，是否使用数组？由于数据长度需要编译器确定，并不符合我们动态初始化容量的需要。<br>比如</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    buffer: [T; <span class="number">10</span>],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者将数组大小存入范型</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T,<span class="keyword">const</span> N: <span class="type">usize</span>&gt; &#123;</span><br><span class="line">    buffer: [T; N],</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>非常不方便。</p>
+<p>那么是否能使用Vec代替？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    buffer: <span class="type">Vec</span>&lt;T&gt;,</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>由于我们的数据容量是固定大小，因此我们需要预先分配好Vec，那么我们就要求类型T实现Default和Clone:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T: <span class="built_in">Default</span> + <span class="built_in">Clone</span>&gt; &#123;</span><br><span class="line">    buffer: <span class="type">Vec</span>&lt;T&gt;,</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; </span><br><span class="line"><span class="keyword">where</span> T: <span class="built_in">Default</span>+<span class="built_in">Clone</span>&#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; buffer: <span class="built_in">vec!</span>[<span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>(); size], head: <span class="number">0</span>, tail: <span class="number">0</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者至少也必须Default:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[allow(dead_code)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T: <span class="built_in">Default</span>&gt; &#123;</span><br><span class="line">    buffer: <span class="type">Vec</span>&lt;T&gt;,</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; </span><br><span class="line"><span class="keyword">where</span> T: <span class="built_in">Default</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; buffer: (<span class="number">0</span>..size).<span class="title function_ invoke__">map</span>(|_| <span class="built_in">Default</span>::<span class="title function_ invoke__">default</span>()).<span class="title function_ invoke__">collect</span>(), head: <span class="number">0</span>, tail: <span class="number">0</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或许我们可以使用Option？可以减少对类型T不必要的限制？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[allow(dead_code)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    buffer: <span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;T&gt;&gt;,</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; </span><br><span class="line"><span class="keyword">where</span> T: <span class="built_in">Default</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; buffer: (<span class="number">0</span>..size).<span class="title function_ invoke__">map</span>(|_| <span class="literal">None</span>).<span class="title function_ invoke__">collect</span>(), head: <span class="number">0</span>, tail: <span class="number">0</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们补充完其剩余的method:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    buffer: <span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;T&gt;&gt;,</span><br><span class="line">    head: <span class="type">usize</span>,</span><br><span class="line">    tail: <span class="type">usize</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; </span><br><span class="line"><span class="keyword">where</span> T: <span class="built_in">Default</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; buffer: (<span class="number">0</span>..size).<span class="title function_ invoke__">map</span>(|_| <span class="literal">None</span>).<span class="title function_ invoke__">collect</span>(), head: <span class="number">0</span>, tail: <span class="number">0</span> &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">pop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">self</span>.buffer[<span class="keyword">self</span>.head].<span class="title function_ invoke__">is_some</span>() &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">value</span> = <span class="keyword">self</span>.buffer[<span class="keyword">self</span>.head].<span class="title function_ invoke__">take</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">            <span class="keyword">self</span>.head = (<span class="keyword">self</span>.head + <span class="number">1</span>) % <span class="keyword">self</span>.buffer.<span class="title function_ invoke__">len</span>();</span><br><span class="line">            <span class="title function_ invoke__">Some</span>(value)</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="literal">None</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;   </span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>, value: T) &#123;</span><br><span class="line">        <span class="keyword">self</span>.buffer[<span class="keyword">self</span>.tail] = <span class="title function_ invoke__">Some</span>(value);</span><br><span class="line">        <span class="keyword">self</span>.tail = (<span class="keyword">self</span>.tail + <span class="number">1</span>) % <span class="keyword">self</span>.buffer.<span class="title function_ invoke__">len</span>();</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>它似乎可以在单线程环境下正确运行，但不是我们想要的多线程无锁版。</p>
+<p>这里由于我们需要使用take从Option中取出数据。然而：</p>
+<ol>
+<li>Option，take需要接受一个<code>&amp;mut self</code> </li>
+<li>这就导致我们的pop和push也必须是<code>&amp;mut self</code></li>
+<li>然而，当我们想把我们写好的RingBuffer通过Arc分发到各个线程时会发现，Arc并不能获取可变引用，Arc只实现了Deref，并没有实现DerefMut。</li>
+<li>这就导致必须使用Mutex才能解决我们的问题，这就违反了我们需求。</li>
+</ol>
+<p>因此，如果这里想实现无锁，我们仍需要尝试使用别的数据容器。</p>
+<p>一种可行的方式是为我们的数据容器包一层UnsafeCell，顺便把usize改为AtomicUsize</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    read: AtomicUsize,</span><br><span class="line">    write: AtomicUsize,</span><br><span class="line">    data: UnsafeCell&lt;<span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;T&gt;&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: <span class="built_in">Send</span>&gt; <span class="built_in">Send</span> <span class="keyword">for</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: <span class="built_in">Send</span>&gt; <span class="built_in">Sync</span> <span class="keyword">for</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            read: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            write: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            data: UnsafeCell::<span class="title function_ invoke__">new</span>((<span class="number">0</span>..size).<span class="title function_ invoke__">map</span>(|_| <span class="literal">None</span>).<span class="title function_ invoke__">collect</span>()),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/// 将元素推入缓冲区。如果缓冲区已满，返回 Err(value)</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">self</span>, value: T) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), T&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">write</span> = <span class="keyword">self</span>.write.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">read</span> = <span class="keyword">self</span>.read.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">data</span> = <span class="keyword">unsafe</span> &#123; &amp;<span class="keyword">mut</span> *<span class="keyword">self</span>.data.<span class="title function_ invoke__">get</span>() &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">size</span> = data.<span class="title function_ invoke__">len</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 检查缓冲区是否已满</span></span><br><span class="line">        <span class="title function_ invoke__">if</span> (write + <span class="number">1</span>) % size == read &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">Err</span>(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 存储值</span></span><br><span class="line">        data[write] = <span class="title function_ invoke__">Some</span>(value);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新写指针</span></span><br><span class="line">        <span class="keyword">self</span>.write.<span class="title function_ invoke__">store</span>((write + <span class="number">1</span>) % size, Ordering::Release);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 从缓冲区弹出元素。如果缓冲区为空，返回 None</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">pop</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">read</span> = <span class="keyword">self</span>.read.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">write</span> = <span class="keyword">self</span>.write.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">data</span> = <span class="keyword">unsafe</span> &#123; &amp;<span class="keyword">mut</span> *<span class="keyword">self</span>.data.<span class="title function_ invoke__">get</span>() &#125;;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">size</span> = data.<span class="title function_ invoke__">len</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 检查缓冲区是否为空</span></span><br><span class="line">        <span class="keyword">if</span> read == write &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 取出值</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">value</span> = data[read].<span class="title function_ invoke__">take</span>();</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新读指针</span></span><br><span class="line">        <span class="keyword">self</span>.read.<span class="title function_ invoke__">store</span>((read + <span class="number">1</span>) % size, Ordering::Release);</span><br><span class="line">        value</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们首先面向SPSC场景，单线程生产则不需要write的SeqCst，因为根本不会发生写冲突，写线程始终能读到最新的write，同样的道理，消费者<br>则始终能获取到最新的read点位。而生产者的read和消费者的write则由对方的Release保证。</p>
+<p>这种SPSC情况下，我们就能使用<code>&amp;self</code> 代理 <code>&amp;mut self</code>。</p>
+<p>同时我们保留一个哨兵位，即用于区分RingBuffer为空和满两种情况：read&#x3D;&#x3D;wirte为空，read&#x3D;&#x3D;write+1 则为满。</p>
+<p>再来点小优化，比如我们使用取模效率相对较低，我们将其改造为强制使用2的n次幂下的位运算。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    read: AtomicUsize,</span><br><span class="line">    write: AtomicUsize,</span><br><span class="line">    data: UnsafeCell&lt;<span class="type">Vec</span>&lt;<span class="type">Option</span>&lt;T&gt;&gt;&gt;,</span><br><span class="line">    mask: <span class="type">usize</span>,  <span class="comment">// 用于位运算的掩码</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="built_in">assert!</span>(size.<span class="title function_ invoke__">is_power_of_two</span>(), <span class="string">&quot;Buffer size must be a power of 2&quot;</span>);</span><br><span class="line">        <span class="keyword">Self</span> &#123;</span><br><span class="line">            read: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            write: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            data: UnsafeCell::<span class="title function_ invoke__">new</span>((<span class="number">0</span>..size).<span class="title function_ invoke__">map</span>(|_| <span class="literal">None</span>).<span class="title function_ invoke__">collect</span>()),</span><br><span class="line">            mask: size - <span class="number">1</span>,  <span class="comment">// 对于 2 的幂，减 1 得到掩码</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们使用write &amp; mask即可代替取模操作</p>
+<p>另一个可能的改进是我们由于使用write和read判断内存哪些区域可用，那么Option所占用的空间就是浪费了。我们要将其完全改造为指针。</p>
+<p>我们将不会使用裸指针，因为我们在RingBuffer初始化时会将内存分配好，并且始终不会move，我们可以使用NonNull。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    read: AtomicUsize,</span><br><span class="line">    write: AtomicUsize,</span><br><span class="line">    ptr: NonNull&lt;T&gt;,</span><br><span class="line">    capacity: <span class="type">usize</span>,</span><br><span class="line">    mask: <span class="type">usize</span>,  <span class="comment">// 用于位运算替代取模</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 实现 Send 和 Sync 使其可以在线程间安全共享</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: <span class="built_in">Send</span>&gt; <span class="built_in">Send</span> <span class="keyword">for</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: <span class="built_in">Send</span>&gt; <span class="built_in">Sync</span> <span class="keyword">for</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; RingBuffer&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">/// 创建新的环形缓冲区</span></span><br><span class="line">    <span class="comment">/// size 必须是 2 的幂次方，否则会 panic</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(size: <span class="type">usize</span>) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="comment">// 确保 size 是 2 的幂次方</span></span><br><span class="line">        <span class="built_in">assert!</span>(size.<span class="title function_ invoke__">is_power_of_two</span>(), <span class="string">&quot;Buffer size must be a power of 2&quot;</span>);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 分配内存</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">layout</span> = Layout::array::&lt;T&gt;(size).<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">ptr</span> = <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">ptr</span> = <span class="title function_ invoke__">alloc</span>(layout) <span class="keyword">as</span> *<span class="keyword">mut</span> T;</span><br><span class="line">            <span class="comment">// 不需要初始化，因为我们只在写入时使用</span></span><br><span class="line">            NonNull::<span class="title function_ invoke__">new_unchecked</span>(ptr)</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        RingBuffer &#123;</span><br><span class="line">            read: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            write: AtomicUsize::<span class="title function_ invoke__">new</span>(<span class="number">0</span>),</span><br><span class="line">            ptr,</span><br><span class="line">            capacity: size,</span><br><span class="line">            mask: size - <span class="number">1</span>,  <span class="comment">// 对于 2 的幂次方，减 1 得到掩码</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 将元素推入缓冲区。如果缓冲区已满，返回 Err(value)</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">self</span>, value: T) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), T&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">write</span> = <span class="keyword">self</span>.write.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">read</span> = <span class="keyword">self</span>.read.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">// 检查缓冲区是否已满</span></span><br><span class="line">        <span class="title function_ invoke__">if</span> ((write + <span class="number">1</span>) &amp; <span class="keyword">self</span>.mask) == read &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="title function_ invoke__">Err</span>(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 存储值</span></span><br><span class="line">        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">add</span>(write &amp; <span class="keyword">self</span>.mask).<span class="title function_ invoke__">write</span>(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新写指针</span></span><br><span class="line">        <span class="keyword">self</span>.write.<span class="title function_ invoke__">store</span>((write + <span class="number">1</span>) &amp; <span class="keyword">self</span>.mask, Ordering::Release);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/// 从缓冲区弹出元素。如果缓冲区为空，返回 None</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">pop</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">read</span> = <span class="keyword">self</span>.read.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">write</span> = <span class="keyword">self</span>.write.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 检查缓冲区是否为空</span></span><br><span class="line">        <span class="keyword">if</span> read == write &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="literal">None</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 取出值</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">value</span> = <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">add</span>(read &amp; <span class="keyword">self</span>.mask).<span class="title function_ invoke__">read</span>()</span><br><span class="line">        &#125;;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 更新读指针</span></span><br><span class="line">        <span class="keyword">self</span>.read.<span class="title function_ invoke__">store</span>((read + <span class="number">1</span>) &amp; <span class="keyword">self</span>.mask, Ordering::Release);</span><br><span class="line">        <span class="title function_ invoke__">Some</span>(value)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>需要注意的是，由于我使用指针代替了Vec，这意味着当我们Drop RingBuffer时，我们需要手动调用T的Drop函数，并释放内存。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; <span class="built_in">Drop</span> <span class="keyword">for</span> <span class="title class_">RingBuffer</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">drop</span>(&amp;<span class="keyword">mut</span> <span class="keyword">self</span>) &#123;</span><br><span class="line">        <span class="comment">// 只清理有效数据区域的元素</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">write</span> = <span class="keyword">self</span>.write.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">read</span> = <span class="keyword">self</span>.read.<span class="title function_ invoke__">load</span>(Ordering::Relaxed);</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> write &gt;= read &#123;</span><br><span class="line">            <span class="comment">// 连续区域</span></span><br><span class="line">            <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> read..write &#123;</span><br><span class="line">                <span class="keyword">unsafe</span> &#123; <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">add</span>(i &amp; <span class="keyword">self</span>.mask).<span class="title function_ invoke__">drop_in_place</span>() &#125;;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            <span class="comment">// 环绕区域</span></span><br><span class="line">            <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> read..<span class="keyword">self</span>.capacity &#123;</span><br><span class="line">                <span class="keyword">unsafe</span> &#123; <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">add</span>(i &amp; <span class="keyword">self</span>.mask).<span class="title function_ invoke__">drop_in_place</span>() &#125;;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">for</span> <span class="variable">i</span> <span class="keyword">in</span> <span class="number">0</span>..write &#123;</span><br><span class="line">                <span class="keyword">unsafe</span> &#123; <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>().<span class="title function_ invoke__">add</span>(i &amp; <span class="keyword">self</span>.mask).<span class="title function_ invoke__">drop_in_place</span>() &#125;;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 释放内存</span></span><br><span class="line">        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">            <span class="title function_ invoke__">dealloc</span>(</span><br><span class="line">                <span class="keyword">self</span>.ptr.<span class="title function_ invoke__">as_ptr</span>() <span class="keyword">as</span> *<span class="keyword">mut</span> <span class="type">u8</span>,</span><br><span class="line">                Layout::array::&lt;T&gt;(<span class="keyword">self</span>.capacity).<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">            );</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>写完记得使用miri测试下</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cargo miri test</span><br></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/rust-ringbuffer/" title="rust实现的ringbuffer">https://fenixc9.github.io/rust-ringbuffer/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" rel="tag"># 数据结构</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/consistency-in-zookeeper/" rel="prev" title="zookeeper中的一致性">
+      <i class="fa fa-chevron-left"></i> zookeeper中的一致性
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '3ef9903bfbd28220a673251fe1e8e7ff',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="图(graph)是一种数据结构，是目前应用最广泛的数据结构，它能实现抽象的功能以及相当生活化的功能，应用范围包括计算机科学、语言学、物理和化学、社会科学、生物学和数学，包括目前热门的人工智能中的神经网络学习。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java图论库 Jgrapht">
+<meta property="og:url" content="https://fenixc9.github.io/jgrapht/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="图(graph)是一种数据结构，是目前应用最广泛的数据结构，它能实现抽象的功能以及相当生活化的功能，应用范围包括计算机科学、语言学、物理和化学、社会科学、生物学和数学，包括目前热门的人工智能中的神经网络学习。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/jgrapht/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/jgrapht/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/jgrapht/3.png">
+<meta property="article:published_time" content="2023-07-16T07:49:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.157Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="图论">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/jgrapht/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/jgrapht/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java图论库 Jgrapht | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/jgrapht/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java图论库 Jgrapht
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-07-16 15:49:26" itemprop="dateCreated datePublished" datetime="2023-07-16T15:49:26+08:00">2023-07-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Java/" itemprop="url" rel="index"><span itemprop="name">Java</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">图(graph)是一种数据结构，是目前应用最广泛的数据结构，它能实现抽象的功能以及相当生活化的功能，应用范围包括计算机科学、语言学、物理和化学、社会科学、生物学和数学，包括目前热门的人工智能中的神经网络学习。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="一-环境"><a href="#一-环境" class="headerlink" title="一 环境"></a>一 环境</h1><p>由于Jgrapht是一个Java库，跨平台没有任何问题，环境方面无需赘述，一般的maven项目即可。</p>
+<ul>
+<li>jdk16</li>
+<li>maven 3.5.3</li>
+</ul>
+<p>学习图论可以配合可视化的库一起学习更直观，所以我这里使用了一套开源的整合的可视化包 <a target="_blank" rel="noopener" href="https://github.com/tomnelson/jungrapht-visualization">https://github.com/tomnelson/jungrapht-visualization</a>  （jgrapht-ext在顶点布局和友好度上不如这个库 ）</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>com.github.tomnelson<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jungrapht-visualization<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.4<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>这里面包含了 jgrapht-core:1.5.1 ，因此，如果你只需要核心功能，只需依赖：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>org.jgrapht<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>jgrapht-core<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>$&#123;jgrapht.version&#125;<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<h1 id="二-构建图"><a href="#二-构建图" class="headerlink" title="二 构建图"></a>二 构建图</h1><h2 id="1-无向图"><a href="#1-无向图" class="headerlink" title="1. 无向图"></a>1. 无向图</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 创建图</span></span><br><span class="line">SimpleGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line"><span class="comment">// 添加顶点</span></span><br><span class="line">graph.addVertex(<span class="number">1</span>);</span><br><span class="line">graph.addVertex(<span class="number">2</span>);</span><br><span class="line">graph.addVertex(<span class="number">3</span>);</span><br><span class="line">graph.addVertex(<span class="number">4</span>);</span><br><span class="line"><span class="comment">// 添加边</span></span><br><span class="line">graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>我们可以使用jungrapht-visualization展示这个图，添加如下方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">showGraph</span><span class="params">(Graph&lt;?, ?&gt; g)</span> &#123;</span><br><span class="line">     <span class="type">JFrame</span> <span class="variable">f</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">JFrame</span>();</span><br><span class="line">     f.setLayout(<span class="keyword">new</span> <span class="title class_">BorderLayout</span>());</span><br><span class="line">     <span class="type">Dimension</span> <span class="variable">size</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Dimension</span>(<span class="number">1000</span>, <span class="number">1000</span>);</span><br><span class="line">     VisualizationModel&lt;?, ?&gt; vm =</span><br><span class="line">             VisualizationModel.builder(g)</span><br><span class="line">                     .layoutAlgorithm(<span class="keyword">new</span> <span class="title class_">KKLayoutAlgorithm</span>&lt;&gt;())</span><br><span class="line">                     .layoutSize(size)</span><br><span class="line">                     .build();</span><br><span class="line">     <span class="keyword">final</span> VisualizationViewer&lt;?, ?&gt; vv =</span><br><span class="line">             VisualizationViewer</span><br><span class="line">                     .builder(vm)</span><br><span class="line">                     .viewSize(size)</span><br><span class="line">                     .build();</span><br><span class="line">     vv.getRenderContext().setVertexLabelFunction(Object::toString);</span><br><span class="line">     vv.getRenderContext().setVertexLabelPosition(Renderer.VertexLabel.Position.CNTR);</span><br><span class="line">     vv.setVertexToolTipFunction(Object::toString);</span><br><span class="line">     <span class="type">VisualizationScrollPane</span> <span class="variable">visualizationScrollPane</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">VisualizationScrollPane</span>(vv);</span><br><span class="line">     f.add(visualizationScrollPane);</span><br><span class="line"></span><br><span class="line">     f.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);</span><br><span class="line">     f.pack();</span><br><span class="line">     f.setVisible(<span class="literal">true</span>);</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></figure>
+
+<p>将我们的graph传入</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    <span class="comment">// 创建图</span></span><br><span class="line">    SimpleGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line">    <span class="comment">// 添加顶点</span></span><br><span class="line">    graph.addVertex(<span class="number">1</span>);</span><br><span class="line">    graph.addVertex(<span class="number">2</span>);</span><br><span class="line">    graph.addVertex(<span class="number">3</span>);</span><br><span class="line">    graph.addVertex(<span class="number">4</span>);</span><br><span class="line">    <span class="comment">// 添加边</span></span><br><span class="line">    graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">    graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">    graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">    showGraph(graph);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><img src="/jgrapht/1.png" alt="1"></p>
+<h2 id="2-有向图"><a href="#2-有向图" class="headerlink" title="2. 有向图"></a>2. 有向图</h2><p>同理可以构建有向图：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line"><span class="comment">//        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        SimpleDirectedGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line">        <span class="comment">// 添加顶点</span></span><br><span class="line">        graph.addVertex(<span class="number">1</span>);</span><br><span class="line">        graph.addVertex(<span class="number">2</span>);</span><br><span class="line">        graph.addVertex(<span class="number">3</span>);</span><br><span class="line">        graph.addVertex(<span class="number">4</span>);</span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">        showGraph(graph);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/jgrapht/2.png" alt="2"></p>
+<p>我们在上面的例子中使用Integer作为Vertex （顶点）的泛型。使用DefaultEdge 作为 Edge （边）的泛型。类似jdk里的各种数据结构，这里对于Vertex的泛型没有任何约束。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">interface</span> <span class="title class_">Graph</span>&lt;V, E&gt; &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>和Map同样的道理我们需要重写hashCode和equals来构建自己的Vertex</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">MyVertex</span> &#123;</span><br><span class="line">    String name;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MyVertex</span><span class="params">(String name)</span> &#123;</span><br><span class="line">        <span class="built_in">this</span>.name = name;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">hashCode</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> name.hashCode();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">equals</span><span class="params">(Object obj)</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> ((MyVertex) obj).name.equals(name);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span> &#123;</span><br><span class="line">        <span class="keyword">return</span> name;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    SimpleGraph&lt;MyVertex, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line">    graph.addVertex(<span class="keyword">new</span> <span class="title class_">MyVertex</span>(<span class="string">&quot;v1&quot;</span>));</span><br><span class="line">    graph.addVertex(<span class="keyword">new</span> <span class="title class_">MyVertex</span>(<span class="string">&quot;v2&quot;</span>));</span><br><span class="line">    graph.addEdge(<span class="keyword">new</span> <span class="title class_">MyVertex</span>(<span class="string">&quot;v1&quot;</span>), <span class="keyword">new</span> <span class="title class_">MyVertex</span>(<span class="string">&quot;v2&quot;</span>));</span><br><span class="line">    showGraph(graph);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>需要记得重写toString ，否则可视化库将调用Object的toString方法渲染vertex标签。<br><img src="/jgrapht/3.png" alt="3"></p>
+<p>此外，Edge也没有任何限制，但是有时用户会选择继承DefaultEdge 的原因是，在默认的Graph实现中，框架会自动识别Edge类型，如果是DefaultEdge的子类则会自动填充其 边两端的顶点</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * A default implementation for edges in a &#123;<span class="doctag">@link</span> Graph&#125;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Barak Naveh</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">DefaultEdge</span></span><br><span class="line">    <span class="keyword">extends</span></span><br><span class="line">    <span class="title class_">IntrusiveEdge</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> <span class="type">long</span> <span class="variable">serialVersionUID</span> <span class="operator">=</span> <span class="number">3258408452177932855L</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Retrieves the source of this edge. This is protected, for use by subclasses only (e.g. for</span></span><br><span class="line"><span class="comment">     * implementing toString).</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> source of this edge</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">protected</span> Object <span class="title function_">getSource</span><span class="params">()</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> source;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * Retrieves the target of this edge. This is protected, for use by subclasses only (e.g. for</span></span><br><span class="line"><span class="comment">     * implementing toString).</span></span><br><span class="line"><span class="comment">     *</span></span><br><span class="line"><span class="comment">     * <span class="doctag">@return</span> target of this edge</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">protected</span> Object <span class="title function_">getTarget</span><span class="params">()</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">toString</span><span class="params">()</span></span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;(&quot;</span> + source + <span class="string">&quot; : &quot;</span> + target + <span class="string">&quot;)&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>需要注意注释所说，这里source和target都是protected，只能在子类中访问，外部访问需要在子类暴露一个函数。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">static</span> <span class="keyword">class</span> <span class="title class_">Dummy</span> <span class="keyword">extends</span> <span class="title class_">DefaultEdge</span> &#123;</span><br><span class="line">        <span class="keyword">public</span> Integer <span class="title function_">getSrc</span><span class="params">()</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> (Integer) getSource();</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">public</span> Integer <span class="title function_">getTarget0</span><span class="params">()</span> &#123;</span><br><span class="line">            <span class="keyword">return</span> (Integer) getTarget();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line"><span class="comment">//        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        SimpleDirectedGraph&lt;Integer, Dummy&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(Dummy.class);</span><br><span class="line">        <span class="comment">// 添加顶点</span></span><br><span class="line">        graph.addVertex(<span class="number">1</span>);</span><br><span class="line">        graph.addVertex(<span class="number">2</span>);</span><br><span class="line">        graph.addVertex(<span class="number">3</span>);</span><br><span class="line">        graph.addVertex(<span class="number">4</span>);</span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">for</span> (Dummy dummy : graph.edgeSet()) &#123;</span><br><span class="line">            System.out.println(dummy.getSrc() + <span class="string">&quot; &quot;</span> + dummy.getTarget0());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="number">1</span> <span class="number">2</span></span><br><span class="line"><span class="number">1</span> <span class="number">4</span></span><br><span class="line"><span class="number">2</span> <span class="number">3</span></span><br></pre></td></tr></table></figure>
+<h2 id="3-有权图"><a href="#3-有权图" class="headerlink" title="3. 有权图"></a>3. 有权图</h2><p>有权图怎么构建呢？</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    Graph&lt;Integer, DefaultWeightedEdge&gt; g = <span class="keyword">new</span> <span class="title class_">DefaultUndirectedWeightedGraph</span>&lt;&gt;(DefaultWeightedEdge.class);</span><br><span class="line"></span><br><span class="line">    g.addVertex(<span class="number">1</span>);</span><br><span class="line">    g.addVertex(<span class="number">2</span>);</span><br><span class="line">    g.addVertex(<span class="number">3</span>);</span><br><span class="line">    g.addVertex(<span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">    <span class="type">DefaultWeightedEdge</span> <span class="variable">defaultWeightedEdge</span> <span class="operator">=</span> g.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">    g.setEdgeWeight(defaultWeightedEdge,<span class="number">1</span>);</span><br><span class="line">    <span class="type">DefaultWeightedEdge</span> <span class="variable">defaultWeightedEdge1</span> <span class="operator">=</span> g.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">    g.setEdgeWeight(defaultWeightedEdge1,<span class="number">2</span>);</span><br><span class="line">    <span class="type">DefaultWeightedEdge</span> <span class="variable">defaultWeightedEdge2</span> <span class="operator">=</span> g.addEdge(<span class="number">1</span>, <span class="number">3</span>);</span><br><span class="line">    g.setEdgeWeight(defaultWeightedEdge2,<span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">    showGraph(g);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-子图"><a href="#4-子图" class="headerlink" title="4. 子图"></a>4. 子图</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line"><span class="comment">//        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        SimpleDirectedGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line">        <span class="comment">// 添加节点</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">10</span>; i++) &#123;</span><br><span class="line">            graph.addVertex(i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        <span class="type">DefaultEdge</span> <span class="variable">e1</span> <span class="operator">=</span> graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        <span class="type">DefaultEdge</span> <span class="variable">e2</span> <span class="operator">=</span> graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">        <span class="type">DefaultEdge</span> <span class="variable">e3</span> <span class="operator">=</span> graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">        <span class="type">DefaultEdge</span> <span class="variable">e4</span> <span class="operator">=</span> graph.addEdge(<span class="number">2</span>, <span class="number">5</span>);</span><br><span class="line"></span><br><span class="line">        AsSubgraph&lt;Integer, DefaultEdge&gt; sub = <span class="keyword">new</span> <span class="title class_">AsSubgraph</span>&lt;&gt;(graph, Set.of(<span class="number">3</span>, <span class="number">4</span>, <span class="number">5</span>), Set.of(e1, e3));</span><br><span class="line"></span><br><span class="line">        BreadthFirstIterator&lt;Integer, DefaultEdge&gt; iter = <span class="keyword">new</span> <span class="title class_">BreadthFirstIterator</span>&lt;&gt;(sub);</span><br><span class="line">        <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">            System.out.println(iter.next());</span><br><span class="line">        &#125;</span><br><span class="line">        showGraph(graph);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h1 id="三-图算法"><a href="#三-图算法" class="headerlink" title="三 图算法"></a>三 图算法</h1><h2 id="1-遍历"><a href="#1-遍历" class="headerlink" title="1. 遍历"></a>1. 遍历</h2><p>如何遍历呢？比较常用的有：广度优先遍历，深度优先遍历，拓扑遍历，广度优先遍历和深度优先遍历具体原理这里不再详述。</p>
+<p>需要注意的是：深度优先和广度优先可用于无向或有向图，拓扑遍历只能用于有向无环图（DAG）。在图论中，我们经常讨论有向无环图DAG（Directed Acyclic Graph），这类图常用来描述顶点之间的依赖关系（先修课程、软件包的安装依赖）。对于DAG，我们可以对其进行拓扑排序。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line">        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line"><span class="comment">//        SimpleDirectedGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleDirectedGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        <span class="comment">// 添加顶点</span></span><br><span class="line">        graph.addVertex(<span class="number">1</span>);</span><br><span class="line">        graph.addVertex(<span class="number">2</span>);</span><br><span class="line">        graph.addVertex(<span class="number">3</span>);</span><br><span class="line">        graph.addVertex(<span class="number">4</span>);</span><br><span class="line">        graph.addVertex(<span class="number">5</span>);</span><br><span class="line">        graph.addVertex(<span class="number">6</span>);</span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">5</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">6</span>);</span><br><span class="line">        <span class="comment">// 广度优先遍历</span></span><br><span class="line">        BreadthFirstIterator&lt;Integer, DefaultEdge&gt; iter = <span class="keyword">new</span> <span class="title class_">BreadthFirstIterator</span>&lt;&gt;(graph);</span><br><span class="line">        <span class="comment">// 深度优先遍历</span></span><br><span class="line"><span class="comment">//        DepthFirstIterator&lt;Integer, DefaultEdge&gt; iter = new DepthFirstIterator&lt;&gt;(graph);</span></span><br><span class="line">        <span class="comment">// 拓扑遍历</span></span><br><span class="line"><span class="comment">//        TopologicalOrderIterator&lt;Integer, DefaultEdge&gt; iter = new TopologicalOrderIterator&lt;&gt;(graph);</span></span><br><span class="line">        <span class="keyword">while</span> (iter.hasNext()) &#123;</span><br><span class="line">            System.out.println(iter.next());</span><br><span class="line">        &#125;</span><br><span class="line">        showGraph(graph);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-最短路径"><a href="#2-最短路径" class="headerlink" title="2. 最短路径"></a>2. 最短路径</h2><p>最短路径算法较多，如广度优先搜索（深度优先无法得到最短路径），A*算法 ，Dijkstra算法，Floyd等，以上算法还有诸多变种。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line">        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line"><span class="comment">//        SimpleDirectedGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleDirectedGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        <span class="comment">// 添加节点</span></span><br><span class="line">        graph.addVertex(<span class="number">1</span>);</span><br><span class="line">        graph.addVertex(<span class="number">2</span>);</span><br><span class="line">        graph.addVertex(<span class="number">3</span>);</span><br><span class="line">        graph.addVertex(<span class="number">4</span>);</span><br><span class="line">        graph.addVertex(<span class="number">5</span>);</span><br><span class="line">        graph.addVertex(<span class="number">6</span>);</span><br><span class="line">        graph.addVertex(<span class="number">7</span>);</span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">5</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">6</span>);</span><br><span class="line"></span><br><span class="line">        ShortestPathAlgorithm&lt;Integer, DefaultEdge&gt; shortPathAlg = <span class="keyword">new</span> <span class="title class_">DijkstraShortestPath</span>&lt;&gt;(graph);</span><br><span class="line"><span class="comment">//        ShortestPathAlgorithm&lt;Integer, DefaultEdge&gt; shortPathAlg = new FloydWarshallShortestPaths&lt;&gt;(graph);</span></span><br><span class="line"><span class="comment">//        ShortestPathAlgorithm&lt;Integer, DefaultEdge&gt; shortPathAlg = new BFSShortestPath&lt;&gt;(graph);</span></span><br><span class="line"><span class="comment">//        ShortestPathAlgorithm&lt;Integer, DefaultEdge&gt; shortPathAlg = new AStarShortestPath&lt;&gt;(graph, new ALTAdmissibleHeuristic&lt;&gt;(graph, new HashSet&lt;&gt;()));</span></span><br><span class="line">        GraphPath&lt;Integer, DefaultEdge&gt; path = shortPathAlg.getPath(<span class="number">1</span>, <span class="number">6</span>);</span><br><span class="line">        <span class="keyword">for</span> (DefaultEdge defaultEdge : path.getEdgeList()) &#123;</span><br><span class="line">            System.out.println(defaultEdge);</span><br><span class="line">        &#125;</span><br><span class="line">        showGraph(graph);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>由于我们的样例图不存在权重，所以使用BFS和Dijkstra效果是一样的。Dijkstra（迪杰斯特拉）算法是典型的单源最短路径算法，用于计算某个顶点到其他所有顶点的最短路径。Dijkstra（迪杰斯特拉）算法要求图中不存在负权边，即保证图中每条边的权重值为正。算法的基本思想是：从源点出发，每次选择离源点最近的一个顶点前进，然后以该顶点为中心进行扩展，最终得到源点到其余所有点的最短路径。</p>
+<p>上面的最短路径算法中A*算法需要配置启发函数。其他的只需将图传入即可。</p>
+<h2 id="3-连通性检测"><a href="#3-连通性检测" class="headerlink" title="3. 连通性检测"></a>3. 连通性检测</h2><p>connectedSets api可以将图划分为多个联通子图</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">        <span class="comment">// 创建图</span></span><br><span class="line"><span class="comment">//        SimpleGraph&lt;Integer, DefaultEdge&gt; graph = new SimpleGraph&lt;&gt;(DefaultEdge.class);</span></span><br><span class="line">        SimpleDirectedGraph&lt;Integer, DefaultEdge&gt; graph = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(DefaultEdge.class);</span><br><span class="line">        <span class="comment">// 添加节点</span></span><br><span class="line">        graph.addVertex(<span class="number">1</span>);</span><br><span class="line">        graph.addVertex(<span class="number">2</span>);</span><br><span class="line">        graph.addVertex(<span class="number">3</span>);</span><br><span class="line">        graph.addVertex(<span class="number">4</span>);</span><br><span class="line">        <span class="comment">// 添加边</span></span><br><span class="line">        graph.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        graph.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line"></span><br><span class="line">        ConnectivityInspector&lt;Integer, DefaultEdge&gt; inspector = <span class="keyword">new</span> <span class="title class_">ConnectivityInspector</span>&lt;&gt;(graph);</span><br><span class="line">        List&lt;Set&lt;Integer&gt;&gt; sets = inspector.connectedSets();</span><br><span class="line">        <span class="keyword">for</span> (Set&lt;Integer&gt; s : sets) &#123;</span><br><span class="line">            System.out.println(s);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">[<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>]</span><br><span class="line">[<span class="number">4</span>]</span><br></pre></td></tr></table></figure>
+
+<p>判断图是否联通</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    ConnectivityInspector&lt;Integer, DefaultEdge&gt; inspector = <span class="keyword">new</span> <span class="title class_">ConnectivityInspector</span>&lt;&gt;(graph);</span><br><span class="line">    System.out.println(inspector.isConnected());</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个算法的本质就是查看分组的联通子图是否为1，和前一个api是一套实现。</p>
+<p>判断两个顶点是否连通</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> &#123;</span><br><span class="line">    ...</span><br><span class="line">    ConnectivityInspector&lt;Integer, DefaultEdge&gt; inspector = <span class="keyword">new</span> <span class="title class_">ConnectivityInspector</span>&lt;&gt;(graph);</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">b</span> <span class="operator">=</span> inspector.pathExists(<span class="number">1</span>, <span class="number">4</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>强连通：强连通首先只用于有向图，强连通意味着如果我们从当前顶点开始遍历，可以达到任意顶点。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setup</span><span class="params">()</span> &#123;</span><br><span class="line"><span class="comment">//        g = new SimpleGraph&lt;&gt;(null, new IdEdgeFactory(), false);</span></span><br><span class="line">        g = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">IdEdgeFactory</span>(), <span class="literal">false</span>);</span><br><span class="line">        <span class="keyword">for</span> (<span class="type">int</span> <span class="variable">i</span> <span class="operator">=</span> <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123;</span><br><span class="line">            g.addVertex(i);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        g.addEdge(<span class="number">1</span>, <span class="number">3</span>);</span><br><span class="line">        g.addEdge(<span class="number">3</span>, <span class="number">1</span>);</span><br><span class="line">        g.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">        g.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">        g.addEdge(<span class="number">4</span>, <span class="number">3</span>);</span><br><span class="line">        g.addEdge(<span class="number">7</span>, <span class="number">8</span>);</span><br><span class="line">        g.addEdge(<span class="number">8</span>, <span class="number">1</span>);</span><br><span class="line">        g.addEdge(<span class="number">8</span>, <span class="number">1</span>);</span><br><span class="line">        g.addEdge(<span class="number">8</span>, <span class="number">10</span>);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        StrongConnectivityAlgorithm&lt;Integer, IdEdge&gt; scAlg</span><br><span class="line">                = <span class="keyword">new</span> <span class="title class_">KosarajuStrongConnectivityInspector</span>&lt;&gt;(g);</span><br><span class="line">        <span class="keyword">for</span> (Set&lt;Integer&gt; integers : scAlg.stronglyConnectedSets()) &#123;</span><br><span class="line">            System.out.println(integers);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        List&lt;Graph&lt;Integer, IdEdge&gt;&gt; stronglyConnectedComponents = scAlg.getStronglyConnectedComponents();</span><br><span class="line">        <span class="keyword">for</span> (Graph&lt;Integer, IdEdge&gt; stronglyConnectedComponent : stronglyConnectedComponents) &#123;</span><br><span class="line">            System.out.println(stronglyConnectedComponent);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        System.out.println(scAlg.isStronglyConnected());</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-欧拉回路"><a href="#4-欧拉回路" class="headerlink" title="4. 欧拉回路"></a>4. 欧拉回路</h3><p>与著名的七桥问题，和一笔画问题的概念相关。</p>
+<h4 id="欧拉路径"><a href="#欧拉路径" class="headerlink" title="欧拉路径"></a>欧拉路径</h4><p>如果图G中的一个路径包括每个边恰好一次，则该路径称为欧拉路径(Euler path)。</p>
+<h4 id="欧拉回路"><a href="#欧拉回路" class="headerlink" title="欧拉回路"></a>欧拉回路</h4><p>如果一个回路是欧拉路径，则称为欧拉回路(Euler circuit)。</p>
+<p>是否存在欧拉回路的判断：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">g = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">IdEdgeFactory</span>(), <span class="literal">false</span>);</span><br><span class="line">g.addVertex(<span class="number">1</span>);</span><br><span class="line">g.addVertex(<span class="number">2</span>);</span><br><span class="line">g.addVertex(<span class="number">3</span>);</span><br><span class="line">g.addVertex(<span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">g.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">g.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">g.addEdge(<span class="number">3</span>, <span class="number">4</span>);</span><br><span class="line">g.addEdge(<span class="number">4</span>, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="type">HierholzerEulerianCycle</span> <span class="variable">eulerianCycle</span></span><br><span class="line">        <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">HierholzerEulerianCycle</span>&lt;&gt;();</span><br><span class="line"><span class="type">GraphPath</span> <span class="variable">eulerianCycle1</span> <span class="operator">=</span> eulerianCycle.getEulerianCycle(g);</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-环检测"><a href="#5-环检测" class="headerlink" title="5. 环检测"></a>5. 环检测</h3><p>jgrapht环检测算法也较多，这里不再一一列举</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">g = <span class="keyword">new</span> <span class="title class_">SimpleDirectedGraph</span>&lt;&gt;(<span class="literal">null</span>, <span class="keyword">new</span> <span class="title class_">IdEdgeFactory</span>(), <span class="literal">false</span>);</span><br><span class="line">g.addVertex(<span class="number">1</span>);</span><br><span class="line">g.addVertex(<span class="number">2</span>);</span><br><span class="line">g.addVertex(<span class="number">3</span>);</span><br><span class="line">g.addVertex(<span class="number">4</span>);</span><br><span class="line"></span><br><span class="line">g.addEdge(<span class="number">1</span>, <span class="number">2</span>);</span><br><span class="line">g.addEdge(<span class="number">2</span>, <span class="number">3</span>);</span><br><span class="line">g.addEdge(<span class="number">3</span>, <span class="number">4</span>);</span><br><span class="line">g.addEdge(<span class="number">4</span>, <span class="number">1</span>);</span><br><span class="line">CycleDetector&lt;Integer, IdEdge&gt; cycleDetector</span><br><span class="line">        = <span class="keyword">new</span> <span class="title class_">CycleDetector</span>&lt;&gt;(g);</span><br><span class="line"></span><br><span class="line">System.out.println(cycleDetector.detectCycles());</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-最小生成树"><a href="#6-最小生成树" class="headerlink" title="6. 最小生成树"></a>6. 最小生成树</h3><p>图中边的权值最小的生成树，这里的两个著名算法Prim和Kruskal</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">...</span><br><span class="line">        SpanningTreeAlgorithm&lt;IdEdge&gt; spanningTreeAlgorithm = <span class="keyword">new</span> <span class="title class_">PrimMinimumSpanningTree</span>&lt;&gt;(g);</span><br><span class="line">        <span class="keyword">for</span> (IdEdge idEdge : spanningTreeAlgorithm.getSpanningTree()) &#123;</span><br><span class="line">            System.out.println(idEdge);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>本人对图论了解不深，所以目前只学习到了这些较为常用的API。后续有新的好用的API会继续更新。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/jgrapht/" title="Java图论库 Jgrapht">https://fenixc9.github.io/jgrapht/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Java/" rel="tag"># Java</a>
+              <a href="/tags/%E5%9B%BE%E8%AE%BA/" rel="tag"># 图论</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/mysql-binlog/" rel="prev" title="mysql的binlog机制">
+      <i class="fa fa-chevron-left"></i> mysql的binlog机制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/window-port-nat-fail/" rel="next" title="Windows下端口绑定失败的问题">
+      Windows下端口绑定失败的问题 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80-%E7%8E%AF%E5%A2%83"><span class="nav-number">1.</span> <span class="nav-text">一 环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%8C-%E6%9E%84%E5%BB%BA%E5%9B%BE"><span class="nav-number">2.</span> <span class="nav-text">二 构建图</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E6%97%A0%E5%90%91%E5%9B%BE"><span class="nav-number">2.1.</span> <span class="nav-text">1. 无向图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9C%89%E5%90%91%E5%9B%BE"><span class="nav-number">2.2.</span> <span class="nav-text">2. 有向图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E6%9C%89%E6%9D%83%E5%9B%BE"><span class="nav-number">2.3.</span> <span class="nav-text">3. 有权图</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-%E5%AD%90%E5%9B%BE"><span class="nav-number">2.4.</span> <span class="nav-text">4. 子图</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%89-%E5%9B%BE%E7%AE%97%E6%B3%95"><span class="nav-number">3.</span> <span class="nav-text">三 图算法</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%81%8D%E5%8E%86"><span class="nav-number">3.1.</span> <span class="nav-text">1. 遍历</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E6%9C%80%E7%9F%AD%E8%B7%AF%E5%BE%84"><span class="nav-number">3.2.</span> <span class="nav-text">2. 最短路径</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E8%BF%9E%E9%80%9A%E6%80%A7%E6%A3%80%E6%B5%8B"><span class="nav-number">3.3.</span> <span class="nav-text">3. 连通性检测</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-%E6%AC%A7%E6%8B%89%E5%9B%9E%E8%B7%AF"><span class="nav-number">3.3.1.</span> <span class="nav-text">4. 欧拉回路</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AC%A7%E6%8B%89%E8%B7%AF%E5%BE%84"><span class="nav-number">3.3.1.1.</span> <span class="nav-text">欧拉路径</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%AC%A7%E6%8B%89%E5%9B%9E%E8%B7%AF"><span class="nav-number">3.3.1.2.</span> <span class="nav-text">欧拉回路</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#5-%E7%8E%AF%E6%A3%80%E6%B5%8B"><span class="nav-number">3.3.2.</span> <span class="nav-text">5. 环检测</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-%E6%9C%80%E5%B0%8F%E7%94%9F%E6%88%90%E6%A0%91"><span class="nav-number">3.3.3.</span> <span class="nav-text">6. 最小生成树</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '58a145fa4f989083e64b7331ebc10a67',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

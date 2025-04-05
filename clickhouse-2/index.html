@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习目前olap领域炙手可热的明星项目，clickhouse">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Clickhouse学习笔记 二">
+<meta property="og:url" content="https://fenixc9.github.io/clickhouse-2/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习目前olap领域炙手可热的明星项目，clickhouse">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-10-17T07:00:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.131Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Clickhouse">
+<meta property="article:tag" content="Database">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/clickhouse-2/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Clickhouse学习笔记 二 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/clickhouse-2/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Clickhouse学习笔记 二
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-10-17 15:00:26" itemprop="dateCreated datePublished" datetime="2023-10-17T15:00:26+08:00">2023-10-17</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Clickhouse/" itemprop="url" rel="index"><span itemprop="name">Clickhouse</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">学习目前olap领域炙手可热的明星项目，clickhouse</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="部署数据集"><a href="#部署数据集" class="headerlink" title="部署数据集"></a>部署数据集</h1><p><a target="_blank" rel="noopener" href="https://clickhouse.com/docs/zh/getting-started/example-datasets">https://clickhouse.com/docs/zh/getting-started/example-datasets</a></p>
+<p>官方文档给出了一堆示例数据集。</p>
+<p>我们这里选择食谱，<a target="_blank" rel="noopener" href="https://clickhouse.com/docs/zh/getting-started/example-datasets/recipes%E3%80%82">https://clickhouse.com/docs/zh/getting-started/example-datasets/recipes。</a><br>稍微小一点</p>
+<h2 id="下载并解压数据集"><a href="#下载并解压数据集" class="headerlink" title="下载并解压数据集"></a>下载并解压数据集</h2><ol>
+<li>进入下载页面<a target="_blank" rel="noopener" href="https://recipenlg.cs.put.poznan.pl/dataset%E3%80%82">https://recipenlg.cs.put.poznan.pl/dataset。</a></li>
+<li>接受条款和条件并下载 zip 文件。</li>
+<li>使用 unzip 解压 zip 文件，得到 full_dataset.csv 文件。</li>
+</ol>
+<h2 id="创建表"><a href="#创建表" class="headerlink" title="创建表"></a>创建表</h2><p>运行 clickhouse-client 并执行以下 CREATE 请求：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> recipes</span><br><span class="line">(</span><br><span class="line">    title String,</span><br><span class="line">    ingredients <span class="keyword">Array</span>(String),</span><br><span class="line">    directions <span class="keyword">Array</span>(String),</span><br><span class="line">    link String,</span><br><span class="line">    source LowCardinality(String),</span><br><span class="line">    NER <span class="keyword">Array</span>(String)</span><br><span class="line">) ENGINE <span class="operator">=</span> MergeTree <span class="keyword">ORDER</span> <span class="keyword">BY</span> title;</span><br></pre></td></tr></table></figure>
+<p>其中字段含义为</p>
+<ul>
+<li>title 食谱标题</li>
+<li>ingredients 成分 </li>
+<li>directions  烹饪指导</li>
+<li>link  出处</li>
+<li>LowCardinality  低基数类型</li>
+<li>Named Entity Recognition，简称NER，类似标签</li>
+</ul>
+<p>这里可以看到clickhouse支持Array</p>
+<h2 id="插入数据"><a href="#插入数据" class="headerlink" title="插入数据"></a>插入数据</h2><p>运行以下命令：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">clickhouse<span class="operator">-</span>client <span class="comment">--query &quot;</span></span><br><span class="line">    <span class="keyword">INSERT</span> <span class="keyword">INTO</span> recipes</span><br><span class="line">    <span class="keyword">SELECT</span></span><br><span class="line">        title,</span><br><span class="line">        JSONExtract(ingredients, <span class="string">&#x27;Array(String)&#x27;</span>),</span><br><span class="line">        JSONExtract(directions, <span class="string">&#x27;Array(String)&#x27;</span>),</span><br><span class="line">        link,</span><br><span class="line">        source,</span><br><span class="line">        JSONExtract(NER, <span class="string">&#x27;Array(String)&#x27;</span>)</span><br><span class="line">    <span class="keyword">FROM</span> input(<span class="string">&#x27;num UInt32, title String, ingredients String, directions String, link String, source LowCardinality(String), NER String&#x27;</span>)</span><br><span class="line">    FORMAT CSVWithNames</span><br><span class="line">&quot; --input_format_with_names_use_header 0 --format_csv_allow_single_quote 0 --input_format_allow_errors_num 10 &lt; full_dataset.csv</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>如果一切顺利，这里执行完毕数据就插入完毕了。</p>
+<p>可以查看插入了多少行数据。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) select count() from recipes;</span><br><span class="line"></span><br><span class="line">SELECT count()</span><br><span class="line">FROM recipes</span><br><span class="line"></span><br><span class="line">Query id: b3ac8973-8772-4347-a1a0-4b9ea393f2f0</span><br><span class="line"></span><br><span class="line">┌─count()─┐</span><br><span class="line">│ 2231142 │</span><br><span class="line">└─────────┘</span><br><span class="line"></span><br><span class="line">1 row in set. Elapsed: 0.002 sec.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>比如我们想查找包含柠檬（lemon）的最短的10个食谱</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">select</span> directions,title,NER <span class="keyword">from</span> recipes </span><br><span class="line"><span class="keyword">where</span>  has(NER, <span class="string">&#x27;lemon&#x27;</span>) <span class="keyword">order</span> <span class="keyword">by</span> length(directions) limit <span class="number">10</span> \G     </span><br></pre></td></tr></table></figure>
+<p>这里我们使用has函数从判断NER中是否包含lemon。那么clickhouse到底有哪些类型呢？</p>
+<h1 id="数据类型"><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h1><h2 id="数值类型"><a href="#数值类型" class="headerlink" title="数值类型"></a>数值类型</h2><h3 id="整型"><a href="#整型" class="headerlink" title="整型"></a>整型</h3><p>没啥好说，目前已经支持8位到256位整型</p>
+<p>整型范围</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">Int8 — [-128 : 127]</span><br><span class="line">Int16 — [-32768 : 32767]</span><br><span class="line">Int32 — [-2147483648 : 2147483647]</span><br><span class="line">Int64 — [-9223372036854775808 : 9223372036854775807]</span><br><span class="line">Int128 — [-170141183460469231731687303715884105728 : 170141183460469231731687303715884105727]</span><br><span class="line">Int256 — [-57896044618658097711785492504343953926634992332820282019728792003956564819968 : 57896044618658097711785492504343953926634992332820282019728792003956564819967]</span><br><span class="line">别名：</span><br><span class="line"></span><br><span class="line">Int8 — TINYINT, BOOL, BOOLEAN, INT1.</span><br><span class="line">Int16 — SMALLINT, INT2.</span><br><span class="line">Int32 — INT, INT4, INTEGER.</span><br><span class="line">Int64 — BIGINT.</span><br></pre></td></tr></table></figure>
+
+<p>无符号整型范围</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">UInt8 — [0 : 255]</span><br><span class="line">UInt16 — [0 : 65535]</span><br><span class="line">UInt32 — [0 : 4294967295]</span><br><span class="line">UInt64 — [0 : 18446744073709551615]</span><br><span class="line">UInt128 — [0 : 340282366920938463463374607431768211455]</span><br><span class="line">UInt256 — [0 : 115792089237316195423570985008687907853269984665640564039457584007913129639935]</span><br></pre></td></tr></table></figure>
+
+<h3 id="浮点"><a href="#浮点" class="headerlink" title="浮点"></a>浮点</h3><p>浮点则只有Float32,Float64，为IEEE标准浮点，如果想自定义其精度，则需使用Decimal。</p>
+<h2 id="字符串"><a href="#字符串" class="headerlink" title="字符串"></a>字符串</h2><h3 id="String"><a href="#String" class="headerlink" title="String"></a>String</h3><p>长度不限，且不需要指定字符集的编码。</p>
+<p>从设计上clickhouse希望替我们屏蔽掉sql语句中的String，到网络传输过程中转换为字节，再到server端又转换为字符，再到存储时又转换为字节。我们在一些传统数据库服务器中需要小心地配置这些编码使其保持一致。clickhouse更希望这一切对我们透明。</p>
+<h3 id="FixString"><a href="#FixString" class="headerlink" title="FixString"></a>FixString</h3><p>和String类似，不过是定长。<br>如果字符串包含的字节数少于&#96;N’,将对字符串末尾进行空字节填充。<br>如果字符串包含的字节数大于N,将抛出Too large value for FixedString(N)异常。</p>
+<h3 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">create</span> <span class="keyword">table</span> test_c (a UUID) engine MergeTree <span class="keyword">order</span> <span class="keyword">by</span> a;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_c</span><br><span class="line">(</span><br><span class="line">    `a` UUID</span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> MergeTree</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> a</span><br></pre></td></tr></table></figure>
+<p>直接调用函数在server侧生成UUID</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO test_c SELECT generateUUIDv4()</span><br></pre></td></tr></table></figure>
+
+<h2 id="时间"><a href="#时间" class="headerlink" title="时间"></a>时间</h2><h3 id="DateTime"><a href="#DateTime" class="headerlink" title="DateTime"></a>DateTime</h3><p>支持到时分秒，占用4字节，支持字符串写入</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">create</span> <span class="keyword">table</span> test_d (a Datetime) engine Memory;</span><br><span class="line">fenixs :) <span class="keyword">INSERT</span> <span class="keyword">INTO</span> Datetime_TEST <span class="keyword">VALUES</span>(<span class="string">&#x27;2019-06-22 00:00:00&#x27;</span>);</span><br></pre></td></tr></table></figure>
+
+<h3 id="DateTime64"><a href="#DateTime64" class="headerlink" title="DateTime64"></a>DateTime64</h3><p>顾名思义64位占用8字节，可以提供高于秒的精度。</p>
+<h3 id="Date"><a href="#Date" class="headerlink" title="Date"></a>Date</h3><p>精度到天</p>
+<h2 id="复合类型"><a href="#复合类型" class="headerlink" title="复合类型"></a>复合类型</h2><h3 id="数组"><a href="#数组" class="headerlink" title="数组"></a>数组</h3><p>定义方式1 array(1,2,3)</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">select</span> <span class="keyword">array</span>(<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>)</span><br></pre></td></tr></table></figure>
+<p>定义方式2 [1,2,3]</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> [<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>]</span><br></pre></td></tr></table></figure>
+
+<p>创建array不需要显式声明其类型，clickhouse会自动推断，如果存在Null会推断为Nullable：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">fenixs :) <span class="keyword">SELECT</span> [<span class="number">1</span>, <span class="number">2</span>, <span class="keyword">null</span>] <span class="keyword">as</span> a , toTypeName(a)</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    [<span class="number">1</span>, <span class="number">2</span>, <span class="keyword">NULL</span>] <span class="keyword">AS</span> a,</span><br><span class="line">    toTypeName(a)</span><br><span class="line"></span><br><span class="line">Query id: <span class="number">1</span>a4019e2<span class="number">-3e3</span>b<span class="number">-4073</span><span class="number">-934</span>b<span class="number">-81115</span>c7fd35b</span><br><span class="line"></span><br><span class="line">┌─a──────────┬─toTypeName([<span class="number">1</span>, <span class="number">2</span>, <span class="keyword">NULL</span>])─┐</span><br><span class="line">│ [<span class="number">1</span>,<span class="number">2</span>,<span class="keyword">NULL</span>] │ <span class="keyword">Array</span>(Nullable(UInt8))   │</span><br><span class="line">└────────────┴──────────────────────────┘</span><br><span class="line"></span><br><span class="line"><span class="number">1</span> <span class="type">row</span> <span class="keyword">in</span> set. Elapsed: <span class="number">0.008</span> sec.</span><br></pre></td></tr></table></figure>
+
+<p>定义表时则必须明确指出其类型</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">fenixs :) <span class="keyword">create</span> <span class="keyword">table</span> test_e (a <span class="keyword">Array</span>(DateTime)) engine Memory;</span><br><span class="line"></span><br><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> test_e</span><br><span class="line">(</span><br><span class="line">    `a` <span class="keyword">Array</span>(DateTime)</span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> Memory</span><br></pre></td></tr></table></figure>
+
+<h3 id="Tuple"><a href="#Tuple" class="headerlink" title="Tuple"></a>Tuple</h3><p>元组支持不同的类型</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">SELECT</span> tuple(<span class="number">1</span>,<span class="string">&#x27;a&#x27;</span>,now()) <span class="keyword">AS</span> x, toTypeName(x)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h3 id="Enum"><a href="#Enum" class="headerlink" title="Enum"></a>Enum</h3><p>ClickHouse提供了Enum8和Enum16两种枚举类型，它们除了取值范围不同之外，别无二致。枚举固定使用(String:Int)Key&#x2F;Value键值对的形式定义数据。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> Enum_TEST (</span><br><span class="line"> c1 Enum8(<span class="string">&#x27;ready&#x27;</span> <span class="operator">=</span> <span class="number">1</span>, <span class="string">&#x27;start&#x27;</span> <span class="operator">=</span> <span class="number">2</span>, <span class="string">&#x27;success&#x27;</span> <span class="operator">=</span> <span class="number">3</span>, <span class="string">&#x27;error&#x27;</span> <span class="operator">=</span> <span class="number">4</span>)</span><br><span class="line">) ENGINE <span class="operator">=</span> Memory</span><br></pre></td></tr></table></figure>
+
+<h3 id="Nested"><a href="#Nested" class="headerlink" title="Nested"></a>Nested</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">CREATE</span> <span class="keyword">TABLE</span> nested_test (</span><br><span class="line"> name String,</span><br><span class="line"> age UInt8 ,</span><br><span class="line"> dept Nested(</span><br><span class="line">    id UInt8,</span><br><span class="line">    name String</span><br><span class="line"> )</span><br><span class="line">) ENGINE <span class="operator">=</span> Memory;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这种数据的插入方式需要注意，首先嵌套表只能有一层。其次，嵌套表和外层不是一对一的关系。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">INSERT</span> <span class="keyword">INTO</span> nested_test <span class="keyword">VALUES</span> (<span class="string">&#x27;bruce&#x27;</span> , <span class="number">30</span> , [<span class="number">10000</span>,<span class="number">10001</span>,<span class="number">10002</span>], [<span class="string">&#x27;研发部&#x27;</span>,<span class="string">&#x27;技术支持中心&#x27;</span>,<span class="string">&#x27;测试部&#x27;</span>]);</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> nested_test</span><br><span class="line"></span><br><span class="line">Query id: b689f40a<span class="operator">-</span>c74c<span class="number">-4734</span><span class="number">-9</span>dcd<span class="operator">-</span>a4be236e3015</span><br><span class="line"></span><br><span class="line">┌─name──┬─age─┬─dept.id────┬─dept.name────────────────────────────┐</span><br><span class="line">│ bruce │  <span class="number">30</span> │ [<span class="number">16</span>,<span class="number">17</span>,<span class="number">18</span>] │ [<span class="string">&#x27;研发部&#x27;</span>,<span class="string">&#x27;技术支持中心&#x27;</span>,<span class="string">&#x27;测试部&#x27;</span>]     │</span><br><span class="line">└───────┴─────┴────────────┴──────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p>而是Array。</p>
+<h2 id="特殊类型"><a href="#特殊类型" class="headerlink" title="特殊类型"></a>特殊类型</h2><h3 id="Nullable"><a href="#Nullable" class="headerlink" title="Nullable"></a>Nullable</h3><p>用来修饰其他类型，表示这个字段可以为null。</p>
+<p>在使用Nullable类型的时候还有两点值得注意：</p>
+<ol>
+<li>首先，它只能和基础类型搭配使用，不能用于数组和元组这些复合类型，也不能作为索引字段。</li>
+<li>其次，应该慎用Nullable类型，包括Nullable的数据表，不然会使查询和写入性能变慢。因为在正常情况下，每个列字段的数据会被存储在对应的[Column].bin文件中。如果一个列字段被<code>Nullable</code>类型修饰后，会额外生成一个[Column].null.bin文件专门保存它的Null值。这意味着在读取和写入数据时，需要一倍的额外文件操作。</li>
+</ol>
+<h3 id="IPV4-IPV6"><a href="#IPV4-IPV6" class="headerlink" title="IPV4 IPV6"></a>IPV4 IPV6</h3><p>IPV4使用Uint32存储数据。IPV6使用FixedString(16)，效率更高，更节省空间。</p>
+<h1 id="数据库引擎"><a href="#数据库引擎" class="headerlink" title="数据库引擎"></a>数据库引擎</h1><p>创建数据库可以配置数据库引擎，比较常用的：</p>
+<ol>
+<li><p>Atomic<br>默认引擎，数据库Atomic中的所有表都有唯一的UUID，并将数据存储在目录&#x2F;clickhouse_path&#x2F;store&#x2F;xxx&#x2F;xxxyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy&#x2F;，其中<code>xxxyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy</code>是该表的UUID。</p>
+</li>
+<li><p>MySql<br>可以将远端mysql映射为本地database，并允许您对表进行INSERT和SELECT查询，以方便您在ClickHouse与MySQL之间进行数据交换。</p>
+</li>
+</ol>
+<p>MySQL数据库引擎会将对其的查询转换为MySQL语法并发送到MySQL服务器中，因此可以执行诸如SHOW TABLES或SHOW CREATE TABLE之类的操作。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> DATABASE [IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span>] db_name [<span class="keyword">ON</span> CLUSTER cluster]</span><br><span class="line">ENGINE <span class="operator">=</span> MySQL(<span class="string">&#x27;host:port&#x27;</span>, [<span class="string">&#x27;database&#x27;</span> <span class="operator">|</span> database], <span class="string">&#x27;user&#x27;</span>, <span class="string">&#x27;password&#x27;</span>)</span><br></pre></td></tr></table></figure>
+
+<p>可以直接联查两个远端实例的数据。</p>
+<ol start="3">
+<li><p>Memory<br>内存引擎，用于存放临时数据。此类数据库下的数据<br>表只会停留在内存中，不会涉及任何磁盘操作，当服务重启后数据会<br>被清除内存</p>
+</li>
+<li><p>SQLite<br>允许连接到SQLite数据库，并支持ClickHouse和SQLite交换数据， 执行 INSERT 和 SELECT 查询。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> DATABASE sqlite_database ENGINE <span class="operator">=</span> SQLite(<span class="string">&#x27;db_path&#x27;</span>)</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>PostgreSQL<br>允许连接到远程PostgreSQL服务。支持读写操作(SELECT和INSERT查询)，以在ClickHouse和PostgreSQL之间交换数据。</p>
+</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> DATABASE test_database </span><br><span class="line">ENGINE <span class="operator">=</span> PostgreSQL(<span class="string">&#x27;host:port&#x27;</span>, <span class="string">&#x27;database&#x27;</span>, <span class="string">&#x27;user&#x27;</span>, <span class="string">&#x27;password&#x27;</span>[, `use_table_cache`]);</span><br></pre></td></tr></table></figure>
+
+<h1 id="表引擎"><a href="#表引擎" class="headerlink" title="表引擎"></a>表引擎</h1><h2 id="MergeTree"><a href="#MergeTree" class="headerlink" title="MergeTree"></a>MergeTree</h2><p>clickhouse的核心表引擎为MergeTree和MergeTree的变种。</p>
+<ul>
+<li>存储的数据按主键排序。</li>
+<li>如果指定了 分区键 的话，可以使用分区。</li>
+<li>支持数据副本。</li>
+</ul>
+<p>数据结构为LSM（Log-Structured Merge-Tree ）这个数据结构在HBase，LevelDb，Rocksdb，等处都有广泛的应用。主要的思想是把随机写转为顺序写，提升写效率，但是会损失一些读性能。后面我会专门分析LSM树和它的简单实现。</p>
+<p>一个标准的clickhouse建表语句如下：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> [IF <span class="keyword">NOT</span> <span class="keyword">EXISTS</span>] [db.]table_name [<span class="keyword">ON</span> CLUSTER cluster]</span><br><span class="line">(</span><br><span class="line">    name1 [type1] [<span class="keyword">DEFAULT</span><span class="operator">|</span>MATERIALIZED<span class="operator">|</span>ALIAS expr1] [TTL expr1],</span><br><span class="line">    name2 [type2] [<span class="keyword">DEFAULT</span><span class="operator">|</span>MATERIALIZED<span class="operator">|</span>ALIAS expr2] [TTL expr2],</span><br><span class="line">    ...</span><br><span class="line">    INDEX index_name1 expr1 TYPE type1(...) GRANULARITY value1,</span><br><span class="line">    INDEX index_name2 expr2 TYPE type2(...) GRANULARITY value2</span><br><span class="line">) ENGINE <span class="operator">=</span> MergeTree()</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> expr</span><br><span class="line">[<span class="keyword">PARTITION</span> <span class="keyword">BY</span> expr] </span><br><span class="line">[<span class="keyword">PRIMARY</span> KEY expr]</span><br><span class="line">[SAMPLE <span class="keyword">BY</span> expr]</span><br><span class="line">[TTL expr [<span class="keyword">DELETE</span><span class="operator">|</span><span class="keyword">TO</span> DISK <span class="string">&#x27;xxx&#x27;</span><span class="operator">|</span><span class="keyword">TO</span> VOLUME <span class="string">&#x27;xxx&#x27;</span>], ...]</span><br><span class="line">[SETTINGS name<span class="operator">=</span><span class="keyword">value</span>, ...]</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="分区键"><a href="#分区键" class="headerlink" title="分区键"></a>分区键</h3><p>创建一个支持分片的sql语句通常如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> visits</span><br><span class="line">(</span><br><span class="line">    VisitDate <span class="type">Date</span>,</span><br><span class="line">    <span class="keyword">Hour</span> UInt8,</span><br><span class="line">    ClientID UUID</span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> MergeTree()</span><br><span class="line"><span class="keyword">PARTITION</span> <span class="keyword">BY</span> toYYYYMM(VisitDate)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> <span class="keyword">Hour</span>;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<h4 id="PartitionId"><a href="#PartitionId" class="headerlink" title="PartitionId"></a>PartitionId</h4><p>PARTITION BY 后面跟分区键，也可以套一个函数，比如上面的例子将Date转为了月维度。clickhouse会按照分区将数据切分到分区键为名字的目录下。官方给出的建议是，<strong>大多数情况下，不需要分区键。即使需要使用，也不需要使用比月更细粒度的分区键。分区不会加快查询（这与 ORDER BY 表达式不同）。永远也别使用过细粒度的分区键。不要使用客户端指定分区标识符或分区字段名称来对数据进行分区（而是将分区字段标识或名称作为 ORDER BY 表达式的第一列来指定分区）</strong>。</p>
+<p>分区键可以是整型，日期，字符串。</p>
+<ul>
+<li>整型，比如用户直接指定某个整型作为分区键，或者套了某个会返回整型的函数。这类分区键会直接作为分区id。</li>
+<li>日期，如果日期作为分区类型 ，会转为 YYYYMMDD 作为分区id。</li>
+<li>如果不是上面两者类型会将分区键做hash后作为分区id。</li>
+</ul>
+<p>最终我们分区的目录格式是这样的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&#123;PartitionId&#125;_&#123;MinBlock&#125;_&#123;MaxBlock&#125;_&#123;Level&#125; </span><br></pre></td></tr></table></figure>
+
+<h4 id="blockNum"><a href="#blockNum" class="headerlink" title="blockNum"></a>blockNum</h4><p>blockNum 在同一个MergeTree表内全局递增。n从1开始，每当新创建一个分区目录时，计数n就会累积加1。对于一个新的分区目录而言，MinBlockNum与MaxBlockNum取值一样，同等于n，例如<br>201905_1_1_0、201906_2_2_0以此类推。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">fenix@fenixs:~$ sudo ls /var/lib/clickhouse/data/default/table_ttl2</span><br><span class="line">all_10_10_0  all_9_9_0  detached  format_version.txt</span><br></pre></td></tr></table></figure>
+
+<p>在clickhouse的使用过程中，随着每次insert都会或多或少的创建分区目录，ClickHouse会通过后台任务再将属于相同分区的多个目录合并成一个新的目录。已经存在的旧分区目录并不会立即被删除，而是在之后的某个时刻通过后台任务被删除（默认8分钟）。</p>
+<ul>
+<li>MinBlockNum：取同一分区内所有目录中最小的<br>MinBlockNum值。</li>
+<li>MaxBlockNum：取同一分区内所有目录中最大的<br>MaxBlockNum值。</li>
+<li>Level：取同一分区内最大Level值并加1。</li>
+</ul>
+<p>在<code>system.parts</code> 中可以查到我们创建的分区和具体的物理文件是一致的</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">fenix@fenixs:~$ sudo ls -alh /var/lib/clickhouse/data/default/table_ttl2/</span><br><span class="line">总用量 39K</span><br><span class="line">drwxr-x--- 6 clickhouse clickhouse  7 10月 21 14:46 .</span><br><span class="line">drwxr-x--- 3 clickhouse clickhouse  3 10月 21 11:11 ..</span><br><span class="line">drwxr-x--- 2 clickhouse clickhouse 12 10月 21 14:46 all_11_11_0</span><br><span class="line">drwxr-x--- 2 clickhouse clickhouse 12 10月 21 14:46 all_12_12_0</span><br><span class="line">drwxr-x--- 2 clickhouse clickhouse 12 10月 21 14:46 all_13_13_0</span><br><span class="line">drwxr-x--- 2 clickhouse clickhouse  2 10月 21 11:11 detached</span><br><span class="line">-rw-r----- 1 clickhouse clickhouse  1 10月 21 11:11 format_version.txt</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">fenixs :) <span class="keyword">select</span> path <span class="keyword">from</span> system.parts <span class="keyword">where</span> <span class="keyword">table</span> <span class="operator">=</span> <span class="string">&#x27;table_ttl2&#x27;</span> \G;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> path</span><br><span class="line"><span class="keyword">FROM</span> system.parts</span><br><span class="line"><span class="keyword">WHERE</span> <span class="keyword">table</span> <span class="operator">=</span> <span class="string">&#x27;table_ttl2&#x27;</span></span><br><span class="line"></span><br><span class="line">Query id: <span class="number">6448</span>ae48<span class="number">-7</span>cef<span class="number">-4</span>cf2<span class="number">-9</span>fc5<span class="number">-1701207</span>d4be4</span><br><span class="line"></span><br><span class="line"><span class="type">Row</span> <span class="number">1</span>:</span><br><span class="line">──────</span><br><span class="line">path: <span class="operator">/</span>var<span class="operator">/</span>lib<span class="operator">/</span>clickhouse<span class="operator">/</span>store<span class="operator">/</span>d90<span class="operator">/</span>d90e89a7<span class="number">-544</span>b<span class="number">-4</span>bf5<span class="operator">-</span>a143<span class="number">-505</span>c103003aa<span class="operator">/</span>all_11_11_0<span class="operator">/</span></span><br><span class="line"></span><br><span class="line"><span class="type">Row</span> <span class="number">2</span>:</span><br><span class="line">──────</span><br><span class="line">path: <span class="operator">/</span>var<span class="operator">/</span>lib<span class="operator">/</span>clickhouse<span class="operator">/</span>store<span class="operator">/</span>d90<span class="operator">/</span>d90e89a7<span class="number">-544</span>b<span class="number">-4</span>bf5<span class="operator">-</span>a143<span class="number">-505</span>c103003aa<span class="operator">/</span>all_12_12_0<span class="operator">/</span></span><br><span class="line"></span><br><span class="line"><span class="type">Row</span> <span class="number">3</span>:</span><br><span class="line">──────</span><br><span class="line">path: <span class="operator">/</span>var<span class="operator">/</span>lib<span class="operator">/</span>clickhouse<span class="operator">/</span>store<span class="operator">/</span>d90<span class="operator">/</span>d90e89a7<span class="number">-544</span>b<span class="number">-4</span>bf5<span class="operator">-</span>a143<span class="number">-505</span>c103003aa<span class="operator">/</span>all_13_13_0<span class="operator">/</span></span><br><span class="line"></span><br><span class="line"><span class="number">3</span> <span class="keyword">rows</span> <span class="keyword">in</span> set. Elapsed: <span class="number">0.002</span> sec.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="删除-x2F-更新分区"><a href="#删除-x2F-更新分区" class="headerlink" title="删除&#x2F;更新分区"></a>删除&#x2F;更新分区</h3><p>删除分区</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tb_name <span class="keyword">DROP</span> <span class="keyword">PARTITION</span> partition_expr</span><br></pre></td></tr></table></figure>
+
+<p>替换分区</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ALTER TABLE B REPLACE PARTITION partition_expr FROM A</span><br></pre></td></tr></table></figure>
+<h3 id="卸载-x2F-装载"><a href="#卸载-x2F-装载" class="headerlink" title="卸载&#x2F;装载"></a>卸载&#x2F;装载</h3><p>执行卸载DETACH，执行后其数据会被转移到detached目录下，每个mergeTree表目录下都包含这个目录，这个目录下的文件不被clickhouse管理，这个功能长用于备份恢复数据</p>
+<p>卸载</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tb_name DETACH <span class="keyword">PARTITION</span> partition_expr</span><br></pre></td></tr></table></figure>
+
+<p>装载</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> tb_name ATTACH <span class="keyword">PARTITION</span> partition_exp</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="数据的增删改"><a href="#数据的增删改" class="headerlink" title="数据的增删改"></a>数据的增删改</h3><h4 id="insert"><a href="#insert" class="headerlink" title="insert"></a>insert</h4><p>插入数据的几种方式</p>
+<ol>
+<li><p>insert into … values (),(),()…</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">INSERT</span> <span class="keyword">INTO</span> [<span class="keyword">TABLE</span>] [db.]<span class="keyword">table</span> [(c1, c2, c3)] <span class="keyword">VALUES</span> (v11, v12, v13), (v21, v22, v23), ...</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>insert into … from …</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">INSERT INTO [db.]table [(c1, c2, c3)] FORMAT format_name data_set</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>insert into … select …</p>
+</li>
+</ol>
+<h4 id="update-x2F-delete"><a href="#update-x2F-delete" class="headerlink" title="update&#x2F;delete"></a>update&#x2F;delete</h4><p>update</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> [db.]<span class="keyword">table</span> <span class="keyword">UPDATE</span> column1 <span class="operator">=</span> expr1 [, ...] <span class="keyword">WHERE</span> filter_expr</span><br></pre></td></tr></table></figure>
+
+<p>delete</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> [db.]<span class="keyword">table</span> [<span class="keyword">ON</span> CLUSTER cluster] <span class="keyword">DELETE</span> <span class="keyword">WHERE</span> filter_expr</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>为什么这里有<code>ALTER TABLE</code> ,官方文档表示这是为了语义刻意设计的：</p>
+<pre><code>ALTER TABLE 的前缀使这个语法与其他大多数支持SQL的系统不同。它的目的是表明，与OLTP数据库中的类似查询不同，这是一个繁重的操作，不是为频繁使用而设计。
+</code></pre>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/clickhouse-2/" title="Clickhouse学习笔记 二">https://fenixc9.github.io/clickhouse-2/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Clickhouse/" rel="tag"># Clickhouse</a>
+              <a href="/tags/Database/" rel="tag"># Database</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/click-house-1/" rel="prev" title="Clickhouse学习笔记 一">
+      <i class="fa fa-chevron-left"></i> Clickhouse学习笔记 一
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/clickhouse-3/" rel="next" title="Clickhouse学习笔记 三">
+      Clickhouse学习笔记 三 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">1.</span> <span class="nav-text">部署数据集</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%8B%E8%BD%BD%E5%B9%B6%E8%A7%A3%E5%8E%8B%E6%95%B0%E6%8D%AE%E9%9B%86"><span class="nav-number">1.1.</span> <span class="nav-text">下载并解压数据集</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%9B%E5%BB%BA%E8%A1%A8"><span class="nav-number">1.2.</span> <span class="nav-text">创建表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E5%85%A5%E6%95%B0%E6%8D%AE"><span class="nav-number">1.3.</span> <span class="nav-text">插入数据</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.</span> <span class="nav-text">数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E5%80%BC%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.1.</span> <span class="nav-text">数值类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E5%9E%8B"><span class="nav-number">2.1.1.</span> <span class="nav-text">整型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%AE%E7%82%B9"><span class="nav-number">2.1.2.</span> <span class="nav-text">浮点</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="nav-number">2.2.</span> <span class="nav-text">字符串</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#String"><span class="nav-number">2.2.1.</span> <span class="nav-text">String</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#FixString"><span class="nav-number">2.2.2.</span> <span class="nav-text">FixString</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#UUID"><span class="nav-number">2.2.3.</span> <span class="nav-text">UUID</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%B6%E9%97%B4"><span class="nav-number">2.3.</span> <span class="nav-text">时间</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#DateTime"><span class="nav-number">2.3.1.</span> <span class="nav-text">DateTime</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#DateTime64"><span class="nav-number">2.3.2.</span> <span class="nav-text">DateTime64</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Date"><span class="nav-number">2.3.3.</span> <span class="nav-text">Date</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%8D%E5%90%88%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.4.</span> <span class="nav-text">复合类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E7%BB%84"><span class="nav-number">2.4.1.</span> <span class="nav-text">数组</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Tuple"><span class="nav-number">2.4.2.</span> <span class="nav-text">Tuple</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Enum"><span class="nav-number">2.4.3.</span> <span class="nav-text">Enum</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Nested"><span class="nav-number">2.4.4.</span> <span class="nav-text">Nested</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%89%B9%E6%AE%8A%E7%B1%BB%E5%9E%8B"><span class="nav-number">2.5.</span> <span class="nav-text">特殊类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Nullable"><span class="nav-number">2.5.1.</span> <span class="nav-text">Nullable</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#IPV4-IPV6"><span class="nav-number">2.5.2.</span> <span class="nav-text">IPV4 IPV6</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E5%BC%95%E6%93%8E"><span class="nav-number">3.</span> <span class="nav-text">数据库引擎</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A1%A8%E5%BC%95%E6%93%8E"><span class="nav-number">4.</span> <span class="nav-text">表引擎</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#MergeTree"><span class="nav-number">4.1.</span> <span class="nav-text">MergeTree</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%8C%BA%E9%94%AE"><span class="nav-number">4.1.1.</span> <span class="nav-text">分区键</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#PartitionId"><span class="nav-number">4.1.1.1.</span> <span class="nav-text">PartitionId</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#blockNum"><span class="nav-number">4.1.1.2.</span> <span class="nav-text">blockNum</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%A0%E9%99%A4-x2F-%E6%9B%B4%E6%96%B0%E5%88%86%E5%8C%BA"><span class="nav-number">4.1.2.</span> <span class="nav-text">删除&#x2F;更新分区</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8D%B8%E8%BD%BD-x2F-%E8%A3%85%E8%BD%BD"><span class="nav-number">4.1.3.</span> <span class="nav-text">卸载&#x2F;装载</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%9A%84%E5%A2%9E%E5%88%A0%E6%94%B9"><span class="nav-number">4.1.4.</span> <span class="nav-text">数据的增删改</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#insert"><span class="nav-number">4.1.4.1.</span> <span class="nav-text">insert</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#update-x2F-delete"><span class="nav-number">4.1.4.2.</span> <span class="nav-text">update&#x2F;delete</span></a></li></ol></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'bf3171aef507874f725f7aa8c62053a3',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

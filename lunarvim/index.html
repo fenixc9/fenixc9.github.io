@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="有时我们会觉得VSCode还不够快，想尝试下neovim，但是又被其繁杂的配置劝退。这时可以尝试下lunarvim，一套开箱即用的neovim配置。是懒得折腾又想尝试neovim的人的福音。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lunarvim + neovide的炫酷开发环境">
+<meta property="og:url" content="https://fenixc9.github.io/lunarvim/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="有时我们会觉得VSCode还不够快，想尝试下neovim，但是又被其繁杂的配置劝退。这时可以尝试下lunarvim，一套开箱即用的neovim配置。是懒得折腾又想尝试neovim的人的福音。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/4.gif">
+<meta property="article:published_time" content="2023-02-11T16:45:52.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.159Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="vim">
+<meta property="article:tag" content="ide">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/lunarvim/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/lunarvim/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>lunarvim + neovide的炫酷开发环境 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/lunarvim/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          lunarvim + neovide的炫酷开发环境
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-02-12 00:45:52" itemprop="dateCreated datePublished" datetime="2023-02-12T00:45:52+08:00">2023-02-12</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vim/" itemprop="url" rel="index"><span itemprop="name">Vim</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">有时我们会觉得VSCode还不够快，想尝试下neovim，但是又被其繁杂的配置劝退。这时可以尝试下lunarvim，一套开箱即用的neovim配置。是懒得折腾又想尝试neovim的人的福音。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="环境和依赖"><a href="#环境和依赖" class="headerlink" title="环境和依赖"></a>环境和依赖</h1><p>lunarvim 的官方文档：<br><a target="_blank" rel="noopener" href="https://www.lunarvim.org/zh-Hans/docs/installation">https://www.lunarvim.org/zh-Hans/docs/installation</a></p>
+<p>笔者这里是Ubuntu 22</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">fenix@thisway:~$ lsb_release -a</span><br><span class="line">No LSB modules are available.</span><br><span class="line">Distributor ID:	Ubuntu</span><br><span class="line">Description:	Ubuntu 22.04.1 LTS</span><br><span class="line">Release:	22.04</span><br><span class="line">Codename:	jammy</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="1-Neovim"><a href="#1-Neovim" class="headerlink" title="1. Neovim"></a>1. Neovim</h2><p>目前lunarvim要求neovim版本<code>0.8.0</code> 以上。</p>
+<p>在这里可以找到：<br><a target="_blank" rel="noopener" href="https://github.com/neovim/neovim/releases/tag/stable">https://github.com/neovim/neovim/releases/tag/stable</a></p>
+<p>安装deb：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rpm -ivh nvim-linux64.deb</span><br></pre></td></tr></table></figure>
+
+<h2 id="2-rust"><a href="#2-rust" class="headerlink" title="2. rust"></a>2. rust</h2><p>安装依赖rust环境：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">curl --proto &#x27;=https&#x27; --tlsv1.2 -sSf https://sh.rustup.rs | sh</span><br></pre></td></tr></table></figure>
+
+<p>rust默认的中央仓库如果访问较慢，可以在<code>~/.cargo/config</code>中配置一些国内镜像：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">[source.crates-io]</span><br><span class="line">registry = &quot;https://github.com/rust-lang/crates.io-index&quot;</span><br><span class="line"># 指定镜像</span><br><span class="line">replace-with = &#x27;ustc&#x27;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"># 中国科学技术大学</span><br><span class="line">[source.ustc]</span><br><span class="line">registry = &quot;git://mirrors.ustc.edu.cn/crates.io-index&quot;</span><br><span class="line"></span><br><span class="line"># 上海交通大学</span><br><span class="line">[source.sjtu]</span><br><span class="line">registry = &quot;https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index&quot;</span><br><span class="line"></span><br><span class="line"># 清华大学</span><br><span class="line">[source.tuna]</span><br><span class="line">registry = &quot;https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git&quot;</span><br><span class="line"></span><br><span class="line"># rustcc社区</span><br><span class="line">[source.rustcc]</span><br><span class="line">registry = &quot;https://code.aliyun.com/rustcc/crates.io-index.git&quot;</span><br></pre></td></tr></table></figure>
+
+<h2 id="3-安装git-make-gcc-python-pip-node-npm"><a href="#3-安装git-make-gcc-python-pip-node-npm" class="headerlink" title="3. 安装git,make,gcc,python,pip,node,npm"></a>3. 安装git,make,gcc,python,pip,node,npm</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install git build-essential python3 python-pip nodejs npm</span><br></pre></td></tr></table></figure>
+
+<h1 id="安装lunarvim"><a href="#安装lunarvim" class="headerlink" title="安装lunarvim"></a>安装lunarvim</h1><p>执行脚本:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">LV_BRANCH=&#x27;release-1.2/neovim-0.8&#x27; bash &lt;(curl -s https://raw.githubusercontent.com/lunarvim/lunarvim/fc6873809934917b470bff1b072171879899a36b/utils/installer/install.sh)</span><br></pre></td></tr></table></figure>
+
+<p>配置环境变量</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export PATH=/home/fenix/.local/bin:$PATH</span><br><span class="line">alias vim=lvim</span><br></pre></td></tr></table></figure>
+<h2 id="安装字体"><a href="#安装字体" class="headerlink" title="安装字体"></a>安装字体</h2><p>安装最新版nerd-fonts</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget -c https://github.com/ryanoasis/nerd-fonts/releases/download/&#123;版本&#125;/SourceCodePro.zip</span><br></pre></td></tr></table></figure>
+<p>安装字体</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">sudo unzip SourceCodePro -d /usr/share/fonts/SourceCodePro</span><br><span class="line">cd /usr/share/fonts/SourceCodePro</span><br><span class="line">sudo mkfontscale # 生成核心字体信息</span><br><span class="line">sudo mkfontdir # 生成字体文件夹</span><br><span class="line">sudo fc-cache -fv # 刷新系统字体缓存</span><br></pre></td></tr></table></figure>
+<p>为你的终端配置字体为SourceCodePro，lunarvim的emoji和icon就可以正常显示了。</p>
+<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><p>执行vim后 <code>:LvimUpdate</code> 尝试更新插件</p>
+<h2 id="lsp语言插件"><a href="#lsp语言插件" class="headerlink" title="lsp语言插件"></a>lsp语言插件</h2><p><code>:TSInstall </code> 后面接上语言，笔者这里就只安装Rust了。<br>执行</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">:TSInstall rust</span><br></pre></td></tr></table></figure>
+<p>可以看到<br><img src="/lunarvim/1.png" alt="1"></p>
+<p>支持补全和注释显示<br><img src="/lunarvim/2.png" alt="2"></p>
+<p>目前的版本还不支持inlay-hint，我们需要再配置几个插件</p>
+<p>leader键 + L + c</p>
+<p>找到：</p>
+<figure class="highlight lua"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lvim.plugins = &#123;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>添加rust-tools：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">lvim.plugins = &#123;</span><br><span class="line"> &#123;</span><br><span class="line">    &quot;simrat39/rust-tools.nvim&quot;,</span><br><span class="line">    config = function()</span><br><span class="line">      local status_ok, rust_tools = pcall(require, &quot;rust-tools&quot;)</span><br><span class="line">      if not status_ok then</span><br><span class="line">        return</span><br><span class="line">      end</span><br><span class="line"></span><br><span class="line">      local opts = &#123;</span><br><span class="line">        tools = &#123;</span><br><span class="line">          executor = require(&quot;rust-tools/executors&quot;).termopen, -- can be quickfix or termopen</span><br><span class="line">          reload_workspace_from_cargo_toml = true,</span><br><span class="line">          inlay_hints = &#123;</span><br><span class="line">            auto = true,</span><br><span class="line">            only_current_line = false,</span><br><span class="line">            show_parameter_hints = true,</span><br><span class="line">            parameter_hints_prefix = &quot;&lt;-&quot;,</span><br><span class="line">            other_hints_prefix = &quot;=&gt;&quot;,</span><br><span class="line">            max_len_align = false,</span><br><span class="line">            max_len_align_padding = 1,</span><br><span class="line">            right_align = false,</span><br><span class="line">            right_align_padding = 7,</span><br><span class="line">            highlight = &quot;Comment&quot;,</span><br><span class="line">          &#125;,</span><br><span class="line">          hover_actions = &#123;</span><br><span class="line">            border = &#123;</span><br><span class="line">                    &#123; &quot;╭&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;─&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;╮&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;│&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;╯&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;─&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;╰&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">                    &#123; &quot;│&quot;, &quot;FloatBorder&quot; &#125;,</span><br><span class="line">            &#125;,</span><br><span class="line">            auto_focus = true,</span><br><span class="line">          &#125;,</span><br><span class="line">        &#125;,</span><br><span class="line">        server = &#123;</span><br><span class="line">          on_attach = require(&quot;lvim.lsp&quot;).common_on_attach,</span><br><span class="line">          on_init = require(&quot;lvim.lsp&quot;).common_on_init,</span><br><span class="line">          settings = &#123;</span><br><span class="line">            [&quot;rust-analyzer&quot;] = &#123;</span><br><span class="line">              checkOnSave = &#123;</span><br><span class="line">                command = &quot;clippy&quot;</span><br><span class="line">              &#125;</span><br><span class="line">            &#125;</span><br><span class="line">          &#125;,</span><br><span class="line">        &#125;,</span><br><span class="line">      &#125;</span><br><span class="line">      local extension_path = vim.fn.expand &quot;~/&quot; .. &quot;.vscode/extensions/vadimcn.vscode-lldb-1.7.3/&quot;</span><br><span class="line"></span><br><span class="line">      local codelldb_path = extension_path .. &quot;adapter/codelldb&quot;</span><br><span class="line">      local liblldb_path = extension_path .. &quot;lldb/lib/liblldb.dylib&quot;</span><br><span class="line"></span><br><span class="line">      opts.dap = &#123;</span><br><span class="line">              adapter = require(&quot;rust-tools.dap&quot;).get_codelldb_adapter(codelldb_path, liblldb_path),</span><br><span class="line">      &#125;</span><br><span class="line">      rust_tools.setup(opts)</span><br><span class="line">    end,</span><br><span class="line">    ft = &#123; &quot;rust&quot;, &quot;rs&quot; &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>然后hint就可以在右边正常显示了<br><img src="/lunarvim/3.png" alt="3"></p>
+<p>一些Rust用的命令</p>
+<ul>
+<li>运行Rust代码<code>:RustRun</code></li>
+<li>展开宏<code>RustExpandMacro</code></li>
+<li>编译为IR <code>RustEmitIR</code></li>
+</ul>
+<h2 id="其他插件"><a href="#其他插件" class="headerlink" title="其他插件"></a>其他插件</h2><p>此外还有一些比较常用的插件:</p>
+<ol>
+<li>markdown预览<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;iamcco/markdown-preview.nvim&quot;,</span><br><span class="line">  run = &quot;cd app &amp;&amp; npm install&quot;,</span><br><span class="line">  ft = &quot;markdown&quot;,</span><br><span class="line">  config = function()</span><br><span class="line">    vim.g.mkdp_auto_start = 1</span><br><span class="line">  end,</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure></li>
+<li>自动保存<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;Pocco81/auto-save.nvim&quot;,</span><br><span class="line">  config = function()</span><br><span class="line">    require(&quot;auto-save&quot;).setup()</span><br><span class="line">  end,</span><br><span class="line">&#125;,</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h1 id="neovide"><a href="#neovide" class="headerlink" title="neovide"></a>neovide</h1><p>neovide是一个Rust实现的neovim前端，非常炫酷，支持这样的cursor动态效果，丝滑滚动，窗口动画等<br><img src="/lunarvim/4.gif" alt="4"></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>我们这里就不自己编译了，这里下载二进制包</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">https://github.com/neovide/neovide/releases/latest/download/neovide.tar.gz</span><br></pre></td></tr></table></figure>
+<p>解压完成后</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mv neovide /usr/local/bin/</span><br></pre></td></tr></table></figure>
+<p>即可</p>
+<p>然后配置我们的lvim脚本 <code>~/.local/bin/lvim</code><br>最后一行改为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">exec -a lvim neovide 	 &quot;$@&quot; -- -u &quot;$LUNARVIM_BASE_DIR/init.lua&quot;</span><br></pre></td></tr></table></figure>
+<p>即可体验neovide下的lunarvim，直接执行lvim即可。</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>配置可以在这里看到<br><a target="_blank" rel="noopener" href="https://neovide.dev/configuration.html">https://neovide.dev/configuration.html</a><br>这里有完整的配置。配置文件就是lunarvim的配置文件，打开lvim后点<code>leader键 + L + c</code><br>就是config.lua。将配置加到最后即可，目前笔者配置了下面几个:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">--透明度</span><br><span class="line">vim.g.neovide_transparency = 0.9</span><br><span class="line"></span><br><span class="line">-- cursor特效 </span><br><span class="line">vim.g.neovide_cursor_vfx_mode = &quot;railgun&quot;</span><br><span class="line">--vim.g.neovide_cursor_vfx_mode = &quot;ripple&quot;</span><br><span class="line"></span><br><span class="line">-- neovide profile用于查看目前帧数，渲染延迟</span><br><span class="line">vim.g.neovide_profiler=true</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/lunarvim/" title="lunarvim + neovide的炫酷开发环境">https://fenixc9.github.io/lunarvim/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/vim/" rel="tag"># vim</a>
+              <a href="/tags/ide/" rel="tag"># ide</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/minio/" rel="prev" title="开源轻量对象存储minio">
+      <i class="fa fa-chevron-left"></i> 开源轻量对象存储minio
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/directory-tree-in-rust/" rel="next" title="Rust实现的文件目录树">
+      Rust实现的文件目录树 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%AF%E5%A2%83%E5%92%8C%E4%BE%9D%E8%B5%96"><span class="nav-number">1.</span> <span class="nav-text">环境和依赖</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-Neovim"><span class="nav-number">1.1.</span> <span class="nav-text">1. Neovim</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-rust"><span class="nav-number">1.2.</span> <span class="nav-text">2. rust</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-%E5%AE%89%E8%A3%85git-make-gcc-python-pip-node-npm"><span class="nav-number">1.3.</span> <span class="nav-text">3. 安装git,make,gcc,python,pip,node,npm</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%89%E8%A3%85lunarvim"><span class="nav-number">2.</span> <span class="nav-text">安装lunarvim</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85%E5%AD%97%E4%BD%93"><span class="nav-number">2.1.</span> <span class="nav-text">安装字体</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8F%92%E4%BB%B6"><span class="nav-number">2.2.</span> <span class="nav-text">插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lsp%E8%AF%AD%E8%A8%80%E6%8F%92%E4%BB%B6"><span class="nav-number">2.3.</span> <span class="nav-text">lsp语言插件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%85%B6%E4%BB%96%E6%8F%92%E4%BB%B6"><span class="nav-number">2.4.</span> <span class="nav-text">其他插件</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#neovide"><span class="nav-number">3.</span> <span class="nav-text">neovide</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">3.1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">3.2.</span> <span class="nav-text">配置</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'e1e0bbf6cec59871b31cf4c60c7f4a7f',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

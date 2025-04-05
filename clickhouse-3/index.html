@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习目前olap领域炙手可热的明星项目，clickhouse，本篇讨论集群和副本相关">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Clickhouse学习笔记 三">
+<meta property="og:url" content="https://fenixc9.github.io/clickhouse-3/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习目前olap领域炙手可热的明星项目，clickhouse，本篇讨论集群和副本相关">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/clickhouse-3/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/clickhouse-3/2.webp">
+<meta property="article:published_time" content="2023-11-02T07:00:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.131Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Clickhouse">
+<meta property="article:tag" content="Database">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/clickhouse-3/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/clickhouse-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Clickhouse学习笔记 三 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/clickhouse-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Clickhouse学习笔记 三
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-11-02 15:00:26" itemprop="dateCreated datePublished" datetime="2023-11-02T15:00:26+08:00">2023-11-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Clickhouse/" itemprop="url" rel="index"><span itemprop="name">Clickhouse</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">学习目前olap领域炙手可热的明星项目，clickhouse，本篇讨论集群和副本相关</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="partition和shard的区别"><a href="#partition和shard的区别" class="headerlink" title="partition和shard的区别"></a>partition和shard的区别</h1><p>partition和shard在不同的中间件中的概念或多或少略有区别，我们这里只关注这两个概念在clickhouse中的语义：</p>
+<h2 id="分区partition"><a href="#分区partition" class="headerlink" title="分区partition"></a>分区partition</h2><p>表中的数据可以按照指定的字段分区存储，每个分区在文件系统中都是都以目录的形式存在。常用时间字段作为分区字段，数据量大的表可以按照小时分区，数据量小的表可以在按照天分区或者月分区，查询时，使用分区字段作为Where条件，可以有效的过滤掉大量非结果集数据。</p>
+<ul>
+<li>创建分区的方法比较简单，只需要在建表时通过partition by语法指定即可；</li>
+<li>不止可以按某个字段做partition by，还可以支持按任意合法的表达式进行分区操作，比如toYYYYMM()按月做分区；</li>
+<li>支持对partition进行TTL管理，淘汰过期的分区数据；</li>
+<li>插入数据到分区表中时，先会将数据写入到分区目录下的segment文件中，后台程序会自动进行合并，当然也可以通过optimize命令手动触发合并。</li>
+</ul>
+<h2 id="分片shard"><a href="#分片shard" class="headerlink" title="分片shard"></a>分片shard</h2><p>分片则只有在分布式下存在， 一个分片则是一个clickhouse实例，将全量数据水平切分到多个clickhouse实例中提高查询性能。</p>
+<h1 id="副本"><a href="#副本" class="headerlink" title="副本"></a>副本</h1><p>clickhouse的副本同步机制是通过Zookeeper来完成的，包括主副本选举、副本状态感知、操作日志分发、任务队列和BlockID去重判断等。在执行INSERT数据写入、MERGE分区和MUTATION操作的时候，都会涉及与ZooKeeper的通信。但是在通信的过程中，并不会涉及任何表数据的传输，在查询数据的时候也不会访问ZooKeeper，所以不必过于担心ZooKeeper的承载压力。所以我们想使用副本功能必须部署Zookeeper，目前最新的版本clickhouse已经实现了自己的协调器（clickhouse keeper），zk的替代品，我们后面再讨论。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p><img src="/clickhouse-3/1.png" alt="1"><br>大致的原理就是多个节点会在zk中为同一个表配置同一个path，或者说zk的语境中是同一个节点。当某个节点写入操作日志后，另一个节点watch到zk这个事件后，立即去zk拉取操作日志，然后根据操作日志到对应节点拉取数据。</p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><p>我这里就单机docker 3节点配置了。</p>
+<p>首先创建独立的docker network，因为clickhouse默认会使用其主机名注册到zk中，对应docker的主机名如果不在同一个docker network中，是无法通过容器主机名互访的。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker network create clickhouse</span><br></pre></td></tr></table></figure>
+
+<p>docker启动Zookeeper</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --net clickhouse -p 2181:2181 rishabh208/zookeeper:latest</span><br></pre></td></tr></table></figure>
+
+<p>注意，官方镜像较新，不适合clickhouse，这里使用这个3.4的镜像。</p>
+<p>docker启动三个节点的clickhouse</p>
+<p>startup.sh</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">datadir=data1</span><br><span class="line">logdir=log1</span><br><span class="line">configdir=config1</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">8124 8125 8126</span></span><br><span class="line">port_http=8124</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">9001 9002 9003</span></span><br><span class="line">port_tcp=9001</span><br><span class="line"></span><br><span class="line">docker -H 127.0.0.1:2375 run \</span><br><span class="line">        --net clickhouse \</span><br><span class="line">        -d \</span><br><span class="line">        -v /etc/hosts:/etc/hosts:ro  \</span><br><span class="line">        -v /etc/localtime:/etc/localtime:ro \</span><br><span class="line">        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \</span><br><span class="line">        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \</span><br><span class="line">        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \</span><br><span class="line">        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \</span><br><span class="line">        --name &quot;ck-$&#123;datadir&#125;&quot; \</span><br><span class="line">        --ulimit nofile=262144:262144 clickhouse/clickhouse-server</span><br><span class="line"></span><br><span class="line">echo &#x27;节点1启动完毕&#x27;</span><br><span class="line"></span><br><span class="line">datadir=data2</span><br><span class="line">logdir=log2</span><br><span class="line">configdir=config2</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">8124 8125 8126</span></span><br><span class="line">port_http=8125</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">9001 9002 9003</span></span><br><span class="line">port_tcp=9002</span><br><span class="line"></span><br><span class="line">docker -H 127.0.0.1:2375 run \</span><br><span class="line">        --net clickhouse \</span><br><span class="line">        -d \</span><br><span class="line">        -v /etc/hosts:/etc/hosts:ro  \</span><br><span class="line">        -v /etc/localtime:/etc/localtime:ro \</span><br><span class="line">        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \</span><br><span class="line">        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \</span><br><span class="line">        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \</span><br><span class="line">        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \</span><br><span class="line">        --name &quot;ck-$&#123;datadir&#125;&quot; \</span><br><span class="line">        --ulimit nofile=262144:262144 clickhouse/clickhouse-server</span><br><span class="line"></span><br><span class="line">echo &#x27;节点2 启动完毕&#x27;</span><br><span class="line">datadir=data3</span><br><span class="line">logdir=log3</span><br><span class="line">configdir=config3</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">8124 8125 8126</span></span><br><span class="line">port_http=8126</span><br><span class="line"><span class="meta prompt_"># </span><span class="language-bash">9001 9002 9003</span></span><br><span class="line">port_tcp=9003</span><br><span class="line"></span><br><span class="line">docker -H 127.0.0.1:2375 run \</span><br><span class="line">        --net clickhouse \</span><br><span class="line">        -d \</span><br><span class="line">        -v /etc/hosts:/etc/hosts:ro  \</span><br><span class="line">        -v /etc/localtime:/etc/localtime:ro \</span><br><span class="line">        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \</span><br><span class="line">        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \</span><br><span class="line">        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \</span><br><span class="line">        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \</span><br><span class="line">        --name &quot;ck-$&#123;datadir&#125;&quot; \</span><br><span class="line">        --ulimit nofile=262144:262144 clickhouse/clickhouse-server</span><br><span class="line"></span><br><span class="line">echo &#x27;节点3启动完毕&#x27;</span><br></pre></td></tr></table></figure>
+<p>这里启动了三个节点，分别将容器8123映射到主机的8124，8125，8126，将容器9000映射到主机。</p>
+<p>其中 config1 config2 config3 中把clickhouse默认的几个配置放进去</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(base) fenix@fenixs:~/clickhouse$ ls config1/clickhouse-server/</span><br><span class="line">config.d  config.xml  metrika.xml  users.d  users.xml</span><br></pre></td></tr></table></figure>
+
+<p>其中config.xml 下添加如下配置</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">zookeeper</span> <span class="attr">incl</span>=<span class="string">&quot;zookeeper-servers&quot;</span> <span class="attr">optional</span>=<span class="string">&quot;true&quot;</span> /&gt;</span></span><br><span class="line"><span class="tag">&lt;<span class="name">include_from</span>&gt;</span>/etc/clickhouse-server/metrika.xml<span class="tag">&lt;/<span class="name">include_from</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>listen_host改为：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">listen_host</span>&gt;</span>0.0.0.0<span class="tag">&lt;/<span class="name">listen_host</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>metrica.xml中添加</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">yandex</span>&gt;</span></span><br><span class="line">    <span class="comment">&lt;!-- Replicated*MergeTree会用到zk --&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">zookeeper-servers</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">node</span> <span class="attr">index</span>=<span class="string">&quot;1&quot;</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">host</span>&gt;</span>zookeeper<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">port</span>&gt;</span>2181<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">node</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">zookeeper-servers</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">yandex</span>&gt;</span></span><br></pre></td></tr></table></figure>
+
+<p>然后执行<code>sh startup.sh</code> </p>
+<p>在上面的脚本启动的3个节点中，并没有配置任何集群相关的信息，换句话说三个节点除了连接了同一个zk外，是毫无关系的三个独立clickhouse实例。</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>在使用副本时，不需要依赖任何集群配置。ReplicatedMergeTree结合ZooKeeper就能完成全部工作。</p>
+<p>其语法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ENGINE = ReplicatedMergeTree(&#x27;zk_path&#x27;, &#x27;replica_name&#x27;)</span><br></pre></td></tr></table></figure>
+<p>其中zk_path 指定zk中表的路径，replica_name 表明副本的名称。</p>
+<p>zkpath并没有固定规则，<strong>只要能唯一定位一个分片即可</strong>，不过有一些约定俗成的模板。</p>
+<p><code>/clickhouse/tables/&#123;shard&#125;/table_name</code></p>
+<p>这里面指定shard分片，table_name表名。replica_name 中指定副本的名称。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ReplicatedMergeTree(&#x27;/clickhouse/tables/01/test_1, &#x27;01&#x27;)</span><br></pre></td></tr></table></figure>
+
+
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>在节点A上创建表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> replicated_sales_1 (</span><br><span class="line">    id String,</span><br><span class="line">    price Float64,</span><br><span class="line">    create_time DateTime</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/01/replicated_sales_1&#x27;</span>,<span class="string">&#x27;c1&#x27;</span>)</span><br><span class="line"><span class="keyword">partition</span> <span class="keyword">by</span> toYYYYMM(create_time)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id ;</span><br></pre></td></tr></table></figure>
+
+<p>在节点B上创建表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> replicated_sales_1 (</span><br><span class="line">    id String,</span><br><span class="line">    price Float64,</span><br><span class="line">    create_time DateTime</span><br><span class="line">) ENGINE <span class="operator">=</span> ReplicatedMergeTree(<span class="string">&#x27;/clickhouse/tables/01/replicated_sales_1&#x27;</span>,<span class="string">&#x27;c2&#x27;</span>)</span><br><span class="line"><span class="keyword">partition</span> <span class="keyword">by</span> toYYYYMM(create_time)</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id ;</span><br></pre></td></tr></table></figure>
+
+
+<p>在节点A上写入表</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> replicated_sales_1 <span class="keyword">values</span> (<span class="string">&#x27;A222&#x27;</span>,<span class="number">123123</span>,now());</span><br></pre></td></tr></table></figure>
+
+<p>在B节点可以正常看到数据</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> replicated_sales_1;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> replicated_sales_1</span><br><span class="line"></span><br><span class="line">Query id: c88dfc44<span class="operator">-</span>ec15<span class="number">-4850</span><span class="operator">-</span>bfbb<span class="number">-541</span>d36a9cd88</span><br><span class="line"></span><br><span class="line">┌─id───┬──price─┬─────────create_time─┐</span><br><span class="line">│ A222 │ <span class="number">123123</span> │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">03</span>:<span class="number">25</span>:<span class="number">48</span> │</span><br><span class="line">└──────┴────────┴─────────────────────┘</span><br></pre></td></tr></table></figure>
+
+
+<h1 id="集群"><a href="#集群" class="headerlink" title="集群"></a>集群</h1><p>clickhouse的集群并不是某种类似其他中间件的节点级别的全局的，固定的集群关系。clickhouse能够根据可用性，数据分片，性能的需求，自由组合现有节点成为一个集群，这种集群关系可以是局部的。</p>
+<p>比如我们的业务中某些表需要更好的读性能，高可用可以选择其中一部分节点创建多副本集群；另一部分业务表数据量巨大，需要水平切片的，则可以选择一部分节点创建分片集群；也可以创建既分片又副本的集群，总之我们可以任意定义一个集群。这些定义的集群之间的节点可以重叠可以不重叠，只需要保证集群内的节点不重叠即可。</p>
+<p>比如我们配置2节点2副本的集群：</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">ck_2s_2r</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">shard</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">replica</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">host</span>&gt;</span>ch1<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">port</span>&gt;</span>9000<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">replica</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">replica</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">host</span>&gt;</span>ch2<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">port</span>&gt;</span>9000<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">replica</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">shard</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">shard</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">replica</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">host</span>&gt;</span>ch3<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">port</span>&gt;</span>9000<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">replica</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;<span class="name">replica</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">host</span>&gt;</span>ch4<span class="tag">&lt;/<span class="name">host</span>&gt;</span></span><br><span class="line">            <span class="tag">&lt;<span class="name">port</span>&gt;</span>9000<span class="tag">&lt;/<span class="name">port</span>&gt;</span></span><br><span class="line">        <span class="tag">&lt;/<span class="name">replica</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;/<span class="name">shard</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">ck_2s_2r</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<p>共4个节点，查看我们创建的集群：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">select</span> <span class="operator">*</span> <span class="keyword">from</span> system.clusters;</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span></span><br><span class="line">    cluster,</span><br><span class="line">    shard_num,</span><br><span class="line">    shard_weight,</span><br><span class="line">    replica_num,</span><br><span class="line">    host_name</span><br><span class="line"><span class="keyword">FROM</span> system.clusters</span><br><span class="line"></span><br><span class="line">Query id: <span class="number">4624</span>d392<span class="number">-58</span>bc<span class="number">-40</span>ba<span class="operator">-</span>b3a1<span class="number">-8</span>b16354d772b</span><br><span class="line"></span><br><span class="line">┌─cluster──────┬─shard_num─┬─shard_weight─┬─replica_num─┬─host_name────────────────────┐</span><br><span class="line">│ ck_2s_2r     │         <span class="number">1</span> │            <span class="number">1</span> │           <span class="number">1</span> │ <span class="keyword">some</span><span class="operator">-</span>clickhouse<span class="operator">-</span>server<span class="operator">-</span>data1 │</span><br><span class="line">│ ck_2s_2r     │         <span class="number">1</span> │            <span class="number">1</span> │           <span class="number">2</span> │ <span class="keyword">some</span><span class="operator">-</span>clickhouse<span class="operator">-</span>server<span class="operator">-</span>data2 │</span><br><span class="line">│ ck_2s_2r     │         <span class="number">2</span> │            <span class="number">1</span> │           <span class="number">1</span> │ <span class="keyword">some</span><span class="operator">-</span>clickhouse<span class="operator">-</span>server<span class="operator">-</span>data3 │</span><br><span class="line">│ ck_2s_2r     │         <span class="number">2</span> │            <span class="number">1</span> │           <span class="number">2</span> │ <span class="keyword">some</span><span class="operator">-</span>clickhouse<span class="operator">-</span>server<span class="operator">-</span>data4 │</span><br><span class="line">└──────────────┴───────────┴──────────────┴─────────────┴──────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h2 id="ON-CLUSTER语法"><a href="#ON-CLUSTER语法" class="headerlink" title="ON CLUSTER语法"></a>ON CLUSTER语法</h2><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span><span class="operator">/</span><span class="keyword">DROP</span><span class="operator">/</span>RENAME<span class="operator">/</span><span class="keyword">ALTER</span> <span class="keyword">TABLE</span> <span class="keyword">ON</span> CLUSTER cluster_name</span><br></pre></td></tr></table></figure>
+<p>可以在集群上所有的节点建表</p>
+<p>比如我们可以在每个节点上创建一个MergeTree</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> test_001 <span class="keyword">on</span> cluster ck_2s_2r (id String,<span class="type">date</span> DateTime) engine MergeTree <span class="keyword">order</span> <span class="keyword">by</span> id;</span><br></pre></td></tr></table></figure>
+
+<p>然后就在集群上每个节点创建一个MergeTree，本质上跟你手动在每个节点上执行create table 创建MergeTree是同样的效果。</p>
+<p>同样我们可以在集群中创建</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">CREATE TABLE test_003 ON CLUSTER ck_2s_2r</span><br><span class="line">(</span><br><span class="line">    `id` String,</span><br><span class="line">    `date` DateTime</span><br><span class="line">)</span><br><span class="line">ENGINE = ReplicatedMergeTree(&#x27;/clickhouse/tables/&#123;shard&#125;/test_003&#x27;, &#x27;&#123;replica&#125;&#x27;)</span><br><span class="line">ORDER BY id</span><br></pre></td></tr></table></figure>
+
+<p>注意这里需要我们在每个节点的metrica.xml 中配置宏</p>
+<figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">macros</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">layer</span>&gt;</span>ck_2s_2r<span class="tag">&lt;/<span class="name">layer</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">shard</span>&gt;</span>1<span class="tag">&lt;/<span class="name">shard</span>&gt;</span></span><br><span class="line">  <span class="tag">&lt;<span class="name">replica</span>&gt;</span>1<span class="tag">&lt;/<span class="name">replica</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">macros</span>&gt;</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>使用宏来指定zkpath是和我们前面集群定义的分片没有关系的，如果想用上我们前面配置的集群分片和副本。可以这样：</p>
+<p>把database创建到对应集群上</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> database ck_2s_2r <span class="keyword">on</span> cluster ck_2s_2r;</span><br></pre></td></tr></table></figure>
+<p>然后就可以直接免配置zkpath创建ReplicatedMergeTree了</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE</span> <span class="keyword">TABLE</span> ck_2s_2r.test_001 <span class="keyword">ON</span> CLUSTER ck_2s_2r</span><br><span class="line">(</span><br><span class="line">    `id` String,</span><br><span class="line">    `<span class="type">date</span>` DateTime</span><br><span class="line">)</span><br><span class="line">ENGINE <span class="operator">=</span> ReplicatedMergeTree</span><br><span class="line"><span class="keyword">ORDER</span> <span class="keyword">BY</span> id</span><br></pre></td></tr></table></figure>
+
+<p>此时我们ck1 和 ck2 互为副本，ck3 和 ck4互为副本，我们给1插数据2会同步，给3插数据4会同步。</p>
+<h2 id="分布式表"><a href="#分布式表" class="headerlink" title="分布式表"></a>分布式表</h2><p>到目前为止，我们的2s2r分片副本表还是本地表，链接1节点无法看到3节点的数据。这里我们可以创建分布式表，为我们的分片副本表创建一个视图。</p>
+<p>规则如下</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ENGINE <span class="operator">=</span> Distributed(cluster, database, <span class="keyword">table</span> [,sharding_key])</span><br></pre></td></tr></table></figure>
+
+<p>这里table是对应要代理的本地表</p>
+<p>我们创建:</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> ck_2s_2r.test_001_all <span class="keyword">on</span> cluster ck_2s_2r (id String,<span class="type">date</span> DateTime) engine Distributed (<span class="string">&#x27;ck_2s_2r&#x27;</span>,<span class="string">&#x27;ck_2s_2r&#x27;</span>,<span class="string">&#x27;test_001&#x27;</span>,rand());</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>到on cluster上，意味着集群所有节点都能访问到分布式表。<br>分布式表支持insert select</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">aad19fa35aa0 :) <span class="keyword">insert</span> <span class="keyword">into</span> ck_2s_2r.test_001_all <span class="keyword">values</span> (<span class="string">&#x27;3A&#x27;</span>,now()),(<span class="string">&#x27;4B&#x27;</span>,now()),(<span class="string">&#x27;5C&#x27;</span>,now());</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">aad19fa35aa0 :) <span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> ck_2s_2r.test_001_all</span><br><span class="line"></span><br><span class="line"><span class="keyword">SELECT</span> <span class="operator">*</span></span><br><span class="line"><span class="keyword">FROM</span> ck_2s_2r.test_001_all</span><br><span class="line"></span><br><span class="line">Query id: <span class="number">59</span>f73ffa<span class="operator">-</span>f221<span class="number">-480</span>c<span class="operator">-</span>af8c<span class="operator">-</span>ce7c9a4765e5</span><br><span class="line"></span><br><span class="line">┌─id─┬────────────────<span class="type">date</span>─┐</span><br><span class="line">│ <span class="number">3</span>A │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">33</span>:<span class="number">41</span> │</span><br><span class="line">│ <span class="number">4</span>B │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">33</span>:<span class="number">41</span> │</span><br><span class="line">│ <span class="number">5</span>C │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">33</span>:<span class="number">41</span> │</span><br><span class="line">└────┴─────────────────────┘</span><br><span class="line">┌─id───┬────────────────<span class="type">date</span>─┐</span><br><span class="line">│ <span class="number">123</span>A │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">30</span>:<span class="number">10</span> │</span><br><span class="line">│ <span class="number">234</span>B │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">30</span>:<span class="number">10</span> │</span><br><span class="line">│ a1   │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">30</span>:<span class="number">10</span> │</span><br><span class="line">└──────┴─────────────────────┘</span><br><span class="line">┌─id─┬────────────────<span class="type">date</span>─┐</span><br><span class="line">│ <span class="number">3</span>A │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">46</span>:<span class="number">25</span> │</span><br><span class="line">│ <span class="number">4</span>B │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">46</span>:<span class="number">25</span> │</span><br><span class="line">│ <span class="number">5</span>C │ <span class="number">2023</span><span class="number">-11</span><span class="number">-05</span> <span class="number">16</span>:<span class="number">46</span>:<span class="number">25</span> │</span><br><span class="line">└────┴─────────────────────┘</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h3 id="分布式表的原理"><a href="#分布式表的原理" class="headerlink" title="分布式表的原理"></a>分布式表的原理</h3><p>查询节点接受到Distributed表的select查询后，会将其转换为对每个子节点的查询，然后向每个子节点发起查询，然后汇总结果。</p>
+<h2 id="环形复制"><a href="#环形复制" class="headerlink" title="环形复制"></a>环形复制</h2><p>clickhouse原生并不支持环型复制（Circular Replication），所谓环形复制就是：比如在3个节点上实现3分片2副本<br><img src="/clickhouse-3/2.webp" alt="2"></p>
+<p>这种拓扑结构每个节点保存2个shard————即2&#x2F;3的数据，并且能容忍1个节点离线。</p>
+<p>对于原生clickhouse 集群如果想实现3分片2副本则至少需要6个节点，但是有一些hack方式可以解决这个问题。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/ClickHouse/ClickHouse/issues/7611">https://github.com/ClickHouse/ClickHouse/issues/7611</a></p>
+<p>这里可以看到den-crane并不推荐环形复制，“Personally I don’t recommend this schema because second replicas kill performance (they use cache &#x2F; I&#x2F;O&#x2F; CPU).” 这种方式会对性能造成影响，clickhouse并未对这种拓扑做优化，某些情况下会导致查询本应分摊到多个节点的计算落到同一节点。</p>
+<p>知乎这里有个博主写的使用default_database的方案实现环形复制。</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/461792873">https://zhuanlan.zhihu.com/p/461792873</a></p>
+<p>他的这个方案中的模式使用default_database来区分同一个节点上的两个分片，但是这种方式需要手动指定zk_path 而不能更为智能的使用on cluster语法。</p>
+<p>对于生产环境部署，使用每节点一分片，节点数等于分片数乘副本数更为可靠。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/clickhouse-3/" title="Clickhouse学习笔记 三">https://fenixc9.github.io/clickhouse-3/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Clickhouse/" rel="tag"># Clickhouse</a>
+              <a href="/tags/Database/" rel="tag"># Database</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/clickhouse-2/" rel="prev" title="Clickhouse学习笔记 二">
+      <i class="fa fa-chevron-left"></i> Clickhouse学习笔记 二
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/neo4j-01/" rel="next" title="Neo4j学习笔记 一">
+      Neo4j学习笔记 一 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#partition%E5%92%8Cshard%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">1.</span> <span class="nav-text">partition和shard的区别</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%8C%BApartition"><span class="nav-number">1.1.</span> <span class="nav-text">分区partition</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E7%89%87shard"><span class="nav-number">1.2.</span> <span class="nav-text">分片shard</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%89%AF%E6%9C%AC"><span class="nav-number">2.</span> <span class="nav-text">副本</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.1.</span> <span class="nav-text">原理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E8%B7%B5"><span class="nav-number">2.2.</span> <span class="nav-text">实践</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE"><span class="nav-number">2.2.1.</span> <span class="nav-text">配置</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">2.2.2.</span> <span class="nav-text">测试</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%9B%86%E7%BE%A4"><span class="nav-number">3.</span> <span class="nav-text">集群</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#ON-CLUSTER%E8%AF%AD%E6%B3%95"><span class="nav-number">3.1.</span> <span class="nav-text">ON CLUSTER语法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%A1%A8"><span class="nav-number">3.2.</span> <span class="nav-text">分布式表</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%86%E5%B8%83%E5%BC%8F%E8%A1%A8%E7%9A%84%E5%8E%9F%E7%90%86"><span class="nav-number">3.2.1.</span> <span class="nav-text">分布式表的原理</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%8E%AF%E5%BD%A2%E5%A4%8D%E5%88%B6"><span class="nav-number">3.3.</span> <span class="nav-text">环形复制</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '66c96c9824f269dcbf947b53e5569539',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

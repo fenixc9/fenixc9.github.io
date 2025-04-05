@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="GNS3是一个非常好用的开源模拟器，支持Linux平台">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Ubuntu内安装开源网络模拟器GNS3">
+<meta property="og:url" content="https://fenixc9.github.io/gns3/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="GNS3是一个非常好用的开源模拟器，支持Linux平台">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/7.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/6.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/8.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/9.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/10.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/11.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/12.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/13.png">
+<meta property="og:image" content="https://fenixc9.github.io/gns3/15.png">
+<meta property="article:published_time" content="2023-04-28T14:21:05.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.142Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="网络">
+<meta property="article:tag" content="模拟">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/gns3/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/gns3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Ubuntu内安装开源网络模拟器GNS3 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/gns3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Ubuntu内安装开源网络模拟器GNS3
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-28 22:21:05" itemprop="dateCreated datePublished" datetime="2023-04-28T22:21:05+08:00">2023-04-28</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%BD%91%E7%BB%9C/" itemprop="url" rel="index"><span itemprop="name">网络</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">GNS3是一个非常好用的开源模拟器，支持Linux平台</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>我这里安装架构为Ubuntu GNS3桌面端 + Virtulbox后端。</p>
+<p>首先安装Ubuntu 桌面端。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update</span><br><span class="line">sudo apt upgrade</span><br><span class="line">sudo apt install apt-transport-https ca-certificates curl software-properties-common</span><br><span class="line">sudo add-apt-repository ppa:gns3/ppa</span><br><span class="line">sudo apt update</span><br><span class="line">sudo apt install gns3-gui gns3-server</span><br></pre></td></tr></table></figure>
+
+<p>然后安装后端<br><a target="_blank" rel="noopener" href="https://github.com/GNS3/gns3-gui/releases/tag/v2.2.38">https://github.com/GNS3/gns3-gui/releases/tag/v2.2.38</a><br>这里找到virtualbox版下载，下载后打开virtualbox导入虚拟电脑即可。</p>
+<p>启动GNS3 前端，选择Run Application on virtual machine。<br><img src="/gns3/1.png" alt="1"><br>选择我们刚刚导入的虚拟机<code>GNS3 VM</code>。</p>
+<h2 id="安装L2-L3-IOS"><a href="#安装L2-L3-IOS" class="headerlink" title="安装L2 L3 IOS"></a>安装L2 L3 IOS</h2><p>目前只能加自带的交换机，VPC，Cloud等节点。想加L2 L3设备要去这里下载镜像<br><a target="_blank" rel="noopener" href="https://networkrare.com/download-cisco-iou-iol-images-gns3-gns3-iou-vm-oracle-virtual-box-l2-l3-cisco-switch-images/">https://networkrare.com/download-cisco-iou-iol-images-gns3-gns3-iou-vm-oracle-virtual-box-l2-l3-cisco-switch-images/</a></p>
+<p>我这里是L2 L3各选了个。选择方法详细参考cisco文档，这里不展开。<br>在Edit -&gt; Preference 中选择IOU Devices<br><img src="/gns3/2.png" alt="2"><br>我这里已经加过了两个设备，如果要新加设备点击New<br><img src="/gns3/3.png" alt="3"><br>选择Run this IOU devices on the GNS3 VM<br><img src="/gns3/4.png" alt="4"><br>导入我们下载的IOS镜像，他会自动识别出是L2还是L3的镜像。</p>
+<p>然后cisco的设备需要加license</p>
+<h2 id="cisco-keygen配置方式"><a href="#cisco-keygen配置方式" class="headerlink" title="cisco keygen配置方式"></a>cisco keygen配置方式</h2><p>配置方式，原文这里 <a target="_blank" rel="noopener" href="https://www.systemconf.com/2019/01/03/generate-cisco-iourc-license-key-on-gns3-vm-using-python-3/">https://www.systemconf.com/2019/01/03/generate-cisco-iourc-license-key-on-gns3-vm-using-python-3/</a></p>
+<p>登录到我们刚导入的Virtulbox中，点击shell执行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">wget http://www.ipvanquish.com/download/CiscoIOUKeygen3f.py</span><br><span class="line">python3 CiscoIOUKeygen3f.py</span><br></pre></td></tr></table></figure>
+<p>然后将生成的内容保存到~&#x2F;.iourc中即可。</p>
+<p>点击这里就能看到我们刚加的设备<br><img src="/gns3/7.png" alt="7"></p>
+<h2 id="静态路由实验"><a href="#静态路由实验" class="headerlink" title="静态路由实验"></a>静态路由实验</h2><h4 id="打开端口显示"><a href="#打开端口显示" class="headerlink" title="打开端口显示"></a>打开端口显示</h4><p><img src="/gns3/6.png" alt="6"></p>
+<p>这个点开就能显示交换机的端口。</p>
+<h4 id="添加笔记"><a href="#添加笔记" class="headerlink" title="添加笔记"></a>添加笔记</h4><p><img src="/gns3/5.png" alt="5"></p>
+<p>可以把我们配置的ip写在设备边上</p>
+<p>首先添加L2设备，然后创建两个pvc，并选择下面的网线将他们链接起来。</p>
+<p><img src="/gns3/8.png" alt="8"></p>
+<p>两个pc通过L2设备链接：<br>右键点PC1和PC2 点击 <code>edit config</code>  可以在PC启动后启动执行命令，我们可以配置ip。<br>PC1配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip 10.1.1.2/24 10.1.1.1</span><br></pre></td></tr></table></figure>
+<p>PC2配置:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ip 10.1.1.3/24 10.1.1.1</span><br></pre></td></tr></table></figure>
+
+<p>在PC1上ping PC2</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ping 10.1.1.3</span><br></pre></td></tr></table></figure>
+<p>可以ping通。符合我们的预期，因为我们配置的两台PC在同一个网络id中，此时虽然配置了网关，但是实际上并不需要网关的存在，因为同L2网络内可以直接发起arp广播询问目标ip的mac地址。</p>
+<h2 id="开启抓包"><a href="#开启抓包" class="headerlink" title="开启抓包"></a>开启抓包</h2><p>选择需要抓包的线路，右键start capture</p>
+<p><img src="/gns3/9.png" alt="9"></p>
+<p>对着我们添加的网线点击右键 start capture 这时会唤起wireshark。如果你是Ubuntu可能会和我一样遇到 permission deny。 需执行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo usermod -a -G wireshark $USER</span><br></pre></td></tr></table></figure>
+
+<p>然后重启就可以了。<br>一切正常后就能看到Wireshark被唤醒并开始抓包。</p>
+<p><img src="/gns3/10.png" alt="10"></p>
+<p>假如我们ping一个同子网没有配置的ip 10.1.1.99，就会看到arp广播，Who has 在查询这个ip<br>100	148.839056	Private_66:68:01	Broadcast	ARP	64	Who has 10.1.1.99? Tell 10.1.1.3</p>
+<p><img src="/gns3/11.png" alt="11"></p>
+<p>假如在同一交换机配置了不同子网的ip，比如我这边加了PC5 10.4.4.4&#x2F;24。我们在PC1 ping PC5。</p>
+<p><img src="/gns3/12.png" alt="12"></p>
+<p>这里可以看到访问非子网的这是去找网关了，由于我们路由10.1.1.1尚未配置。这里配置下。</p>
+<p><img src="/gns3/13.png" alt="13"></p>
+<p>添加路由后配置方法为：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">conf t</span><br><span class="line">int e0/0</span><br><span class="line">int 10.1.1.1 255.255.255.0</span><br><span class="line">no shutdown</span><br></pre></td></tr></table></figure>
+
+<p><img src="/gns3/15.png" alt="15"></p>
+<p>此时已经能通网关，所以访问另一个子网的地址也能走到网关了。</p>
+<p>也可以使用PC环境下的trace功能查看这个过程</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PC2&gt; trace 10.4.4.4</span><br><span class="line">trace to 10.4.4.4, 8 hops max, press Ctrl+C to stop</span><br><span class="line"> 1   10.1.1.1   0.575 ms  0.192 ms  0.163 ms</span><br><span class="line"> 2   *10.1.1.1   0.224 ms (ICMP type:3, code:1, Destination host unreachable)</span><br><span class="line"></span><br><span class="line">PC2&gt; </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/gns3/" title="Ubuntu内安装开源网络模拟器GNS3">https://fenixc9.github.io/gns3/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E7%BD%91%E7%BB%9C/" rel="tag"># 网络</a>
+              <a href="/tags/%E6%A8%A1%E6%8B%9F/" rel="tag"># 模拟</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-existential-type/" rel="prev" title="如何理解existential types">
+      <i class="fa fa-chevron-left"></i> 如何理解existential types
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/py-sci-01/" rel="next" title="学习python数据分析 一 Jupyterlab">
+      学习python数据分析 一 Jupyterlab <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85L2-L3-IOS"><span class="nav-number">2.</span> <span class="nav-text">安装L2 L3 IOS</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#cisco-keygen%E9%85%8D%E7%BD%AE%E6%96%B9%E5%BC%8F"><span class="nav-number">3.</span> <span class="nav-text">cisco keygen配置方式</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%9D%99%E6%80%81%E8%B7%AF%E7%94%B1%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">静态路由实验</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%89%93%E5%BC%80%E7%AB%AF%E5%8F%A3%E6%98%BE%E7%A4%BA"><span class="nav-number">4.0.1.</span> <span class="nav-text">打开端口显示</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%BB%E5%8A%A0%E7%AC%94%E8%AE%B0"><span class="nav-number">4.0.2.</span> <span class="nav-text">添加笔记</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%80%E5%90%AF%E6%8A%93%E5%8C%85"><span class="nav-number">5.</span> <span class="nav-text">开启抓包</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'b9f9ff4aaf4c589fb1d7333cb93a375a',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习python数据分析系列，本篇学习基于numpy的框架pandas">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习python数据分析 四 pandas (1)">
+<meta property="og:url" content="https://fenixc9.github.io/py-sci-04/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习python数据分析系列，本篇学习基于numpy的框架pandas">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-05-06T13:15:38.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.179Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="pandas">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/py-sci-04/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>学习python数据分析 四 pandas (1) | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/py-sci-04/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          学习python数据分析 四 pandas (1)
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-06 21:15:38" itemprop="dateCreated datePublished" datetime="2023-05-06T21:15:38+08:00">2023-05-06</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/python/" itemprop="url" rel="index"><span itemprop="name">python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">学习python数据分析系列，本篇学习基于numpy的框架pandas</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Pandas是使用Python语言开发的用于数据处理和数据分析的第三方库。它擅长处理数字型数据和时间序列数据，当然文本型的数据也能轻松处理。</p>
+<p>Pandas由Wes McKinney于2008年开发。McKinney当时在纽约的一家金融服务机构工作，金融数据分析需要一个健壮和超快速的数据分析<br>工具，于是他就开发出了Pandas。Pandas的命名跟熊猫无关，而是来自计量经济学中的术语“面板数据”（Panel data）。</p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pip install pandas xlrd openpyxl</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="数据结构"><a href="#数据结构" class="headerlink" title="数据结构"></a>数据结构</h2><ol>
+<li>Series<br>一系列数据</li>
+<li>DataFrame</li>
+</ol>
+<h2 id="加载数据"><a href="#加载数据" class="headerlink" title="加载数据"></a>加载数据</h2><p>pandas支持多种数据源，包括excel，csv，html，sql等。这里我们加载一个学生成绩的样本数据。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> pandas <span class="keyword">as</span> pd</span><br><span class="line">df = pd.read_excel(<span class="string">&#x27;https://www.gairuo.com/file/data/dataset/team.xlsx&#x27;</span>)</span><br><span class="line">df</span><br><span class="line"></span><br><span class="line">	name	team	Q1	Q2	Q3	Q4</span><br><span class="line"><span class="number">0</span>	Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line"><span class="number">1</span>	Arry	C	<span class="number">36</span>	<span class="number">37</span>	<span class="number">37</span>	<span class="number">57</span></span><br><span class="line"><span class="number">2</span>	Ack	A	<span class="number">57</span>	<span class="number">60</span>	<span class="number">18</span>	<span class="number">84</span></span><br><span class="line"><span class="number">3</span>	Eorge	C	<span class="number">93</span>	<span class="number">96</span>	<span class="number">71</span>	<span class="number">78</span></span><br><span class="line"><span class="number">4</span>	Oah	D	<span class="number">65</span>	<span class="number">49</span>	<span class="number">61</span>	<span class="number">86</span></span><br><span class="line">...	...	...	...	...	...	...</span><br><span class="line"><span class="number">95</span>	Gabriel	C	<span class="number">48</span>	<span class="number">59</span>	<span class="number">87</span>	<span class="number">74</span></span><br><span class="line"><span class="number">96</span>	Austin7	C	<span class="number">21</span>	<span class="number">31</span>	<span class="number">30</span>	<span class="number">43</span></span><br><span class="line"><span class="number">97</span>	Lincoln4	C	<span class="number">98</span>	<span class="number">93</span>	<span class="number">1</span>	<span class="number">20</span></span><br><span class="line"><span class="number">98</span>	Eli	E	<span class="number">11</span>	<span class="number">74</span>	<span class="number">58</span>	<span class="number">91</span></span><br><span class="line"><span class="number">99</span>	Ben	E	<span class="number">21</span>	<span class="number">43</span>	<span class="number">41</span>	<span class="number">74</span></span><br><span class="line"><span class="number">100</span> rows × <span class="number">6</span> columns</span><br></pre></td></tr></table></figure>
+<p>这里读excel返回一个DataFrame对象，pandas的绝大部分API都围绕着DataFrame对象。有点类似numpy的ndarray但又有非常大的区别：</p>
+<h4 id="ndarray和DataFrame的区别"><a href="#ndarray和DataFrame的区别" class="headerlink" title="ndarray和DataFrame的区别"></a>ndarray和DataFrame的区别</h4><p>NumPy的ndarray和Pandas的DataFrame是两种不同的数据结构。</p>
+<ul>
+<li><p>ndarray是一个多维数组对象，用于存储同类型元素的多维数据，可以进行高效的数学运算，如线性代数、傅里叶变换、随机数生成等。NumPy的ndarray是内存连续的，并且能够支持向量化运算，这使得对于大型数据集的计算非常高效。</p>
+</li>
+<li><p>DataFrame是一种二维表格数据结构，由多个Series组成。每个Series都是一个单独的列，不同的Series可以有不同的数据类型。DataFrame提供了各种数据操作功能，如过滤、排序、统计等，可以方便地进行数据分析和处理。</p>
+</li>
+</ul>
+<p>相比之下，DataFrame具有更强大的数据操作和分析能力，但在执行数学运算时可能不如ndarray高效。通常，ndarray更适合进行数值计算和科学计算，而DataFrame则更适合进行数据分析和处理。</p>
+<p>查看数据</p>
+<ol>
+<li>df.head() 查看前x行</li>
+<li>df.tail() 查看末x行</li>
+<li>df.sample() 随机选择</li>
+</ol>
+<p>查看DataFrame的元信息</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">df.shape</span><br><span class="line"></span><br><span class="line">(<span class="number">100</span>, <span class="number">6</span>)</span><br></pre></td></tr></table></figure>
+
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">df.info()</span><br><span class="line"></span><br><span class="line">&lt;<span class="keyword">class</span> <span class="string">&#x27;pandas.core.frame.DataFrame&#x27;</span>&gt;</span><br><span class="line">RangeIndex: <span class="number">100</span> entries, <span class="number">0</span> to <span class="number">99</span></span><br><span class="line">Data columns (total <span class="number">6</span> columns):</span><br><span class="line"> <span class="comment">#   Column  Non-Null Count  Dtype </span></span><br><span class="line">---  ------  --------------  ----- </span><br><span class="line"> <span class="number">0</span>   name    <span class="number">100</span> non-null    <span class="built_in">object</span></span><br><span class="line"> <span class="number">1</span>   team    <span class="number">100</span> non-null    <span class="built_in">object</span></span><br><span class="line"> <span class="number">2</span>   Q1      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">3</span>   Q2      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">4</span>   Q3      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">5</span>   Q4      <span class="number">100</span> non-null    int64 </span><br><span class="line">dtypes: int64(<span class="number">4</span>), <span class="built_in">object</span>(<span class="number">2</span>)</span><br><span class="line">memory usage: <span class="number">4.8</span>+ KB</span><br></pre></td></tr></table></figure>
+<p>查看列的类型</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">df.dtypes</span><br><span class="line">name    <span class="built_in">object</span></span><br><span class="line">team    <span class="built_in">object</span></span><br><span class="line">Q1       int64</span><br><span class="line">Q2       int64</span><br><span class="line">Q3       int64</span><br><span class="line">Q4       int64</span><br><span class="line">dtype: <span class="built_in">object</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="配置索引"><a href="#配置索引" class="headerlink" title="配置索引"></a>配置索引</h2><ul>
+<li>索引（index）：行和列上的标签，标识二维数据坐标的行索引和列索引，默认情况下，指的是每一行的索引。如果是Series，那只能是它行上的索引。列索引又被称为字段名、表头。</li>
+<li>自然索引、数字索引：行和列的0～n（n为数据长度–1）形式的索引，数据天然具有的索引形式。虽然可以指定为其他名称，但在有些方法中依然可以使用。</li>
+<li>标签（label）：行索引和列索引，如果是Series，那只能是它行上的索引。</li>
+<li>轴（axis）：仅用在DataFrame结构中，代表数据的方向，如行和列，用0代表列（默认），1代表行。<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">df.set_index(<span class="string">&#x27;name&#x27;</span>)</span><br><span class="line"></span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line">Arry	C	<span class="number">36</span>	<span class="number">37</span>	<span class="number">37</span>	<span class="number">57</span></span><br><span class="line">Ack	A	<span class="number">57</span>	<span class="number">60</span>	<span class="number">18</span>	<span class="number">84</span></span><br><span class="line">Eorge	C	<span class="number">93</span>	<span class="number">96</span>	<span class="number">71</span>	<span class="number">78</span></span><br><span class="line">Oah	D	<span class="number">65</span>	<span class="number">49</span>	<span class="number">61</span>	<span class="number">86</span></span><br><span class="line">...	...	...	...	...	...</span><br><span class="line">Gabriel	C	<span class="number">48</span>	<span class="number">59</span>	<span class="number">87</span>	<span class="number">74</span></span><br><span class="line">Austin7	C	<span class="number">21</span>	<span class="number">31</span>	<span class="number">30</span>	<span class="number">43</span></span><br><span class="line">Lincoln4	C	<span class="number">98</span>	<span class="number">93</span>	<span class="number">1</span>	<span class="number">20</span></span><br><span class="line">Eli	E	<span class="number">11</span>	<span class="number">74</span>	<span class="number">58</span>	<span class="number">91</span></span><br><span class="line">Ben	E	<span class="number">21</span>	<span class="number">43</span>	<span class="number">41</span>	<span class="number">74</span></span><br><span class="line"><span class="number">100</span> rows × <span class="number">5</span> columns\</span><br></pre></td></tr></table></figure>
+这样已经看不到之前的0-100的索引了。但是要注意</li>
+</ul>
+<ol>
+<li>这种方式生成的索引是创建一个新的DF对象，原有的df并没有发生变化，如果要修改原有的需要添加inPlace参数。</li>
+<li>需要注意 配置完索引后，原字段已经不在column中了，所以<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">df = df.set_index()</span><br><span class="line">df.info()</span><br><span class="line"></span><br><span class="line">&lt;<span class="keyword">class</span> <span class="string">&#x27;pandas.core.frame.DataFrame&#x27;</span>&gt;</span><br><span class="line">Index: <span class="number">100</span> entries, Liver to Ben</span><br><span class="line">Data columns (total <span class="number">5</span> columns):</span><br><span class="line"> <span class="comment">#   Column  Non-Null Count  Dtype </span></span><br><span class="line">---  ------  --------------  ----- </span><br><span class="line"> <span class="number">0</span>   team    <span class="number">100</span> non-null    <span class="built_in">object</span></span><br><span class="line"> <span class="number">1</span>   Q1      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">2</span>   Q2      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">3</span>   Q3      <span class="number">100</span> non-null    int64 </span><br><span class="line"> <span class="number">4</span>   Q4      <span class="number">100</span> non-null    int64 </span><br><span class="line">dtypes: int64(<span class="number">4</span>), <span class="built_in">object</span>(<span class="number">1</span>)</span><br><span class="line">memory usage: <span class="number">8.8</span>+ KB</span><br></pre></td></tr></table></figure>
+这时我们使用 df[‘name’] 是不能读取name这一列的。想要读取索引可以df.index。</li>
+</ol>
+<h2 id="选择数据"><a href="#选择数据" class="headerlink" title="选择数据"></a>选择数据</h2><ol>
+<li><p>直接访问<br>选择Q2 Q3 两列</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">df[[&#x27;Q2&#x27;,&#x27;Q3&#x27;]]</span><br><span class="line"></span><br><span class="line">Q2	Q3</span><br><span class="line">0	21	24</span><br><span class="line">1	37	37</span><br><span class="line">2	60	18</span><br><span class="line">3	96	71</span><br><span class="line">4	49	61</span><br><span class="line">...	...	...</span><br><span class="line">95	59	87</span><br><span class="line">96	31	30</span><br><span class="line">97	93	1</span><br><span class="line">98	74	58</span><br><span class="line">99	43	41</span><br><span class="line">100 rows × 2 columns</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>自然索引</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">df[<span class="number">0</span>:<span class="number">3</span>]</span><br><span class="line"></span><br><span class="line">team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line">Arry	C	<span class="number">36</span>	<span class="number">37</span>	<span class="number">37</span>	<span class="number">57</span></span><br><span class="line">Ack	A	<span class="number">57</span>	<span class="number">60</span>	<span class="number">18</span>	<span class="number">84</span></span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>从1，2可以看出df[]如果传入的是列名或者一个列名的list则作为列的查询，如果传入的是一个range则作为行选择处理。</p>
+<ol start="3">
+<li>loc<br><code>df.loc[x, y]</code>是一个非常强大的数据选择函数，其中x代表行，y代表列，行和列都支持条件表达式，也支持类似列表那样的切片（如果要用自然索引，需要用df.iloc[]）</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 选择多列</span></span><br><span class="line">df[[<span class="string">&#x27;team&#x27;</span>, <span class="string">&#x27;Q1&#x27;</span>]] <span class="comment"># 只看这两列，注意括号</span></span><br><span class="line">df.loc[:, [<span class="string">&#x27;team&#x27;</span>, <span class="string">&#x27;Q1&#x27;</span>]] <span class="comment"># 和上一行效果一样</span></span><br></pre></td></tr></table></figure>
+
+<ol start="4">
+<li>iloc<br>同样是<code>iloc[x,y]</code> 这里则只支持自然索引，不支持条件</li>
+</ol>
+<p>比如选择前10列</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">df.iloc[:<span class="number">10</span>,:]</span><br><span class="line"></span><br><span class="line">team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line">Arry	C	<span class="number">36</span>	<span class="number">37</span>	<span class="number">37</span>	<span class="number">57</span></span><br><span class="line">Ack	A	<span class="number">57</span>	<span class="number">60</span>	<span class="number">18</span>	<span class="number">84</span></span><br><span class="line">Eorge	C	<span class="number">93</span>	<span class="number">96</span>	<span class="number">71</span>	<span class="number">78</span></span><br><span class="line">Oah	D	<span class="number">65</span>	<span class="number">49</span>	<span class="number">61</span>	<span class="number">86</span></span><br><span class="line">Harlie	C	<span class="number">24</span>	<span class="number">13</span>	<span class="number">87</span>	<span class="number">43</span></span><br><span class="line">Acob	B	<span class="number">61</span>	<span class="number">95</span>	<span class="number">94</span>	<span class="number">8</span></span><br><span class="line">Lfie	A	<span class="number">9</span>	<span class="number">10</span>	<span class="number">99</span>	<span class="number">37</span></span><br><span class="line">Reddie	D	<span class="number">64</span>	<span class="number">93</span>	<span class="number">57</span>	<span class="number">72</span></span><br><span class="line">Oscar	A	<span class="number">77</span>	<span class="number">9</span>	<span class="number">26</span>	<span class="number">67</span><span class="comment"># 选择多列</span></span><br><span class="line">df[[<span class="string">&#x27;team&#x27;</span>, <span class="string">&#x27;Q1&#x27;</span>]] <span class="comment"># 只看这两列，注意括号</span></span><br><span class="line">df.loc[:, [<span class="string">&#x27;team&#x27;</span>, <span class="string">&#x27;Q1&#x27;</span>]] <span class="comment"># 和上一行效果一样</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="排序"><a href="#排序" class="headerlink" title="排序"></a>排序</h2><p>df.sort_values([{要排序的列}],ascending&#x3D;[{这些列是否升序}])</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## 多字段排序</span></span><br><span class="line">df.sort_values([<span class="string">&#x27;team&#x27;</span>, <span class="string">&#x27;Q1&#x27;</span>], ascending=[<span class="literal">True</span>, <span class="literal">False</span>])排序公式</span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Aaron	A	<span class="number">96</span>	<span class="number">75</span>	<span class="number">55</span>	<span class="number">8</span></span><br><span class="line">Henry	A	<span class="number">91</span>	<span class="number">15</span>	<span class="number">75</span>	<span class="number">17</span></span><br><span class="line">Nathan	A	<span class="number">87</span>	<span class="number">77</span>	<span class="number">62</span>	<span class="number">13</span></span><br><span class="line">Dylan	A	<span class="number">86</span>	<span class="number">87</span>	<span class="number">65</span>	<span class="number">20</span></span><br><span class="line">Blake	A	<span class="number">78</span>	<span class="number">23</span>	<span class="number">93</span>	<span class="number">9</span></span><br><span class="line">...	...	...	...	...	...</span><br><span class="line">Eli	E	<span class="number">11</span>	<span class="number">74</span>	<span class="number">58</span>	<span class="number">91</span></span><br><span class="line">Jude	E	<span class="number">8</span>	<span class="number">45</span>	<span class="number">13</span>	<span class="number">65</span></span><br><span class="line">Rory9	E	<span class="number">8</span>	<span class="number">12</span>	<span class="number">58</span>	<span class="number">27</span></span><br><span class="line">Jackson5	E	<span class="number">6</span>	<span class="number">10</span>	<span class="number">15</span>	<span class="number">33</span></span><br><span class="line">Finn	E	<span class="number">4</span>	<span class="number">1</span>	<span class="number">55</span>	<span class="number">32</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+<h2 id="聚合"><a href="#聚合" class="headerlink" title="聚合"></a>聚合</h2><p>groupby将返回一个DataFrameGroupBy对象<br>我们可以查看每组的大小</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">df.groupby(<span class="string">&#x27;team&#x27;</span>).size()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">team</span><br><span class="line">A    <span class="number">17</span></span><br><span class="line">B    <span class="number">22</span></span><br><span class="line">C    <span class="number">22</span></span><br><span class="line">D    <span class="number">19</span></span><br><span class="line">E    <span class="number">20</span></span><br><span class="line">dtype: int64</span><br></pre></td></tr></table></figure>
+
+<p>分组完毕要选择聚合算法。</p>
+<p>常见的聚合算法是sum（加和）、mean（均值）</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">df.groupby(<span class="string">&#x27;team&#x27;</span>).<span class="built_in">sum</span>()</span><br><span class="line"></span><br><span class="line">Q1	Q2	Q3	Q4</span><br><span class="line">			</span><br><span class="line"><span class="number">1066</span>	<span class="number">639</span>	<span class="number">875</span>	<span class="number">783</span></span><br><span class="line"><span class="number">975</span>	<span class="number">1218</span>	<span class="number">1202</span>	<span class="number">1136</span></span><br><span class="line"><span class="number">1056</span>	<span class="number">1194</span>	<span class="number">1068</span>	<span class="number">1127</span></span><br><span class="line"><span class="number">860</span>	<span class="number">1191</span>	<span class="number">1241</span>	<span class="number">1199</span></span><br><span class="line"><span class="number">963</span>	<span class="number">1013</span>	<span class="number">881</span>	<span class="number">1033</span></span><br></pre></td></tr></table></figure>
+<p>也可以使用agg函数聚合多个列</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">df.groupby(&#x27;team&#x27;).agg(&#123;&#x27;Q1&#x27;: sum, # 总和</span><br><span class="line">&#x27;Q2&#x27;: &#x27;count&#x27;, # 总数</span><br><span class="line">&#x27;Q3&#x27;:&#x27;mean&#x27;, # 平均</span><br><span class="line">&#x27;Q4&#x27;: max&#125;) # 最大值</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">Q1	Q2	Q3	Q4</span><br><span class="line">team				</span><br><span class="line">A	1066	17	51.470588	97</span><br><span class="line">B	975	22	54.636364	99</span><br><span class="line">C	1056	22	48.545455	98</span><br><span class="line">D	860	19	65.315789	99</span><br><span class="line">E	963	20	44.050000	98</span><br></pre></td></tr></table></figure>
+
+<h2 id="偏移"><a href="#偏移" class="headerlink" title="偏移"></a>偏移</h2><h4 id="diff"><a href="#diff" class="headerlink" title="diff"></a>diff</h4><p>跟numpy中的语义相同<br>比如查看所有学生Q1 到 Q4 每季度成绩增长</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">df.loc[:,<span class="string">&#x27;Q1&#x27;</span>:<span class="string">&#x27;Q4&#x27;</span>].diff(<span class="number">1</span>, axis=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">Q1	Q2	Q3	Q4</span><br><span class="line">			</span><br><span class="line">NaN	-<span class="number">68</span>	<span class="number">3</span>	<span class="number">40</span></span><br><span class="line">NaN	<span class="number">1</span>	<span class="number">0</span>	<span class="number">20</span></span><br><span class="line">NaN	<span class="number">3</span>	-<span class="number">42</span>	<span class="number">66</span></span><br><span class="line">NaN	<span class="number">3</span>	-<span class="number">25</span>	<span class="number">7</span></span><br><span class="line">NaN	-<span class="number">16</span>	<span class="number">12</span>	<span class="number">25</span></span><br><span class="line">...	...	...	...</span><br><span class="line">NaN	<span class="number">11</span>	<span class="number">28</span>	-<span class="number">13</span></span><br><span class="line">NaN	<span class="number">10</span>	-<span class="number">1</span>	<span class="number">13</span></span><br><span class="line">NaN	-<span class="number">5</span>	-<span class="number">92</span>	<span class="number">19</span></span><br><span class="line">NaN	<span class="number">63</span>	-<span class="number">16</span>	<span class="number">33</span></span><br><span class="line">NaN	<span class="number">22</span>	-<span class="number">2</span>	<span class="number">33</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="shift"><a href="#shift" class="headerlink" title="shift"></a>shift</h4><p>向下移动，实际上索引不会动，其他列全部下移一位</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">df.shift().tail()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Gabriel	    D	<span class="number">20.0</span>	<span class="number">31.0</span>	<span class="number">62.0</span>	<span class="number">68.0</span></span><br><span class="line">Austin7	    C	<span class="number">48.0</span>	<span class="number">59.0</span>	<span class="number">87.0</span>	<span class="number">74.0</span></span><br><span class="line">Lincoln4	C	<span class="number">21.0</span>	<span class="number">31.0</span>	<span class="number">30.0</span>	<span class="number">43.0</span></span><br><span class="line">Eli	        C	<span class="number">98.0</span>	<span class="number">93.0</span>	<span class="number">1.0</span>	<span class="number">20.0</span></span><br><span class="line">Ben	        E	<span class="number">11.0</span>	<span class="number">74.0</span>	<span class="number">58.0</span>	<span class="number">91.0</span></span><br></pre></td></tr></table></figure>
+
+<p>向上移动</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">df.shift().head()</span><br><span class="line">	    team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Liver	<span class="literal">None</span>	NaN	NaN	NaN	NaN</span><br><span class="line">Arry	E	<span class="number">89.0</span>	<span class="number">21.0</span>	<span class="number">24.0</span>	<span class="number">64.0</span></span><br><span class="line">Ack	    C	<span class="number">36.0</span>	<span class="number">37.0</span>	<span class="number">37.0</span>	<span class="number">57.0</span></span><br><span class="line">Eorge	A	<span class="number">57.0</span>	<span class="number">60.0</span>	<span class="number">18.0</span>	<span class="number">84.0</span></span><br><span class="line">Oah	    C	<span class="number">93.0</span>	<span class="number">96.0</span>	<span class="number">71.0</span>	<span class="number">78.0</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="计算"><a href="#计算" class="headerlink" title="计算"></a>计算</h2><p>DataFrame可以执行常见的运算符<code>+-*/|&amp;</code> 等</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">df[[<span class="string">&#x27;Q1&#x27;</span>,<span class="string">&#x27;Q2&#x27;</span>]]*<span class="number">2</span></span><br><span class="line"></span><br><span class="line">	    Q1	Q2</span><br><span class="line">name		</span><br><span class="line">Liver	<span class="number">178</span>	<span class="number">42</span></span><br><span class="line">Arry	<span class="number">72</span>	<span class="number">74</span></span><br><span class="line">Ack	    <span class="number">114</span>	<span class="number">120</span></span><br><span class="line">Eorge	<span class="number">186</span>	<span class="number">192</span></span><br><span class="line">Oah	    <span class="number">130</span>	<span class="number">98</span></span><br><span class="line">...	...	...</span><br><span class="line">Gabriel	<span class="number">96</span>	<span class="number">118</span></span><br><span class="line">Austin7	<span class="number">42</span>	<span class="number">62</span></span><br><span class="line">Lincoln4	<span class="number">196</span>	<span class="number">186</span></span><br><span class="line">Eli	    <span class="number">22</span>	<span class="number">148</span></span><br><span class="line">Ben	    <span class="number">42</span>	<span class="number">86</span></span><br></pre></td></tr></table></figure>
+
+<p>两个矩阵相加</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">df[<span class="string">&#x27;Q1&#x27;</span>]+df[<span class="string">&#x27;Q2&#x27;</span>]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">name</span><br><span class="line">Liver       <span class="number">110</span></span><br><span class="line">Arry         <span class="number">73</span></span><br><span class="line">Ack         <span class="number">117</span></span><br><span class="line">Eorge       <span class="number">189</span></span><br><span class="line">Oah         <span class="number">114</span></span><br><span class="line">           ... </span><br><span class="line">Gabriel     <span class="number">107</span></span><br><span class="line">Austin7      <span class="number">52</span></span><br><span class="line">Lincoln4    <span class="number">191</span></span><br><span class="line">Eli          <span class="number">85</span></span><br><span class="line">Ben          <span class="number">64</span></span><br><span class="line">Length: <span class="number">100</span>, dtype: int64</span><br></pre></td></tr></table></figure>
+
+<p>这里相加的行为根据元数据类型不同结果也不同。</p>
+<p>条件判断表达式会转换为矩阵</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">df[<span class="string">&#x27;Q1&#x27;</span>]&gt;<span class="number">80</span></span><br><span class="line"></span><br><span class="line"><span class="number">0</span>      <span class="literal">True</span></span><br><span class="line"><span class="number">1</span>     <span class="literal">False</span></span><br><span class="line"><span class="number">2</span>     <span class="literal">False</span></span><br><span class="line"><span class="number">3</span>      <span class="literal">True</span></span><br><span class="line"><span class="number">4</span>     <span class="literal">False</span></span><br><span class="line">      ...  </span><br><span class="line"><span class="number">95</span>    <span class="literal">False</span></span><br><span class="line"><span class="number">96</span>    <span class="literal">False</span></span><br><span class="line"><span class="number">97</span>     <span class="literal">True</span></span><br><span class="line"><span class="number">98</span>    <span class="literal">False</span></span><br><span class="line"><span class="number">99</span>    <span class="literal">False</span></span><br><span class="line">Name: Q1, Length: <span class="number">100</span>, dtype: <span class="built_in">bool</span></span><br></pre></td></tr></table></figure>
+
+<p>我们又可以使用产生的矩阵选择数据：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">df[df[<span class="string">&#x27;Q1&#x27;</span>]&gt;<span class="number">80</span>]</span><br><span class="line"></span><br><span class="line">	name	team	Q1	Q2	Q3	Q4</span><br><span class="line"><span class="number">0</span>	Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line"><span class="number">3</span>	Eorge	C	<span class="number">93</span>	<span class="number">96</span>	<span class="number">71</span>	<span class="number">78</span></span><br><span class="line"><span class="number">12</span>	Archie	C	<span class="number">83</span>	<span class="number">89</span>	<span class="number">59</span>	<span class="number">68</span></span><br><span class="line"><span class="number">17</span>	Henry	A	<span class="number">91</span>	<span class="number">15</span>	<span class="number">75</span>	<span class="number">17</span></span><br><span class="line"><span class="number">19</span>	Max		E	<span class="number">97</span>	<span class="number">75</span>	<span class="number">41</span>	<span class="number">3</span></span><br><span class="line"><span class="number">25</span>	Harrison	B	<span class="number">89</span>	<span class="number">13</span>	<span class="number">18</span>	<span class="number">75</span></span><br><span class="line"><span class="number">32</span>	Alexander	C	<span class="number">91</span>	<span class="number">76</span>	<span class="number">26</span>	<span class="number">79</span></span><br><span class="line"><span class="number">33</span>	Adam	C	<span class="number">90</span>	<span class="number">32</span>	<span class="number">47</span>	<span class="number">39</span></span><br><span class="line"><span class="number">36</span>	Jaxon	E	<span class="number">88</span>	<span class="number">98</span>	<span class="number">19</span>	<span class="number">98</span></span><br><span class="line"><span class="number">38</span>	Elijah	B	<span class="number">97</span>	<span class="number">89</span>	<span class="number">15</span>	<span class="number">46</span></span><br><span class="line"><span class="number">42</span>	Dylan	A	<span class="number">86</span>	<span class="number">87</span>	<span class="number">65</span>	<span class="number">20</span></span><br><span class="line"><span class="number">70</span>	Nathan	A	<span class="number">87</span>	<span class="number">77</span>	<span class="number">62</span>	<span class="number">13</span></span><br><span class="line"><span class="number">77</span>	Michael	B	<span class="number">89</span>	<span class="number">21</span>	<span class="number">59</span>	<span class="number">92</span></span><br><span class="line"><span class="number">80</span>	Ryan	E	<span class="number">92</span>	<span class="number">70</span>	<span class="number">64</span>	<span class="number">31</span></span><br><span class="line"><span class="number">83</span>	Albert0	B	<span class="number">85</span>	<span class="number">38</span>	<span class="number">41</span>	<span class="number">17</span></span><br><span class="line"><span class="number">88</span>	Aaron	A	<span class="number">96</span>	<span class="number">75</span>	<span class="number">55</span>	<span class="number">8</span></span><br><span class="line"><span class="number">97</span>	Lincoln4	C	<span class="number">98</span>	<span class="number">93</span>	<span class="number">1</span>	<span class="number">20</span></span><br></pre></td></tr></table></figure>
+
+<p>比如我们可以查连续4季度增长的：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">df[(df[<span class="string">&#x27;Q1&#x27;</span>] &lt; df[<span class="string">&#x27;Q2&#x27;</span>]) &amp; (df[<span class="string">&#x27;Q2&#x27;</span>] &lt; df[<span class="string">&#x27;Q3&#x27;</span>]) &amp; (df[<span class="string">&#x27;Q3&#x27;</span>] &lt; df[<span class="string">&#x27;Q4&#x27;</span>])]</span><br><span class="line"></span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Zachary	E	<span class="number">12</span>	<span class="number">71</span>	<span class="number">85</span>	<span class="number">93</span></span><br><span class="line">Jackson E	<span class="number">6</span>	<span class="number">10</span>	<span class="number">15</span>	<span class="number">33</span></span><br><span class="line">Harvey2	B	<span class="number">43</span>	<span class="number">76</span>	<span class="number">87</span>	<span class="number">90</span></span><br><span class="line">Elliott	B	<span class="number">9</span>	<span class="number">31</span>	<span class="number">33</span>	<span class="number">60</span></span><br><span class="line">Aiden	D	<span class="number">20</span>	<span class="number">31</span>	<span class="number">62</span>	<span class="number">68</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="query表达式"><a href="#query表达式" class="headerlink" title="query表达式"></a>query表达式</h2><p>如果只做列的操作可以这样：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">df.query(<span class="string">&#x27;Q1&lt;Q2&lt;Q3&lt;Q4&#x27;</span>)</span><br><span class="line"></span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Zachary	E	<span class="number">12</span>	<span class="number">71</span>	<span class="number">85</span>	<span class="number">93</span></span><br><span class="line">Jackson5	E	<span class="number">6</span>	<span class="number">10</span>	<span class="number">15</span>	<span class="number">33</span></span><br><span class="line">Harvey2	B	<span class="number">43</span>	<span class="number">76</span>	<span class="number">87</span>	<span class="number">90</span></span><br><span class="line">Elliott	B	<span class="number">9</span>	<span class="number">31</span>	<span class="number">33</span>	<span class="number">60</span></span><br><span class="line">Aiden	D	<span class="number">20</span>	<span class="number">31</span>	<span class="number">62</span>	<span class="number">68</span></span><br><span class="line"></span><br><span class="line">df.query(<span class="string">&#x27;Q1 + Q2 &gt; 180&#x27;</span>)</span><br><span class="line"></span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Eorge	C	<span class="number">93</span>	<span class="number">96</span>	<span class="number">71</span>	<span class="number">78</span></span><br><span class="line">Jaxon	E	<span class="number">88</span>	<span class="number">98</span>	<span class="number">19</span>	<span class="number">98</span></span><br><span class="line">Elijah	B	<span class="number">97</span>	<span class="number">89</span>	<span class="number">15</span>	<span class="number">46</span></span><br><span class="line">Lincoln4C	<span class="number">98</span>	<span class="number">93</span>	<span class="number">1</span>	<span class="number">20</span></span><br><span class="line"></span><br><span class="line">df.query(<span class="string">&#x27;team !=&quot;C&quot;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">	team	Q1	Q2	Q3	Q4</span><br><span class="line">name					</span><br><span class="line">Liver	E	<span class="number">89</span>	<span class="number">21</span>	<span class="number">24</span>	<span class="number">64</span></span><br><span class="line">Ack	A	<span class="number">57</span>	<span class="number">60</span>	<span class="number">18</span>	<span class="number">84</span></span><br><span class="line">Oah	D	<span class="number">65</span>	<span class="number">49</span>	<span class="number">61</span>	<span class="number">86</span></span><br><span class="line">Acob	B	<span class="number">61</span>	<span class="number">95</span>	<span class="number">94</span>	<span class="number">8</span></span><br><span class="line">Lfie	A	<span class="number">9</span>	<span class="number">10</span>	<span class="number">99</span>	<span class="number">37</span></span><br><span class="line">...	...	...	...	...	...</span><br><span class="line">Grayson7B	<span class="number">59</span>	<span class="number">84</span>	<span class="number">74</span>	<span class="number">33</span></span><br><span class="line">Jamie0	B	<span class="number">39</span>	<span class="number">97</span>	<span class="number">84</span>	<span class="number">55</span></span><br><span class="line">Aiden	D	<span class="number">20</span>	<span class="number">31</span>	<span class="number">62</span>	<span class="number">68</span></span><br><span class="line">Eli		E	<span class="number">11</span>	<span class="number">74</span>	<span class="number">58</span>	<span class="number">91</span></span><br><span class="line">Ben		E	<span class="number">21</span>	<span class="number">43</span>	<span class="number">41</span>	<span class="number">74</span></span><br><span class="line"><span class="number">78</span> rows × <span class="number">5</span> columns</span><br></pre></td></tr></table></figure>
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/py-sci-04/" title="学习python数据分析 四 pandas (1)">https://fenixc9.github.io/py-sci-04/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/pandas/" rel="tag"># pandas</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/py-sci-03/" rel="prev" title="学习python数据分析 三 numpy（2）">
+      <i class="fa fa-chevron-left"></i> 学习python数据分析 三 numpy（2）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/py-sci-05/" rel="next" title="学习python数据分析 五 pandas (2)">
+      学习python数据分析 五 pandas (2) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%89%E8%A3%85"><span class="nav-number">1.</span> <span class="nav-text">安装</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A0%E8%BD%BD%E6%95%B0%E6%8D%AE"><span class="nav-number">3.</span> <span class="nav-text">加载数据</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#ndarray%E5%92%8CDataFrame%E7%9A%84%E5%8C%BA%E5%88%AB"><span class="nav-number">3.0.1.</span> <span class="nav-text">ndarray和DataFrame的区别</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E7%B4%A2%E5%BC%95"><span class="nav-number">4.</span> <span class="nav-text">配置索引</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%80%89%E6%8B%A9%E6%95%B0%E6%8D%AE"><span class="nav-number">5.</span> <span class="nav-text">选择数据</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%8E%92%E5%BA%8F"><span class="nav-number">6.</span> <span class="nav-text">排序</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%81%9A%E5%90%88"><span class="nav-number">7.</span> <span class="nav-text">聚合</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%81%8F%E7%A7%BB"><span class="nav-number">8.</span> <span class="nav-text">偏移</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#diff"><span class="nav-number">8.0.1.</span> <span class="nav-text">diff</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#shift"><span class="nav-number">8.0.2.</span> <span class="nav-text">shift</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AE%A1%E7%AE%97"><span class="nav-number">9.</span> <span class="nav-text">计算</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#query%E8%A1%A8%E8%BE%BE%E5%BC%8F"><span class="nav-number">10.</span> <span class="nav-text">query表达式</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '1ee77c162415733b504ffb064ac3ffe3',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

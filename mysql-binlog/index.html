@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="本文聊mysql的binlog机制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="mysql的binlog机制">
+<meta property="og:url" content="https://fenixc9.github.io/mysql-binlog/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="本文聊mysql的binlog机制">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/mysql-binlog/1.png">
+<meta property="article:published_time" content="2023-06-14T15:49:09.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.170Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="mysql">
+<meta property="article:tag" content="ETL">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/mysql-binlog/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/mysql-binlog/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>mysql的binlog机制 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/mysql-binlog/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          mysql的binlog机制
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-06-14 23:49:09" itemprop="dateCreated datePublished" datetime="2023-06-14T23:49:09+08:00">2023-06-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/mysql/" itemprop="url" rel="index"><span itemprop="name">mysql</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">本文聊mysql的binlog机制</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>mysql binlog是mysql server层维护的二进制日志。这句话的言外之意是，存储引擎层并不负责写binlog，与innodb引擎中的redo&#x2F;undo log是完全不同的日志。他们大概有如下的区别：</p>
+<ol>
+<li>redo log 是 InnoDB 引擎特有的；binlog 是 MySQL 的 Server 层实现的，所有引擎都可以使用。</li>
+<li>redo log 是物理日志，记录的是“在某个数据页上做了什么修改”；binlog 是逻辑日志，记录的是这个语句的原始逻辑，比如“给 ID&#x3D;2 这一行的 c 字段加 1 ”。</li>
+<li>redo log 是循环写的，空间固定会用完；binlog 是可以追加写入的。“追加写”是指 binlog 文件写到一定大小后会切换到下一个，并不会覆盖以前的日志。</li>
+</ol>
+<h3 id="怎么开启binlog？"><a href="#怎么开启binlog？" class="headerlink" title="怎么开启binlog？"></a>怎么开启binlog？</h3><p>在 mysqld 配置文件中加上如下配置：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[mysqld]</span><br><span class="line">log-bin                        = mysql-bin.log</span><br><span class="line">gtid_mode                      = ON</span><br><span class="line">enforce-gtid-consistency       = ON</span><br></pre></td></tr></table></figure>
+<p>如果是windows 平台则在my.ini中配置。</p>
+<p>配置完毕后，确认是否成功开启：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show variables like &#x27;%log_bin%&#x27;;</span><br><span class="line">+---------------------------------+--------------------------------+</span><br><span class="line">| Variable_name                   | Value                          |</span><br><span class="line">+---------------------------------+--------------------------------+</span><br><span class="line">| log_bin                         | ON                             |</span><br><span class="line">| log_bin_basename                | /var/lib/mysql/mysql-bin       |</span><br><span class="line">| log_bin_index                   | /var/lib/mysql/mysql-bin.index |</span><br><span class="line">| log_bin_trust_function_creators | ON                             |</span><br><span class="line">| log_bin_use_v1_row_events       | OFF                            |</span><br><span class="line">| sql_log_bin                     | ON                             |</span><br><span class="line">+---------------------------------+--------------------------------+</span><br><span class="line">6 rows in set (0.00 sec)</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>查看当前有多少binlog文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binary logs;</span><br><span class="line">+------------------+-----------+-----------+</span><br><span class="line">| Log_name         | File_size | Encrypted |</span><br><span class="line">+------------------+-----------+-----------+</span><br><span class="line">| mysql-bin.000001 |       180 | No        |</span><br><span class="line">| mysql-bin.000002 |   3032843 | No        |</span><br><span class="line">| mysql-bin.000003 |      4020 | No        |</span><br><span class="line">| mysql-bin.000004 |       157 | No        |</span><br><span class="line">+------------------+-----------+-----------+</span><br><span class="line">4 rows in set (0.01 sec)</span><br></pre></td></tr></table></figure>
+<p>实际目录内也能看到binlog文件</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">bash-4.4# pwd</span><br><span class="line">/var/lib/mysql</span><br><span class="line">bash-4.4# ls -alh</span><br><span class="line">total 8.6M</span><br><span class="line">-rw-r-----  1 mysql mysql 192K Jun 14 14:05 &#x27;#ib_16384_0.dblwr&#x27;</span><br><span class="line">-rw-r-----  1 mysql mysql 8.2M May 21 12:55 &#x27;#ib_16384_1.dblwr&#x27;</span><br><span class="line">drwxr-x---  2 mysql mysql   34 Jun 14 14:03 &#x27;#innodb_redo&#x27;</span><br><span class="line">drwxr-x---  2 mysql mysql   12 Jun 14 14:03 &#x27;#innodb_temp&#x27;</span><br><span class="line">drwxrwxr-x  8 mysql  1000   31 Jun 14 14:03  .</span><br><span class="line">drwxr-xr-x 12 root  root    13 Mar  8 20:41  ..</span><br><span class="line">-rw-r-----  1 mysql mysql   56 May 21 12:55  auto.cnf</span><br><span class="line">-rw-------  1 mysql mysql 1.7K May 21 12:55  ca-key.pem</span><br><span class="line">-rw-r--r--  1 mysql mysql 1.1K May 21 12:55  ca.pem</span><br><span class="line">-rw-r--r--  1 mysql mysql 1.1K May 21 12:55  client-cert.pem</span><br><span class="line">-rw-------  1 mysql mysql 1.7K May 21 12:55  client-key.pem</span><br><span class="line">-rw-r-----  1 mysql mysql 4.0K May 21 16:57  ib_buffer_pool</span><br><span class="line">-rw-r-----  1 mysql mysql  12M Jun 14 14:03  ibdata1</span><br><span class="line">-rw-r-----  1 mysql mysql  12M Jun 14 14:03  ibtmp1</span><br><span class="line">drwxr-x---  2 mysql mysql    8 May 21 12:55  mysql</span><br><span class="line">-rw-r-----  1 mysql mysql  180 May 21 12:55  mysql-bin.000001</span><br><span class="line">-rw-r-----  1 mysql mysql 2.9M May 21 12:55  mysql-bin.000002</span><br><span class="line">-rw-r-----  1 mysql mysql 4.0K May 21 16:57  mysql-bin.000003</span><br><span class="line">-rw-r-----  1 mysql mysql  157 Jun 14 14:03  mysql-bin.000004</span><br><span class="line">-rw-r-----  1 mysql mysql   76 Jun 14 14:03  mysql-bin.index</span><br><span class="line">-rw-r-----  1 mysql mysql  30M Jun 14 14:03  mysql.ibd</span><br><span class="line">lrwxrwxrwx  1 mysql mysql   27 Jun 14 14:03  mysql.sock -&gt; /var/run/mysqld/mysqld.sock</span><br><span class="line">drwxr-x---  2 mysql mysql  112 May 21 12:55  performance_schema</span><br><span class="line">-rw-------  1 mysql mysql 1.7K May 21 12:55  private_key.pem</span><br><span class="line">-rw-r--r--  1 mysql mysql  452 May 21 12:55  public_key.pem</span><br><span class="line">-rw-r--r--  1 mysql mysql 1.1K May 21 12:55  server-cert.pem</span><br><span class="line">-rw-------  1 mysql mysql 1.7K May 21 12:55  server-key.pem</span><br><span class="line">drwxr-x---  2 mysql mysql    3 May 21 12:55  sys</span><br><span class="line">-rw-r-----  1 mysql mysql  16M Jun 14 14:05  undo_001</span><br><span class="line">-rw-r-----  1 mysql mysql  16M Jun 14 14:05  undo_002</span><br></pre></td></tr></table></figure>
+
+<p>怎么查看具体event类型偏移?</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events in &#x27;mysql-bin.000002&#x27; from 100 limit 10;</span><br><span class="line">+------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span><br><span class="line">| Log_name         | Pos | Event_type     | Server_id | End_log_pos | Info                                                              |</span><br><span class="line">+------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span><br><span class="line">| mysql-bin.000002 | 126 | Previous_gtids |         1 |         157 |                                                                   |</span><br><span class="line">| mysql-bin.000002 | 157 | Anonymous_Gtid |         1 |         234 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                              |</span><br><span class="line">| mysql-bin.000002 | 234 | Query          |         1 |         338 | use `mysql`; TRUNCATE TABLE time_zone /* xid=3 */                 |</span><br><span class="line">| mysql-bin.000002 | 338 | Anonymous_Gtid |         1 |         415 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                              |</span><br><span class="line">| mysql-bin.000002 | 415 | Query          |         1 |         524 | use `mysql`; TRUNCATE TABLE time_zone_name /* xid=4 */            |</span><br><span class="line">| mysql-bin.000002 | 524 | Anonymous_Gtid |         1 |         601 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                              |</span><br><span class="line">| mysql-bin.000002 | 601 | Query          |         1 |         716 | use `mysql`; TRUNCATE TABLE time_zone_transition /* xid=5 */      |</span><br><span class="line">| mysql-bin.000002 | 716 | Anonymous_Gtid |         1 |         793 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                              |</span><br><span class="line">| mysql-bin.000002 | 793 | Query          |         1 |         913 | use `mysql`; TRUNCATE TABLE time_zone_transition_type /* xid=6 */ |</span><br><span class="line">| mysql-bin.000002 | 913 | Anonymous_Gtid |         1 |         993 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                              |</span><br><span class="line">+------------------+-----+----------------+-----------+-------------+-------------------------------------------------------------------+</span><br></pre></td></tr></table></figure>
+
+<p>命令格式如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">SHOW BINLOG EVENTS</span><br><span class="line">   [IN &#x27;log_name&#x27;]</span><br><span class="line">   [FROM pos]</span><br><span class="line">   [LIMIT [offset,] row_count]</span><br></pre></td></tr></table></figure>
+
+<p>不过这种方式不能看具体变更内容，甚至当某段日志变更内容过大时会直接报错：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; show binlog events in &#x27;mysql-bin.000002&#x27; from 310 limit 1;</span><br><span class="line">ERROR 1220 (HY000): Error when executing command SHOW BINLOG EVENTS: Event too big</span><br></pre></td></tr></table></figure>
+
+
+<p>mysql内也可以看到同样的结果</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">mysql&gt; select @@server_uuid;</span><br><span class="line">+--------------------------------------+</span><br><span class="line">| @@server_uuid                        |</span><br><span class="line">+--------------------------------------+</span><br><span class="line">| d0f27d44-f7d6-11ed-b68d-0242ac110002 |</span><br><span class="line">+--------------------------------------+</span><br><span class="line">1 row in set (0.00 sec)</span><br></pre></td></tr></table></figure>
+
+<p>另一部分就是随事务执行生成的id，这两个组合在一起就能全局（整个系统）唯一确定一个事务。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">root@tanx 03:05  mysql&gt;show master status;</span><br><span class="line">+-------------------+----------+--------------+------------------+------------------------------------------+</span><br><span class="line">| File              | Position | Binlog_Do_DB | Binlog_Ignore_DB | Executed_Gtid_Set                        |</span><br><span class="line">+-------------------+----------+--------------+------------------+------------------------------------------+</span><br><span class="line">| master-bin.000003 |     1326 |              |                  | f9a34f51-dc9e-11ed-ab5b-000c29751c59:1-6 |</span><br><span class="line">+-------------------+----------+--------------+------------------+------------------------------------------+</span><br><span class="line">1 row in set (0.00 sec)</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<h2 id="binlog的格式"><a href="#binlog的格式" class="headerlink" title="binlog的格式"></a>binlog的格式</h2><h4 id="基于行的-ROW"><a href="#基于行的-ROW" class="headerlink" title="基于行的 (ROW)"></a>基于行的 (ROW)</h4><p>保存记录被修改的具体数据，不记录sql语句上下文相关信息。比如某个函数的执行不会被记录，只会记录最后实际需要保存的记录。</p>
+<ul>
+<li>优点：能非常清晰的记录下每行数据的修改细节。能规避某些函数，触发器无法复制到从节点的问题。</li>
+<li>缺点：可能会有大量重复数据，update的批量修改，每行都会产生binlog，会造成日志量大的问题</li>
+</ul>
+<h4 id="基于语句的-STATEMENT"><a href="#基于语句的-STATEMENT" class="headerlink" title="基于语句的 (STATEMENT)"></a>基于语句的 (STATEMENT)</h4><p>每一条会修改数据的sql都会记录在binlog中，因此不会记录实际每行保存的数据，对于大更新语句产生的binlog小多了。然而对于会产生结果的函数，比如随机函数，会造成问题。</p>
+<h4 id="混合-（MIXED）"><a href="#混合-（MIXED）" class="headerlink" title="混合 （MIXED）"></a>混合 （MIXED）</h4><p>在slave日志同步过程中，对于使用now这样的时间函数，MIXED日志格式，会在日志中产生对应的unix_timestamp()*1000的时间字符串，slave在完成同步时，取用的是sqlEvent发生的时间来保证数据的准确性。另外对于一些功能性函数slave能完成相应的数据同步，而对于上面指定的一些类似于UDF函数，导致Slave无法知晓的情况，则会采用ROW格式存储这些Binlog，以保证产生的Binlog可以供Slave完成数据同步。</p>
+<h1 id="binlog的写入"><a href="#binlog的写入" class="headerlink" title="binlog的写入"></a>binlog的写入</h1><p>在事务开启后，每次执行的写语句生成的binlog都会写入到每个线程自己的binlog cache ，在事务提交的时候将数据写入文件，然后根据 配置文件中 sync_binlog的配置决定是否立即执行一次刷盘。</p>
+<ul>
+<li>sync_binlog&#x3D;0 的时候，表示每次提交事务都只 write，不 fsync；</li>
+<li>sync_binlog&#x3D;1 的时候，表示每次提交事务都会执行write并 fsync；</li>
+<li>sync_binlog&#x3D;N(N&gt;1) 的时候，表示每次提交事务都 write，但累积 N 个事务后才 fsync。<br>在对可靠性要求高的场景下，会将sync_binlog配置为1，即每次写入binlog日志都立刻刷入磁盘，但是这样会降低IOPS。其他场景下2-3次事务进行一次刷盘是比较合理的trade off。</li>
+</ul>
+<p>此外还有组提交机制，类似TCP用于避免小包问题的 Nagle算法，先发出的包等待多个小包一起触发搭“顺风车”。组提交也是相同的道理，先触发fsync的等等大伙，多凑几个组员才发车。所以一次提交里面组员越多，节约磁盘 IOPS 的效果越好。</p>
+<h2 id="binlog与从库"><a href="#binlog与从库" class="headerlink" title="binlog与从库"></a>binlog与从库</h2><p>mysql主从架构可以做读写分离轻松扩展系统的读性能，可以主备切换提高系统可用性。</p>
+<p>在读写分离架构中，大致类似这样的拓扑<br><img src="/mysql-binlog/1.png" alt="1"></p>
+<p>备库跟主库之间维持了一个长连接。主库内部有一个线程，专门用于服务备库的这个长连接。一个事务日志同步的完整过程是这样的：</p>
+<ol>
+<li>在备库上通过 change master 命令，设置主库的 IP、端口、用户名、密码，以及要从哪个位置开始请求 binlog，这个位置包含文件名和日志偏移量。</li>
+<li>在备库上执行 start slave 命令，这时候备库会启动两个线程，就是图中的 io_thread 和 sql_thread。其中 io_thread 负责与主库建立连接。</li>
+<li>主库校验完用户名、密码后，开始按照备库 B 传过来的位置，从本地读取 binlog，发给备库。</li>
+<li>备库拿到 binlog 后，写到本地文件，称为中转日志（relay log）。</li>
+<li>sql_thread 读取中转日志，解析出日志里的命令，并执行。</li>
+</ol>
+<h2 id="row-binlog的结构"><a href="#row-binlog的结构" class="headerlink" title="row binlog的结构"></a>row binlog的结构</h2><p>一个典型的insert语句生成的binlog应该是这个样子</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">| mysql-bin.000004 | 371 | Anonymous_Gtid |         1 |         450 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;                                   |</span><br><span class="line">| mysql-bin.000004 | 450 | Query          |         1 |         529 | BEGIN                                                                  |</span><br><span class="line">| mysql-bin.000004 | 529 | Table_map      |         1 |         588 | table_id: 94 (onecloud.a)                                              |</span><br><span class="line">| mysql-bin.000004 | 588 | Write_rows     |         1 |         632 | table_id: 94 flags: STMT_END_F                                         |</span><br><span class="line">| mysql-bin.000004 | 632 | Xid            |         1 |         663 | COMMIT /* xid=39 */                                                    |</span><br><span class="line">| mysql-bin.000004 | 663 | Anonymous_Gtid |         1 |         742 | SET @@SESSION.GTID_NEXT= &#x27;ANONYMOUS&#x27;</span><br></pre></td></tr></table></figure>
+<ol>
+<li>这里 <code>SET @@SESSION.GTID_NEXT= &#39;ANONYMOUS&#39;</code><br>GTID，全称Global transaction identifiers，。MySQL-5.6.2开始支持，MySQL-5.6.10后完善，GTID 分成两部分 GTID&#x3D;servier_uuid:transacton_id，一部分是mysql 的server UUid,UUID保存在mysql数据目录的auto.cnf文件中。GTID主要用于复杂主从复制拓扑下快速定位某个事物是那个节点执行的。</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">bash-4.4# cat auto.cnf</span><br><span class="line">[auto]</span><br><span class="line">server-uuid=d0f27d44-f7d6-11ed-b68d-0242ac110002</span><br></pre></td></tr></table></figure>
+<p>transacton_id，是一个整数，初始值是 1，每次提交事务的时候分配给这个事务，并加 1。</p>
+<ol start="2">
+<li>这里的Table_map中会指明 tableId对应的database名和table名的对应关系，紧接的WriteRow（insert），UpdateRow（update），DeleteRow（delete）事件中包含的tableId和这个对应，就能知道这些增删改事件执行在那个表上。</li>
+</ol>
+<p>但是这里tableId和表名，database名的关系是动态的，必须每次都读取tablemap事件来获取这个绑定关系。</p>
+<ol start="3">
+<li>Write_rows</li>
+</ol>
+<p>show binlog events 这里需要借助mysqlbinlog工具才能查看具体信息。</p>
+<h2 id="一些处理binlog的方案"><a href="#一些处理binlog的方案" class="headerlink" title="一些处理binlog的方案"></a>一些处理binlog的方案</h2><ol>
+<li><p>canal<br>首先就是阿里出品的canal，这个是一套完整的同步方案，包括阿里云内部很多产品都依赖这个方案。<br><a target="_blank" rel="noopener" href="https://github.com/alibaba/canal">https://github.com/alibaba/canal</a></p>
+</li>
+<li><p>mysql-binlog-connector-java<br>这个是一套单纯解析binlog的方案，并没有上层可用性，主备切换方面的处理<br><a target="_blank" rel="noopener" href="https://github.com/osheroff/mysql-binlog-connector-java">https://github.com/osheroff/mysql-binlog-connector-java</a></p>
+</li>
+<li><p>flink-cdcflink-cdc<br>这套就是配合flink食用的方案了，整体完全屏蔽了binlog的细节<br><a target="_blank" rel="noopener" href="https://github.com/ververica/flink-cdc-connectors">https://github.com/ververica/flink-cdc-connectors</a></p>
+</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/mysql-binlog/" title="mysql的binlog机制">https://fenixc9.github.io/mysql-binlog/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/mysql/" rel="tag"># mysql</a>
+              <a href="/tags/ETL/" rel="tag"># ETL</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-how-to-use-future-3/" rel="prev" title="Rust异步系列3 IO trait">
+      <i class="fa fa-chevron-left"></i> Rust异步系列3 IO trait
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/jgrapht/" rel="next" title="Java图论库 Jgrapht">
+      Java图论库 Jgrapht <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%80%8E%E4%B9%88%E5%BC%80%E5%90%AFbinlog%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">怎么开启binlog？</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#binlog%E7%9A%84%E6%A0%BC%E5%BC%8F"><span class="nav-number"></span> <span class="nav-text">binlog的格式</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%A1%8C%E7%9A%84-ROW"><span class="nav-number">0.1.</span> <span class="nav-text">基于行的 (ROW)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E8%AF%AD%E5%8F%A5%E7%9A%84-STATEMENT"><span class="nav-number">0.2.</span> <span class="nav-text">基于语句的 (STATEMENT)</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%B7%B7%E5%90%88-%EF%BC%88MIXED%EF%BC%89"><span class="nav-number">0.3.</span> <span class="nav-text">混合 （MIXED）</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#binlog%E7%9A%84%E5%86%99%E5%85%A5"><span class="nav-number"></span> <span class="nav-text">binlog的写入</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#binlog%E4%B8%8E%E4%BB%8E%E5%BA%93"><span class="nav-number"></span> <span class="nav-text">binlog与从库</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#row-binlog%E7%9A%84%E7%BB%93%E6%9E%84"><span class="nav-number"></span> <span class="nav-text">row binlog的结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E5%A4%84%E7%90%86binlog%E7%9A%84%E6%96%B9%E6%A1%88"><span class="nav-number"></span> <span class="nav-text">一些处理binlog的方案</span></a></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '89e3e725ea3217fd959348c17e2d7011',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】读取文件的困难模式 三">
+<meta property="og:url" content="https://fenixc9.github.io/reading-files-the-hard-way-3/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/1.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/2.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/3.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/4.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/5.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/6.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/7.jpg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/8.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/9.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/10.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/11.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/12.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/13.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/14.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/15.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/16.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/17.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/18.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/18.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/20.svg">
+<meta property="article:published_time" content="2023-12-19T11:42:33.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.184Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/reading-files-the-hard-way-3/1.svg">
+
+<link rel="canonical" href="https://fenixc9.github.io/reading-files-the-hard-way-3/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】读取文件的困难模式 三 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/reading-files-the-hard-way-3/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】读取文件的困难模式 三
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-12-19 19:42:33" itemprop="dateCreated datePublished" datetime="2023-12-19T19:42:33+08:00">2023-12-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>到目前为止，我们已经看到了通过不同编程语言读取文件的多种方法，我们学习了系统调用，如何从汇编中进行这些调用， 然后我们学习了内存映射、虚拟地址空间和通常是用户态和内核交互的一些机制。</p>
+<p>但在我们的探索中，我们总是或多或少地把内核看作一个“黑匣子”。是时候改变这一点了。</p>
+<h1 id="在野兽的肚子里"><a href="#在野兽的肚子里" class="headerlink" title="在野兽的肚子里"></a>在野兽的肚子里</h1><p>在第2部分中，我们使用gdb逐步执行我们的用户态程序readfile。这使我们能够在每条指令之后检查<code>CPU</code>寄存器的状态。但我们无法看到内核中发生了什么。</p>
+<p>我们还使用strace来跟踪系统调用。它比 gdb 噪音小， 因为它只展示在我们的用户层程序与内核通信时的信息。</p>
+<p>现在是时候加强并使用ftrace了。这是一个集成在linux内核中的追踪设施。多亏了它，我们能够追踪各种内核函数和事件。</p>
+<pre><code>酷熊的热心贴士
+Julia Evans 的博客上有一篇精彩的ftrace简介（https://jvns.ca/blog/2017/03/19/getting-started-with-ftrace/）。
+
+说到 Julia，请查看她的精彩杂志！（https://wizardzines.com/）
+</code></pre>
+<p>我们最简单的入门方法是使用trace-cmd。在 Manjaro&#x2F;ArchLinux 上， 有一个 AUR 包，所以我们可以抓住它：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ yay -S trace-cmd</span><br></pre></td></tr></table></figure>
+<p>在 Ubuntu 上，也有一个包：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install trace-cmd</span><br></pre></td></tr></table></figure>
+<p>该计划是：</p>
+<ul>
+<li>启用对所有事件的跟踪ext4 事件（稍后详细介绍）</li>
+<li>运行我们的readfile程序（汇编程序）</li>
+<li>查看报告并尝试拼凑出发生了什么</li>
+</ul>
+<p>我的第一次跟踪没有成功 - 它只包含与 zsh（我的 shell）和 git（由我的 shell 提示调用以显示指示器）。</p>
+<p>事实证明，存在多级缓存，并且&#x2F;etc&#x2F;hosts 已经缓存到最大，所以读取它甚至没有注册。</p>
+<p>幸运的是，我们可以清除所有这些缓存（在系统运行时！） 以 root 身份运行以下命令：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ sync</span><br><span class="line"></span><br><span class="line">$ echo 3 &gt; /proc/sys/vm/drop_caches</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>然后，我们可以开始跟踪（再次以 root 身份）：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ trace-cmd record -e ext4</span><br></pre></td></tr></table></figure>
+<p>然后启动我们的程序，点击Ctrl-C停止trace-cmd，然后再次启动它 trace-cmd 将收集的数据格式化为人类可读的格式：</p>
+<p>Bash</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ trace-cmd report trace.dat &gt; trace.txt</span><br></pre></td></tr></table></figure>
+<p>我们终于得到它了：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">readfile-2056669 [002] 112770.475550: ext4_es_lookup_extent_enter: dev 8,3 ino 16252929 lblk 0</span><br><span class="line">readfile-2056669 [002] 112770.475551: ext4_es_lookup_extent_exit: dev 8,3 ino 16252929 found 1 [0/1) 65019936 WR</span><br><span class="line">readfile-2056669 [002] 112770.475553: ext4_es_lookup_extent_enter: dev 8,3 ino 16252929 lblk 1</span><br><span class="line">readfile-2056669 [002] 112770.475553: ext4_es_lookup_extent_exit: dev 8,3 ino 16252929 found 1 [1/2) 65020464 WR</span><br><span class="line">readfile-2056669 [002] 112770.475565: ext4_es_lookup_extent_enter: dev 8,3 ino 16253092 lblk 0</span><br><span class="line">readfile-2056669 [002] 112770.475565: ext4_es_lookup_extent_exit: dev 8,3 ino 16253092 found 0 [0/0) 0 </span><br><span class="line">readfile-2056669 [002] 112770.475565: ext4_ext_map_blocks_enter: dev 8,3 ino 16253092 lblk 0 len 1 flags </span><br><span class="line">readfile-2056669 [002] 112770.475566: ext4_es_cache_extent: dev 8,3 ino 16253092 es [0/1) mapped 65050624 status W</span><br><span class="line">readfile-2056669 [002] 112770.475566: ext4_ext_show_extent: dev 8,3 ino 16253092 lblk 0 pblk 65050624 len 1</span><br><span class="line">readfile-2056669 [002] 112770.475566: ext4_ext_map_blocks_exit: dev 8,3 ino 16253092 flags  lblk 0 pblk 65050624 len 1 mflags M ret 1</span><br><span class="line">readfile-2056669 [002] 112770.475566: ext4_es_insert_extent: dev 8,3 ino 16253092 es [0/1) mapped 65050624 status W</span><br><span class="line">readfile-2056669 [002] 112770.474893: ext4_es_lookup_extent_enter: dev 8,3 ino 18491454 lblk 0</span><br><span class="line">readfile-2056669 [002] 112770.474893: ext4_es_lookup_extent_exit: dev 8,3 ino 18491454 found 0 [0/0) 0 </span><br><span class="line">readfile-2056669 [002] 112770.474893: ext4_ext_map_blocks_enter: dev 8,3 ino 18491454 lblk 0 len 4 flags </span><br><span class="line">readfile-2056669 [002] 112770.474894: ext4_es_cache_extent: dev 8,3 ino 18491454 es [0/5) mapped 93400358 status W</span><br><span class="line">readfile-2056669 [002] 112770.474894: ext4_ext_show_extent: dev 8,3 ino 18491454 lblk 0 pblk 93400358 len 5</span><br><span class="line">readfile-2056669 [002] 112770.474894: ext4_ext_map_blocks_exit: dev 8,3 ino 18491454 flags  lblk 0 pblk 93400358 len 4 mflags M ret 4</span><br><span class="line">readfile-2056669 [002] 112770.474894: ext4_es_insert_extent: dev 8,3 ino 18491454 es [0/4) mapped 93400358 status W</span><br></pre></td></tr></table></figure>
+<p>这些列的格式如下：</p>
+<p>process_name-pid [cpu_core]  timestamp: event_name: parameters<br>我无法找到每个事件的精确文档，但我们可以 发现这里主要做了三件事：</p>
+<ol>
+<li><p>查找“inode 16252929”</p>
+</li>
+<li><p>查找并映射“inode 16253092”</p>
+</li>
+<li><p>查找并映射“inode 18491454”<br>就是这样。</p>
+<p> 我们学到了什么？<br> ftrace 允许跟踪内核代码内部的行为。我们无法改变它 但我们可以更好地了解正在发生的事情。</p>
+</li>
+</ol>
+<h1 id="我们的路径都去哪儿了？"><a href="#我们的路径都去哪儿了？" class="headerlink" title="我们的路径都去哪儿了？"></a>我们的路径都去哪儿了？</h1><p>而strace向我们展示了&#x2F;etc&#x2F;hosts，即我们正在映射的文件的路径ftrace没有追踪到。相反，它向我们显示索引节点号。要了解原因，我们必须考虑一下文件系统的人体工程学。</p>
+<p>✨ 让我们谈谈符号链接 ✨</p>
+<p>符号链接（简称符号链接）是文件，但它们不是常规文件。 它们指向 另一个 文件，每当打开它们时，另一个文件 应该打开。有..使用符号链接的理由，我不会深入讨论， 相信我这一点。</p>
+<p>要点是，例如，几乎所有 Linux 系统中都有一堆符号链接 在&#x2F;usr&#x2F;lib中：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ ll /usr/lib/x86_64-linux-gnu/libcairo.so*</span><br><span class="line">lrwxrwxrwx 1 root root      21 Oct  1 21:19 /usr/lib/x86_64-linux-gnu/libcairo.so.2 -&gt; libcairo.so.2.11600.0</span><br><span class="line">-rw-r--r-- 1 root root 1203976 Oct  7  2021 /usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0</span><br></pre></td></tr></table></figure>
+<p>此处，libcairo.so.2 指向 libcairo.so.2.11600.0。 如果我们运行像 wc 这样的命令（它计算单词数，但也计算字节数），我们会看到 它正在访问两种情况下所指向的文件：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ wc /usr/lib/x86_64-linux-gnu/libcairo.so.2</span><br><span class="line">   4419   24794 1203976 /usr/lib/x86_64-linux-gnu/libcairo.so.2</span><br><span class="line"></span><br><span class="line">$ wc /usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0 </span><br><span class="line">   4419   24794 1203976 /usr/lib/x86_64-linux-gnu/libcairo.so.2.11600.0</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>但是，它们不是副本。它们只是……符号链接。至于实现细节，我们注意到两件事：这些符号链接文件的大小正是大小 它们指向的路径的不同，并且它们的模式略有不同：</p>
+<p>所以符号链接是带有特殊模式标志的文件，其内容是他们指向的路径。这意味着它们可以悬垂（指向空路径）！</p>
+<pre><code>酷熊的热心贴士
+一个悬垂的符号链接是指向不存在的文件的符号链接。
+
+请参阅下面的示例：
+</code></pre>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">$ echo &quot;Hello there&quot; &gt; regular.txt</span><br><span class="line"></span><br><span class="line">$ cat regular.txt</span><br><span class="line">Hello there</span><br><span class="line"></span><br><span class="line">$ ln -s regular.txt symlink.txt</span><br><span class="line"></span><br><span class="line">$ ll</span><br><span class="line">total 144</span><br><span class="line">drwxrwxr-x  2 amos amos   4096 Mar 11 14:11 ./</span><br><span class="line">drwxrwxrwt 76 root root 135168 Mar 11 14:11 ../</span><br><span class="line">-rw-rw-r--  1 amos amos     12 Mar 11 14:11 regular.txt</span><br><span class="line">lrwxrwxrwx  1 amos amos     11 Mar 11 14:11 symlink.txt -&gt; regular.txt</span><br><span class="line"></span><br><span class="line">$ cat symlink.txt </span><br><span class="line">Hello there</span><br><span class="line"></span><br><span class="line">$ rm regular.txt</span><br><span class="line"></span><br><span class="line">$ cat symlink.txt</span><br><span class="line">cat: symlink.txt: No such file or directory</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="你可以用它制作一个文件系统（或者你可以吗？）"><a href="#你可以用它制作一个文件系统（或者你可以吗？）" class="headerlink" title="你可以用它制作一个文件系统（或者你可以吗？）"></a>你可以用它制作一个文件系统（或者你可以吗？）</h1><p>我们来谈谈文件夹。正如我们所见，符号链接只是文件，带有一种特殊的模式，它们的内容是一个路径。文件夹（目录）不能做同样的事情吗？</p>
+<p>让我们构建一个文件系统。什么是文件系统？只是组织文件的一种方式 以及磁盘上的文件夹、其内容和元数据。你可以想象一个磁盘 作为一块大白板，就像这样：</p>
+<p><img src="/reading-files-the-hard-way-3/1.svg" alt="1"></p>
+<pre><code>酷熊的热心贴士
+在本文的其余部分中，我们将使用“磁盘”一词。什么时候 我们真正的意思是“存储设备”。还更短了！
+</code></pre>
+<p>假设，只是为了好玩，我们将此磁盘划分为一系列块。让我们将它们设置为4096字节（或 4KiB）。这样，它们的大小可能和内核内存页相同。或者是后者的倍数。至少它们是二的幂。</p>
+<p><img src="/reading-files-the-hard-way-3/2.svg" alt="2"></p>
+<p>假设在我们的文件系统中，每个文件夹只是一个名称列表：它们的子节点。我们可以很好地遍历文件系统：</p>
+<ul>
+<li>&#x2F; 的子级列表中有 &#x2F;etc</li>
+<li>&#x2F;etc 的子级列表中有 &#x2F;etc&#x2F;hosts</li>
+<li>&#x2F;etc&#x2F;hosts是一个普通文件</li>
+</ul>
+<p>听起来不错吧？我的意思是，我们仍然需要解决一些问题。</p>
+<p>首先，我们需要确定文件夹和文件在磁盘上的位置。但这并不是一个非常困难的问题。我们可以只有一个路径列表和一个偏移量列表，可能是这样的：</p>
+<p><img src="/reading-files-the-hard-way-3/3.svg" alt="3"></p>
+<p>当我们想要访问<code>/etc/hosts</code>时，我们只需：1) 浏览我们的表，找到正确的条目，然后 2) 阅读它！</p>
+<p><img src="/reading-files-the-hard-way-3/4.svg" alt="4"></p>
+<p>这看起来并没有那么糟糕。为什么会出现问题呢？</p>
+<p><strong>问题 1</strong>：查找文件的时间复杂度为O(n)，其中n是文件数。</p>
+<p>我刚刚统计了我的一个 Linux 系统上的文件，有 其中 1’128’252。听起来像用线性搜索查找文件是会变得昂贵。</p>
+<p><strong>问题 2</strong>：每个文件的内容需要连续。</p>
+<p>在我们当前的布局下，如果文件太大而无法容纳在一个块中， 并且使用了下一个块，那么我们需要移动它：</p>
+<p><img src="/reading-files-the-hard-way-3/5.svg" alt="5"></p>
+<p><strong>问题 3</strong>：元数据与数据混合。</p>
+<p>假设我们要实现 <code>tree</code> 命令。它打印出名字 文件系统中每个文件的模式和大小，无论嵌套有多深。</p>
+<p>根据我们的磁盘布局，我们必须读取每个块的开头 包含一个文件只是为了了解其元数据。当然，同时还有每个文件夹的内容（但这很正常）。</p>
+<p><img src="/reading-files-the-hard-way-3/6.svg" alt="6"></p>
+<p>这尤其成问题，因为读取元数据（这种情况发生得很频繁） 通常）需要大量的寻找(Seeking)。寻找是“跳到某个位置”的过程 不同位置”读取存储设备时。</p>
+<p>这对于光盘读取器或硬盘驱动器来说非常昂贵。对于磁带驱动器来说极其昂贵。</p>
+<p><img src="/reading-files-the-hard-way-3/7.jpg" alt="7"></p>
+<p><strong>问题 4</strong>：重命名操作的开销非常大。</p>
+<p>如果我们想将 &#x2F;etc 重命名为 &#x2F;config，我们有一堆东西要重写：</p>
+<p><img src="/reading-files-the-hard-way-3/8.svg" alt="8"></p>
+<p>这意味着在整个磁盘的许多不同位置，阅读一堆条目来找出我们应该重写的位置，然后写入。 还记得搜素（Seeking）昂贵吗？忘掉它吧。</p>
+<p>目录中的子文件夹和文件越多，情况就会变得更糟。</p>
+<p><strong>问题 5</strong>：每个文件操作都需要解析整个路径。</p>
+<p>根据我们的方案，如果我们想从<code>/etc/hosts</code>到 <code>/etc</code>，有 没有直接链接！我们必须将 <code>/etc/hosts</code> 解析为 [“etc”, “hosts”]， 删除最后一个以获取 [“etc”] 并从中构建 &#x2F;etc 路径。</p>
+<p>然后我们必须在一开始就使用我们的查找表来查找 &#x2F;etc 到底是什么。</p>
+<p>总而言之，这是一个<em>非常糟糕的磁盘布局</em>。从技术上讲，它适用于一个玩具操作系统，但我不想将其用作日常驱动程序。</p>
+<pre><code>我们学到了什么？
+文件系统的磁盘布局必须仔细设计。
+
+枚举文件、向下或向上遍历等操作， 重命名文件夹，应该可以通过尽可能少的操作来实现，最小化寻找。
+</code></pre>
+<h1 id="输入索引节点"><a href="#输入索引节点" class="headerlink" title="输入索引节点"></a>输入索引节点</h1><p>我们从第一次尝试文件系统磁盘中学到的教训之一：我们应该将元数据和数据分开。我们也应该寻找另一种方式来引用文件而不是完全限定名称。</p>
+<p>无论我们的文件是否位于<code>/etc/hosts</code>我们的<code>/config/hosts</code> - 它是同一个文件！ 我们的设计应该反映这一点。</p>
+<p>因此，让我们首先尽可能早的把所有元数据存储在一起。我们需要保留一大块空间，大到足够描述磁盘上的每个文件。</p>
+<p>这将是我们的索引，每个元素都是一个“索引节点”或“inode”。</p>
+<p><img src="/reading-files-the-hard-way-3/9.svg" alt="9"></p>
+<p>每个 inode 都将包含通用的内容，而且还将<strong>包含我们可以在其中找到其数据的块的编号</strong>：</p>
+<p><img src="/reading-files-the-hard-way-3/10.svg" alt="10"></p>
+<p>至于文件夹 - 简单！在数据块中，我们存储目录列表 条目。每个条目都引用另一个inode，并为其指定一个名称。</p>
+<p><img src="/reading-files-the-hard-way-3/11.svg" alt="11"></p>
+<p>让我们回顾一下。我们的问题真的解决了吗？首先，如何我们要在这个新方案中查找文件吗？</p>
+<p>假设我们要打开&#x2F;etc&#x2F;hosts。首先我们读取 <code>/</code> 的 inode。为了方便起见，让我们决定，因为它是文件系统根（最顶层）节点，它将始终位于 inode 1 中：</p>
+<p><img src="/reading-files-the-hard-way-3/12.svg" alt="12"></p>
+<p>然后我们读取其目录条目，查找“etc”。然后我们读 “etc”的索引节点。然后我们读取其整个目录，查找“hosts”。 最后，我们读取“hosts”的数据。</p>
+<p>我制作了一个快速图表，以便更容易理解：</p>
+<p><img src="/reading-files-the-hard-way-3/13.svg" alt="13"></p>
+<p>好吧，这个流程看起来并不简单。</p>
+<p>但是与我们之前的方案相比，有一个优点。我们多次搜索更小的目录条目集，而不是通过绝对路径在文件系统中的所有文件中进行线性搜索：</p>
+<p><img src="/reading-files-the-hard-way-3/14.svg" alt="14"></p>
+<pre><code>酷熊的热心贴士
+上图并未按比例绘制：我们只是减少了最坏的情况 110 万次字符串比较到 228 次字符串比较。
+
+新的最坏情况是旧情况的 0.02%。
+
+当然，这取决于每个目录有多少个文件！
+</code></pre>
+<p><strong>重命名操作怎么样</strong>？。您可能已经注意到，在我们的新方案中，inode不包含路径信息-没有name字段。</p>
+<p>这些名称实际上包含在目录条目中：</p>
+<p><img src="/reading-files-the-hard-way-3/15.svg" alt="15"></p>
+<p>如果我们想重命名&#x2F;etc，我们只需要更改目录即可 条目 - 我们不需要触及任何子节点的索引节点， 无论子目录层次结构有多深：</p>
+<p><img src="/reading-files-the-hard-way-3/16.svg" alt="16"></p>
+<p>如果我们想将 &#x2F;etc&#x2F;hosts 移动到 &#x2F;hosts，我们只需删除 &#x2F;etc的 inode 中的目录条目，并向 &#x2F;的 inode 加一。</p>
+<p>同样，无论有多少个目录，操作次数都是固定的 以及我们目录中的文件。这要好得多。</p>
+<p>现在，向下遍历非常高效（比以前更高），但是 向上遍历（例如，从 &#x2F;etc 到 &#x2F;）仍然需要 操纵路径，我们不想这样做。</p>
+<p>我们有个主意：如果我们向每个目录添加一个条目会怎么样？ 给它的父级？我们可以称其为“..”。对于根，我们只需制作 它指向自身：</p>
+<p><img src="/reading-files-the-hard-way-3/17.svg" alt="17"></p>
+<h1 id="解决剩余问题"><a href="#解决剩余问题" class="headerlink" title="解决剩余问题"></a>解决剩余问题</h1><p>我不了解你的情况，但到目前为止我对我们的磁盘布局非常满意。</p>
+<p>然而，（至少）有两件事我们可以做得更好。</p>
+<p>现在，每个目录条目都以不特定的顺序存储在列表中。 为了找到特定的条目，我们必须进行线性搜索，即。每个条目一个接一个做比较，只有当我们找到我们所找到的内容时才停止查找。</p>
+<p>仅当目录中的文件不超过几千个时，这才实用。如果我们遇到几万、几十万的情况，那么会开始变得非常缓慢。</p>
+<p>一个潜在的解决方案是散列（hash）所有条目的名称，并使用 自平衡二叉搜索树。</p>
+<p>我不会在这里详细介绍，但基本上，它允许插入（添加 一条记录）、删除（删除一条记录）、<strong>对数时间</strong>搜索， 这意味着它会比线性数据结构快得多。</p>
+<pre><code>熊的热心贴士
+《数据结构》是一个丰富而复杂的领域，这需要 很多很多文章。
+
+我们今天不去那里。
+</code></pre>
+<p>第二个问题是我们的文件仍然必须连续。如果 它们长大了，我们可能不得不将它们移到另一组块（block）中。我们可能 甚至发现没有足够大的连续块（block）来容纳文件！</p>
+<p>为了解决这个问题，我们可以使用范围（extents）。</p>
+<p>对于每个文件，我们可以存储一系列(start, length)对：</p>
+<p><img src="/reading-files-the-hard-way-3/18.svg" alt="18"></p>
+<p>这带来了一个新问题：以前，如果我们想读取只是文件的后半部分，我们可以简单地计算出文件的地址第一个块：</p>
+<p><img src="/reading-files-the-hard-way-3/18.svg" alt="18"></p>
+<p>但是现在，文件的中间可能位于任何范围内。这是 不再是简单的算术。为了解决这个问题，我们还可以使用树形数据结构。</p>
+<p>如果我们想从头开始读取文件，那么我们可以简单地 按顺序走树。如果我们正在寻找其他地方，我们只需 在树中进行搜索，直到找到正确的范围，然后然后 这么简单的算术。</p>
+<h1 id="现在来体验一下现实世界"><a href="#现在来体验一下现实世界" class="headerlink" title="现在来体验一下现实世界"></a>现在来体验一下现实世界</h1><p>玩够了！是时候看看真正的实时文件系统了。</p>
+<p>在我们开始考虑磁盘布局之前，我们正在跟踪 打开和映射时的内核事件&#x2F;etc&#x2F;hosts。</p>
+<p>我们得到的跟踪包含如下行：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">ext4_ext_map_blocks_enter: dev 8,3 ino 18491454 lblk 0 len 4 flags </span><br><span class="line"></span><br><span class="line">ext4_ext_map_blocks_enter: dev 8,3 ino 16253092 lblk 0 len 1 flags </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在这更有意义了。</p>
+<p>第一行引用 inode“18491454” （我们现在知道这意味着什么）。这 <em>ext</em> 事件名称的一部分可能指的是范围，因为有一个 “镜头4” （长度为4）。</p>
+<p>可能是&#x2F;etc&#x2F;hosts吗？</p>
+<pre><code>酷熊的热心贴士
+在 Linux 上，我们可以将 -i 标志传递给 ls 命令，使其显示 inode 编号。
+</code></pre>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ls -i -l /etc/hosts</span><br><span class="line">16253092 -rw-r--r-- 1 root root 220 Oct  1 21:21 /etc/hosts</span><br></pre></td></tr></table></figure>
+<p>不！ &#x2F;etc&#x2F;hosts 是 16253092。这是第二行。</p>
+<p>那么第一个是什么？</p>
+<p>好吧，还记得我说过二进制文件在执行时会被映射吗？</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ls -i ./readfile</span><br><span class="line">18491454 ./readfile</span><br></pre></td></tr></table></figure>
+<p>答对了。</p>
+<p>据我们所知，真实的 Linux 系统使用的文件系统 也在使用inode。还有范围！</p>
+<p>我们可以使用 df 命令找出它是什么文件系统（具体来说， -T 标志）：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ df -Th /</span><br><span class="line">Filesystem     Type  Size  Used Avail Use% Mounted on</span><br><span class="line">/dev/sda3      ext4  548G   96G  425G  19% /</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>所以，显然是ext4。它似乎是最新的文档 ext4 位于 kernel.org。</p>
+<p>不幸的是，这个文档似乎不是由ext4作者编写的，而是由其他人在Linux中阅读ext4的代码时写的。哦，好吧，这就是生活。</p>
+<p>但首先：这是什么<code>/dev/sda3</code>？</p>
+<p>好吧，还记得我说过内核是老大吗？并且它控制了用户态进程所能看到的现实？对于文件来说，这更是如此。</p>
+<p>并非所有可以 open()’d 的东西都是传统意义上的文件。</p>
+<p>有些只是..资源。</p>
+<p>例如，<code>/proc/cpuinfo</code> “包含”有关已安装 CPU 的信息：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ head -5 /proc/cpuinfo</span><br><span class="line">processor       : 0</span><br><span class="line">vendor_id       : AuthenticAMD</span><br><span class="line">cpu family      : 25</span><br><span class="line">model           : 33</span><br><span class="line">model name      : AMD Ryzen 9 5950X 16-Core Processor</span><br></pre></td></tr></table></figure>
+<p>实际上并不在任何存储设备上。这只是内核的一种方式 通过标准系统调用为用户态进程提供一些信息 例如 open、read、write 和 close。</p>
+<p><code>/proc/self/</code>是一个包含当前信息的目录 运行过程。如果我们像这样修改 Go 程序：</p>
+<p>Go code</p>
+<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">    <span class="string">&quot;fmt&quot;</span></span><br><span class="line">    <span class="string">&quot;strings&quot;</span></span><br><span class="line">    <span class="string">&quot;io/ioutil&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    payload, _ := ioutil.ReadFile(<span class="string">&quot;/proc/self/cmdline&quot;</span>)</span><br><span class="line">    fmt.Printf(<span class="string">&quot;%#v\n&quot;</span>, strings.Split(<span class="type">string</span>(payload), <span class="string">&quot;\x00&quot;</span>))</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>…然后像这样运行它，它会打印它的参数：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ go build ./main.go</span><br><span class="line"></span><br><span class="line">$ ./main &quot;foo&quot; &quot;argument 2&quot; &quot;bar&quot;</span><br><span class="line">[]string&#123;&quot;./main&quot;, &quot;foo&quot;, &quot;argument 2&quot;, &quot;bar&quot;, &quot;&quot;&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>事实上，在《Unix 哲学》中，一切皆文件。</p>
+<pre><code>酷熊的热心贴士
+这让很多人感到愤怒(https://en.wikipedia.org/wiki/The_UNIX-HATERS_Handbook)。
+</code></pre>
+<p>因此，<code>/dev/sda3</code> 只是一个“文件”。我们的根ext4分区所包含的全部内容。</p>
+<p>如果我们想要整个磁盘，我们会打开&#x2F;dev&#x2F;sda。那我们就不得不学习分区表了，这个最好留待以后。</p>
+<h1 id="让我们读取整个分区"><a href="#让我们读取整个分区" class="headerlink" title="让我们读取整个分区"></a>让我们读取整个分区</h1><p>现在我们已经完成了介绍性材料，让我们直接进入正题。</p>
+<p>我们将在下一部分中使用 Rust。</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cargo new read-raw-ext4</span><br><span class="line">     Created binary (application) `read-raw-ext4` package</span><br><span class="line"></span><br><span class="line">$ cd read-raw-ext4/</span><br></pre></td></tr></table></figure>
+<p>让我们添加我们需要的板条箱之一：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add hex-slice@0.1</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding hex-slice v0.1.4 to dependencies.</span><br><span class="line">    Updating crates.io index</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Rust code<br>&#x2F;&#x2F; in <code>src/main.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> hex_slice::AsHex;</span><br><span class="line"><span class="keyword">use</span> std::&#123;fs::OpenOptions, io::Read&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), std::io::Error&gt; &#123;</span><br><span class="line">    <span class="comment">// open our ext4 partition, READ-ONLY.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// allocate a 128-byte buffer</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">buf</span> = <span class="built_in">vec!</span>[<span class="number">0u8</span>; <span class="number">128</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// read the first 128 bytes of the file</span></span><br><span class="line">    file.<span class="title function_ invoke__">read_exact</span>(&amp;<span class="keyword">mut</span> buf)?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// print it as hexadecimal</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;:x&#125;&quot;</span>, buf.<span class="title function_ invoke__">as_hex</span>());</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>这可以愉快地构建cargo build，但它不会运行：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ cargo build</span><br><span class="line">   Compiling hex-slice v0.1.4</span><br><span class="line">   Compiling read-raw-ext4 v0.1.0 (/home/amos/bearcove/read-raw-ext4)</span><br><span class="line">    Finished dev [unoptimized + debuginfo] target(s) in 0.37s</span><br><span class="line"></span><br><span class="line">$ ./target/debug/read-raw-ext4 </span><br><span class="line">Error: Os &#123; code: 13, kind: PermissionDenied, message: &quot;Permission denied&quot; &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>看，我们当前正在以普通用户身份运行该程序。如果任何用户都可以随意访问任何分区，然后他们就可以绕过文件权限。</p>
+<p>那会很糟糕。</p>
+<p>所以，让我们假装我们热衷于这一分钟，并且：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ./target/debug/read-raw-ext4 </span><br><span class="line">[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>啊。它充满了零。我们可能需要文档(<a target="_blank" rel="noopener" href="https://www.kernel.org/doc/html/latest/filesystems/ext4/overview.html)%E3%80%82">https://www.kernel.org/doc/html/latest/filesystems/ext4/overview.html)。</a></p>
+<p>这是它要说的：</p>
+<pre><code>对于块组0的特殊情况，前1024字节未使用，以允许安装x86引导扇区和其他怪事。超级块将从偏移量 1024 字节开始，无论是哪个块（通常是 0）。
+</code></pre>
+<p>好吧，让我们从字节 1024 开始读取。我们将使用 positioned-io crate (<a target="_blank" rel="noopener" href="https://crates.io/crates/positioned-io)%E4%B8%BA%E6%AD%A4%E3%80%82">https://crates.io/crates/positioned-io)为此。</a></p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add positioned-io@0.3</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding positioned-io v0.3 to dependencies.</span><br><span class="line">             Features as of v0.3.0:</span><br><span class="line">             + byteorder</span><br><span class="line">    Updating crates.io index</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Rust code<br>&#x2F;&#x2F; in <code>src/main.rs</code></p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> hex_slice::AsHex;</span><br><span class="line"><span class="keyword">use</span> positioned_io::ReadAt;</span><br><span class="line"><span class="keyword">use</span> std::fs::OpenOptions;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), std::io::Error&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">buf</span> = <span class="built_in">vec!</span>[<span class="number">0u8</span>; <span class="number">128</span>];</span><br><span class="line"></span><br><span class="line">    <span class="comment">// read 128 bytes of the file starting at offset 1024</span></span><br><span class="line">    file.<span class="title function_ invoke__">read_exact_at</span>(<span class="number">1024</span>, &amp;<span class="keyword">mut</span> buf)?;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;:x&#125;&quot;</span>, buf.<span class="title function_ invoke__">as_hex</span>());</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">   Compiling libc v0.2.140</span><br><span class="line">   Compiling byteorder v1.4.3</span><br><span class="line">   Compiling positioned-io v0.3.1</span><br><span class="line">   Compiling read-raw-ext4 v0.1.0 (/home/amos/bearcove/read-raw-ext4)</span><br><span class="line">    Finished dev [unoptimized + debuginfo] target(s) in 0.84s</span><br><span class="line">[0 e0 2d 2 0 3b b7 8 c0 8f 6f 0 3b 9 d 7 ac 7e 10 2 0 0 0 0 2 0 0 0 2 0 0 0 0 80 0 0 0 80 0 0 0 20 0 0 c5 b4 4 64 c4 b4 4 64 43 0 ff ff 53 ef 1 0 1 0 0 0 98 92 38 63 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 b 0 0 0 0 1 0 0 3c 0 0 0 c6 2 0 0 6b 4 0 0 f7 6a 4c a7 98 2f 4d 8b bb cb ae 71 15 ed d6 90 0 0 0 0 0 0 0 0]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在我们开始做饭了！文档提到了“超级块”，如果我们阅读 它的结构，它说我们应该找到幻数0xEF53 偏移量 0x38。它还说它是一个小端 16 位整数。</p>
+<p>嗯，有一个板条箱可以解决这个问题：byteorder。</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add byteorder@1.4</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding byteorder v1.4 to dependencies.</span><br><span class="line">             Features as of v1.4.0:</span><br><span class="line">             + std</span><br><span class="line">             - i128</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>让我们再添加一个用于错误处理：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add color-eyre@0.6</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding color-eyre v0.6 to dependencies.</span><br><span class="line">             Features as of v0.6.0:</span><br><span class="line">             + capture-spantrace</span><br><span class="line">             + color-spantrace</span><br><span class="line">             + tracing-error</span><br><span class="line">             + track-caller</span><br><span class="line">             - issue-url</span><br><span class="line">             - url</span><br><span class="line">    Updating crates.io index</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>由于我们将阅读很多内容，因此让我们创建一个辅助结构。 我们还需要一些 use 指令：</p>
+<p>Rust code<br>&#x2F;&#x2F; this will let us read integers of various width</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> byteorder::&#123;LittleEndian, ReadBytesExt&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// a cursor keeps track of our position within any</span></span><br><span class="line"><span class="comment">// resource that implements ReadAt.</span></span><br><span class="line"><span class="keyword">use</span> positioned_io::&#123;ReadAt, Cursor&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// this gives us a generic error type that&#x27;s pretty solid by default</span></span><br><span class="line"><span class="keyword">use</span> color_eyre::<span class="type">Result</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Reader</span>&lt;IO&gt; &#123;</span><br><span class="line">  inner: IO,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;IO: ReadAt&gt; Reader&lt;IO&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(inner: IO) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; inner &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">u16</span>(&amp;<span class="keyword">self</span>, offset: <span class="type">u64</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">u16</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cursor</span> = Cursor::<span class="title function_ invoke__">new_pos</span>(&amp;<span class="keyword">self</span>.inner, offset);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(cursor.read_u16::&lt;LittleEndian&gt;()?)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在，任何时候我们想从分区中读取某些内容，我们都会首先创建一个 positioned_io::Slice，将其传递给 Reader，并使用它。</p>
+<pre><code>酷熊的热心贴士
+请注意，File、Slice 或 Reader 都不需要是可变的，因为它们都不在其中维护位置信息。
+
+它们甚至可以同时使用！
+</code></pre>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> positioned_io::Slice;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// create a slice that corresponds to the superblock</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(Slice::<span class="title function_ invoke__">new</span>(file, <span class="number">1024</span>, <span class="literal">None</span>));</span><br><span class="line"></span><br><span class="line">    <span class="comment">// as per the docs:</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">magic</span> = r.<span class="title function_ invoke__">u16</span>(<span class="number">0x38</span>)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;magic = &#123;magic:x&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">magic = ef53</span><br></pre></td></tr></table></figure>
+<p>嘿，这就是文档给我们的价值！我们在正确的轨道。</p>
+<h1 id="块组-Block-Group"><a href="#块组-Block-Group" class="headerlink" title="块组(Block Group)"></a>块组(Block Group)</h1><p>在我们的玩具磁盘布局中，我们将磁盘划分为块。<code>ext4</code>确实如此 只是同样的事情！在超级块的偏移量0x18处，我们发现块的大小。</p>
+<p>好吧，我们找到n，其中块大小为2 ^ (10 + n)。</p>
+<p>我们需要向 Reader 添加一个u32 方法：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;IO: ReadAt&gt; Reader&lt;IO&gt; &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(inner: IO) <span class="punctuation">-&gt;</span> <span class="keyword">Self</span> &#123;</span><br><span class="line">        <span class="keyword">Self</span> &#123; inner &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">u16</span>(&amp;<span class="keyword">self</span>, offset: <span class="type">u64</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">u16</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cursor</span> = Cursor::<span class="title function_ invoke__">new_pos</span>(&amp;<span class="keyword">self</span>.inner, offset);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(cursor.read_u16::&lt;LittleEndian&gt;()?)</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 👇 new!</span></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">u32</span>(&amp;<span class="keyword">self</span>, offset: <span class="type">u64</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">u32</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">cursor</span> = Cursor::<span class="title function_ invoke__">new_pos</span>(&amp;<span class="keyword">self</span>.inner, offset);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(cursor.read_u32::&lt;LittleEndian&gt;()?)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>在 main 中，做一些数学运算：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(Slice::<span class="title function_ invoke__">new</span>(file, <span class="number">1024</span>, <span class="literal">None</span>));</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">magic</span> = r.<span class="title function_ invoke__">u16</span>(<span class="number">0x38</span>)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;magic = &#123;magic:x&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 👇 new!</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">n</span> = r.<span class="title function_ invoke__">u32</span>(<span class="number">0x18</span>)?;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">block_size</span> = <span class="number">1</span> &lt;&lt; (<span class="number">10</span> + n);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;block_size = &#123;block_size&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">magic = ef53</span><br><span class="line">block_size = 4096</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>多么幸运啊！块大小为 4KB，就像我们的玩具磁盘布局一样。</p>
+<p>但是，如果我们查看文档，我们会注意到这些块是分组的 （分成..块组）。</p>
+<pre><code>ext4文件系统分为一系列块组。为了减少碎片造成的性能困难，块分配器尽力将每个文件的块保留在同一组中，从而减少寻道时间。块组的大小在`sb.s_blocks_per_group`中指定，也可以`8 * block_size_in_bytes` 来计算。在默认块大小为4kb的情况下，每组包含32768个块。块组的数量是设备的大小，除以块组的大小。   -- 内核文档。
+</code></pre>
+<p>这些在…组描述符中进行了描述（GDT 代表 “组描述符表”）：</p>
+<pre><code>标准块组的布局大致如下（每个字段将在下面的单独部分中讨论）：
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Group 0 Padding</th>
+<th>ext4 Super Block</th>
+<th>Group Descriptors</th>
+<th>Reserved GDT Blocks</th>
+<th>Data Block Bitmap</th>
+<th>inode Bitmap</th>
+<th>inode Table</th>
+<th>Data Blocks</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1024 bytes</td>
+<td>1 block</td>
+<td>many blocks</td>
+<td>many blocks</td>
+<td>1 block</td>
+<td>1 block</td>
+<td>many blocks</td>
+<td>many more blocks</td>
+</tr>
+</tbody></table>
+<p>每组的块数存储在超级块中， 在偏移量 0x20 处：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">bpg</span> = r.<span class="title function_ invoke__">u32</span>(<span class="number">0x20</span>)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;blocks per group = &#123;bpg&#125;&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">magic = ef53</span><br><span class="line">block_size = 4096</span><br><span class="line">blocks per group = 32768</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>最后，每组的inodes数量存储在偏移量0x28处；</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ipg</span> = r.<span class="title function_ invoke__">u32</span>(<span class="number">0x28</span>)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;inodes per group = &#123;ipg&#125;&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">magic = ef53</span><br><span class="line">block_size = 4096</span><br><span class="line">blocks per group = 32768</span><br><span class="line">inodes per group = 8192</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>好消息是所有这些值看起来都是合法的。坏消息 是我们还远未读取索引节点。</p>
+<h1 id="读取ext4中的inode"><a href="#读取ext4中的inode" class="headerlink" title="读取ext4中的inode"></a>读取ext4中的inode</h1><p>让我们回顾一下。ext4分区以1024字节的填充开始，然后是一个超级块，其中包含各种设置，例如大小块的数量、每组块的数量、每组inode的数量。</p>
+<p>然后是块组描述符。这些包含的偏移量 有几件事，但我们感兴趣的是索引节点表：<br><img src="/reading-files-the-hard-way-3/20.svg" alt="20"></p>
+<p>让我们从头开始 - 查找 “&#x2F;“ 的inode。</p>
+<p>ext4 中有一些特殊的 inode：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">inode号	  目的</span><br><span class="line">0	      不存在；没有索引节点 0。</span><br><span class="line">1	      有缺陷的块列表。</span><br><span class="line">2	      根目录。</span><br><span class="line">3	      用户配额。</span><br><span class="line">4	      团体名额。</span><br><span class="line">5	      引导加载程序。</span><br><span class="line">6	      取消删除目录。</span><br><span class="line">7	      保留的组描述符 inode。 （“调整索引节点大小”）</span><br><span class="line">8	      日志索引节点。</span><br><span class="line">9	      “排除”是指“排除”。 inode，用于快照（？）</span><br><span class="line">10	       副本 inode，用于非上游功能？</span><br><span class="line">11	      传统的第一个非保留 inode。通常这是丢失+找到的目录。请参阅超级块中的 s_first_ino。</span><br><span class="line">                  </span><br><span class="line">                           — 内核文档</span><br></pre></td></tr></table></figure>
+
+<p>文档看起来和我们一样有信心。那些问题 那里有标记..非常棒。</p>
+<p>无论如何，根(“&#x2F;“)的 inode始终是<code>2</code>。 我们如何找到它？ 同样，文档有帮助：</p>
+<h1 id="4-1-2-寻找索引节点"><a href="#4-1-2-寻找索引节点" class="headerlink" title="4.1.2.寻找索引节点"></a>4.1.2.寻找索引节点</h1><pre><code>每个块组包含 sb-&gt;s_inodes_per_group inode。由于 inode 0 被定义为不存在，因此可以使用以下公式查找 inode 所在的块组：`bg = (inode_num - 1) / sb-&gt;s_inodes_per_group`。可以在块组的索引节点表中找到特定的索引节点，位置为 index = (inode_num - 1) % sb-&gt;s_inodes_per_group。要获取 inode 表中的字节地址，请使用 offset = index * sb-&gt;s_inode_size。
+
+— 内核文档
+</code></pre>
+<p>这是有道理的！</p>
+<p>既然我们使用的是一种好的编程语言，那么让我们开始构建一些抽象。</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add custom_debug@0.5</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding custom_debug v0.5 to dependencies.</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>首先是超级块：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// this is like derive(Debug), but better.</span></span><br><span class="line"><span class="comment">// see https://lib.rs/crates/custom_debug</span></span><br><span class="line"><span class="keyword">use</span> custom_debug::&#123;<span class="built_in">Debug</span> <span class="keyword">as</span> CustomDebug&#125;;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(CustomDebug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Superblock</span> &#123;</span><br><span class="line">    <span class="meta">#[debug(format = <span class="string">&quot;&#123;:x&#125;&quot;</span>)]</span></span><br><span class="line">    magic: <span class="type">u16</span>,</span><br><span class="line">    block_size: <span class="type">u64</span>,</span><br><span class="line">    blocks_per_group: <span class="type">u64</span>,</span><br><span class="line">    inodes_per_group: <span class="type">u64</span>,</span><br><span class="line">    inode_size: <span class="type">u64</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Superblock</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(Slice::<span class="title function_ invoke__">new</span>(dev, <span class="number">1024</span>, <span class="literal">None</span>));</span><br><span class="line">        <span class="comment">// note: we&#x27;re casting a few fields to `u64` now.</span></span><br><span class="line">        <span class="comment">// this will save us a bunch of grief later.</span></span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            magic: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x38</span>)?,</span><br><span class="line">            block_size: (<span class="number">2u32</span>.<span class="title function_ invoke__">pow</span>(<span class="number">10</span> + r.<span class="title function_ invoke__">u32</span>(<span class="number">0x18</span>)?)) <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            blocks_per_group: r.<span class="title function_ invoke__">u32</span>(<span class="number">0x20</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            inodes_per_group: r.<span class="title function_ invoke__">u32</span>(<span class="number">0x28</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            inode_size: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x58</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>让我们来试一下：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    color_eyre::<span class="title function_ invoke__">install</span>()?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// open our ext4 partition, READ-ONLY.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">sb</span> = Superblock::<span class="title function_ invoke__">new</span>(&amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;sb:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">Superblock &#123;</span><br><span class="line">    magic: ef53,</span><br><span class="line">    block_size: 4096,</span><br><span class="line">    blocks_per_group: 32768,</span><br><span class="line">    inodes_per_group: 8192,</span><br><span class="line">    inode_size: 256,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>看起来不错！</p>
+<p>现在让我们为块组描述符创建一个类型。我们要去 将其用作常量的容器：块组的大小 描述符：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">BlockGroupDescriptor</span> &#123;&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">BlockGroupDescriptor</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> SIZE: <span class="type">u64</span> = <span class="number">64</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，让我们为块组编号创建一个类型。当然，这只是 一个数字 - 但我们将在其上添加一个方法来获取描述符的一部分。</p>
+<p>酷熊的热心贴士<br>具有单个字段的元组或结构称为newtype。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug, Clone, Copy)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">BlockGroupNumber</span>(<span class="type">u64</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">BlockGroupNumber</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">desc_slice</span>&lt;T&gt;(<span class="keyword">self</span>, sb: &amp;Superblock, dev: T) <span class="punctuation">-&gt;</span> Slice&lt;T&gt;</span><br><span class="line">    <span class="keyword">where</span></span><br><span class="line">        T: ReadAt,</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="built_in">assert!</span>(sb.block_size != <span class="number">1024</span>, <span class="string">&quot;1024 block size not supported&quot;</span>);</span><br><span class="line">        <span class="comment">// the superblock takes up 1 block</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">gdt_start</span> = sb.block_size;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">offset</span> = gdt_start + <span class="keyword">self</span>.<span class="number">0</span> * BlockGroupDescriptor::SIZE;</span><br><span class="line">        Slice::<span class="title function_ invoke__">new</span>(dev, offset, <span class="literal">None</span>)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，让我们为 inode 编号创建一个类型！我们将添加一个方法 它告诉我们特定 inode 位于哪个块组中。</p>
+<p>Rust code</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">#[derive(Debug, Clone, Copy)]</span><br><span class="line">struct InodeNumber(u64);</span><br><span class="line"></span><br><span class="line">impl InodeNumber &#123;</span><br><span class="line">    fn blockgroup_number(self, sb: &amp;Superblock) -&gt; BlockGroupNumber &#123;</span><br><span class="line">        let n = (self.0 - 1) / sb.inodes_per_group;</span><br><span class="line">        BlockGroupNumber(n)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>让我们尝试一下这一切。我们正在寻找 inode 2：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    color_eyre::<span class="title function_ invoke__">install</span>()?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// open our ext4 partition, READ-ONLY.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">sb</span> = Superblock::<span class="title function_ invoke__">new</span>(&amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;sb:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">root_bg</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">blockgroup_number</span>(&amp;sb);</span><br><span class="line">    dbg!(&amp;root_bg);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">buf</span> = <span class="built_in">vec!</span>[<span class="number">0u8</span>; <span class="number">64</span>];</span><br><span class="line">    root_bg.<span class="title function_ invoke__">desc_slice</span>(&amp;sb, &amp;file).<span class="title function_ invoke__">read_at</span>(<span class="number">0</span>, &amp;<span class="keyword">mut</span> buf)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;:x&#125;&quot;</span>, buf.<span class="title function_ invoke__">as_hex</span>());</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">Superblock &#123;</span><br><span class="line">    magic: ef53,</span><br><span class="line">    block_size: 4096,</span><br><span class="line">    blocks_per_group: 32768,</span><br><span class="line">    inodes_per_group: 8192,</span><br><span class="line">    inode_size: 256,</span><br><span class="line">&#125;</span><br><span class="line">[src/main.rs:92] &amp;root_bg = BlockGroupNumber(</span><br><span class="line">    0,</span><br><span class="line">)</span><br><span class="line">[47 4 0 0 57 4 0 0 67 4 0 0 a6 4d ee 1f 2 0 4 0 0 0 0 0 2b 7e e7 d ed 1f a4 83 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 a8 e1 c3 9c 0 0 0 0]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>正如预期的那样，<code>inode 2</code> 位于块组 0 中，并且描述符好吧，切片并不全为零，所以这是一个开始。</p>
+<p>块描述符中我们唯一关心的是 inode 表的偏移量。与大多数其他地点一样， 这是一个块号。</p>
+<p>这个有点烦人，因为低 32 位是 存储在0x8，高32位存储在0x28。</p>
+<p>我们可以直接在BlockGroupDescriptor中进行一些操作， 但让我们向 Reader 添加一个方便的方法：</p>
+<p>Rust code</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">// in `impl Reader &#123;`</span><br><span class="line"></span><br><span class="line">    fn u64_lohi(&amp;self, lo: u64, hi: u64) -&gt; Result&lt;u64&gt; &#123;</span><br><span class="line">        Ok(self.u32(lo)? as u64 + ((self.u32(hi)? as u64) &lt;&lt; 32))</span><br><span class="line">    &#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>让我们填写BlockGroupDescriptor：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">BlockGroupDescriptor</span> &#123;</span><br><span class="line">    inode_table: <span class="type">u64</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">BlockGroupDescriptor</span> &#123;</span><br><span class="line">    <span class="keyword">const</span> SIZE: <span class="type">u64</span> = <span class="number">64</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(slice: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(slice);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            inode_table: r.<span class="title function_ invoke__">u64_lohi</span>(<span class="number">0x8</span>, <span class="number">0x28</span>)?,</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在，我们可以添加一个方法来直接抓取块组 BlockGroupNumber 的描述符：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl BlockGroupNumber</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">desc</span>(<span class="keyword">self</span>, sb: &amp;Superblock, dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;BlockGroupDescriptor&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">slice</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">desc_slice</span>(sb, dev);</span><br><span class="line">    BlockGroupDescriptor::<span class="title function_ invoke__">new</span>(&amp;slice)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>再次，让我们尝试一下：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    color_eyre::<span class="title function_ invoke__">install</span>()?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// open our ext4 partition, READ-ONLY.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">sb</span> = Superblock::<span class="title function_ invoke__">new</span>(&amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;sb:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">bgd</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">blockgroup_number</span>(&amp;sb).<span class="title function_ invoke__">desc</span>(&amp;sb, &amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;bgd:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">Superblock &#123;</span><br><span class="line">    magic: ef53,</span><br><span class="line">    block_size: 4096,</span><br><span class="line">    blocks_per_group: 32768,</span><br><span class="line">    inodes_per_group: 8192,</span><br><span class="line">    inode_size: 256,</span><br><span class="line">&#125;</span><br><span class="line">BlockGroupDescriptor &#123;</span><br><span class="line">    inode_table: 1127,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>嘿，1127 看起来是一个相当合理的 inode 数字 第一个块组的表。</p>
+<h1 id="✨我们正在进步✨"><a href="#✨我们正在进步✨" class="headerlink" title="✨我们正在进步✨"></a>✨我们正在进步✨</h1><p>现在，inode表是一系列固定大小的inode。</p>
+<p>第一个字段是一个 16 位（little-endian，仍然）整数，其中包含文件模式。稍后，我们找到索引节点的大小，再次划分为低32位（位于 0x4）和高 32位（位于 0x6C）。</p>
+<p>在0x28处，我们找到“块映射或范围树”。它是一个 60 字节的块。我 有一种感觉我们也需要它！</p>
+<p>让我们为 reader 添加一个方便的方法，这样我们就可以轻松地获取该块：</p>
+<p>Rust code<br>    &#x2F;&#x2F; in impl Reader</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">fn vec(&amp;self, offset: u64, len: usize) -&gt; Result&lt;Vec&lt;u8&gt;&gt; &#123;</span><br><span class="line">    let mut v = vec![0u8; len];</span><br><span class="line">    self.inner.read_exact_at(offset, &amp;mut v)?;</span><br><span class="line">    Ok(v)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，我们添加一个方法来获取特定 inode 编号的切片。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// in impl InodeNumber</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">inode_slice</span>&lt;T&gt;(<span class="keyword">self</span>, sb: &amp;Superblock, dev: T) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Slice&lt;T&gt;&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    T: ReadAt,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">desc</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">blockgroup_number</span>(sb).<span class="title function_ invoke__">desc</span>(sb, &amp;dev)?;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">table_off</span> = desc.inode_table * sb.block_size;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">idx_in_table</span> = (<span class="keyword">self</span>.<span class="number">0</span> - <span class="number">1</span>) % sb.inodes_per_group;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">inode_off</span> = table_off + sb.inode_size * idx_in_table;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(Slice::<span class="title function_ invoke__">new</span>(dev, inode_off, <span class="title function_ invoke__">Some</span>(sb.inode_size)))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在，让我们创建一个 Inode 类型，其中包含我们想要的所有数据：模式、大小、 和 60 字节块。我们将使用我们最近添加的 Reader::vec：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(CustomDebug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Inode</span> &#123;</span><br><span class="line">    <span class="meta">#[debug(format = <span class="string">&quot;&#123;:o&#125;&quot;</span>)]</span></span><br><span class="line">    mode: <span class="type">u16</span>,</span><br><span class="line">    size: <span class="type">u64</span>,</span><br><span class="line"></span><br><span class="line">    <span class="meta">#[debug(skip)]</span></span><br><span class="line">    block: <span class="type">Vec</span>&lt;<span class="type">u8</span>&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Inode</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(slice: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(slice);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            mode: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x0</span>)?,</span><br><span class="line">            size: r.<span class="title function_ invoke__">u64_lohi</span>(<span class="number">0x4</span>, <span class="number">0x6C</span>)?,</span><br><span class="line">            block: r.<span class="title function_ invoke__">vec</span>(<span class="number">0x28</span>, <span class="number">60</span>)?,</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>最后，让我们向 InodeNumber 添加一个方法，直接读取 索引节点：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">inode</span>(<span class="keyword">self</span>, sb: &amp;Superblock, dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Inode&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">slice</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">inode_slice</span>(sb, dev)?;</span><br><span class="line">    Inode::<span class="title function_ invoke__">new</span>(&amp;slice)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>// in impl InodeNumber
+</code></pre>
+<p>我们准备好了。让我们尝试一下：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;()&gt; &#123;</span><br><span class="line">    color_eyre::<span class="title function_ invoke__">install</span>()?;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// open our ext4 partition, READ-ONLY.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = OpenOptions::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">read</span>(<span class="literal">true</span>).<span class="title function_ invoke__">open</span>(<span class="string">&quot;/dev/sda3&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">sb</span> = Superblock::<span class="title function_ invoke__">new</span>(&amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;sb:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;root_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">Superblock &#123;</span><br><span class="line">    magic: ef53,</span><br><span class="line">    block_size: <span class="number">4096</span>,</span><br><span class="line">    blocks_per_group: <span class="number">32768</span>,</span><br><span class="line">    inodes_per_group: <span class="number">8192</span>,</span><br><span class="line">    inode_size: <span class="number">256</span>,</span><br><span class="line">&#125;</span><br><span class="line">Inode &#123;</span><br><span class="line">    mode: <span class="number">40755</span>,</span><br><span class="line">    size: <span class="number">4096</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>万岁！这些值与 stat 命令报告的内容匹配：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ stat /</span><br><span class="line">  File: /</span><br><span class="line">  Size: 4096            Blocks: 8          IO Block: 4096   directory</span><br><span class="line">Device: 803h/2051d      Inode: 2           Links: 23</span><br><span class="line">Access: (0755/drwxr-xr-x)  Uid: (    0/    root)   Gid: (    0/    root)</span><br><span class="line">Access: 2023-03-11 12:40:08.175908741 +0100</span><br><span class="line">Modify: 2022-12-26 15:42:11.483999585 +0100</span><br><span class="line">Change: 2022-12-26 15:42:11.483999585 +0100</span><br><span class="line"> Birth: 2022-10-01 21:18:48.000000000 +0200</span><br></pre></td></tr></table></figure>
+<p>我确信有很多目录具有相同的权限和大小，所以我们 可能读取了错误的索引节点，但至少我们可能没有读取， 比如说，一个随机数据块。</p>
+<p>让我们快速添加一个 Filetype 枚举，这样我们就可以确保它是一个目录。 文件类型包含在模式中：</p>
+<p>这些是互斥的文件类型</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">0x1000	S_IFIFO（先进先出）</span><br><span class="line">0x2000	S_IFCHR（字符设备）</span><br><span class="line">0x4000	S_IFDIR（目录）</span><br><span class="line">0x6000	S_IFBLK（块设备）</span><br><span class="line">0x8000	S_IFREG（常规文件）</span><br><span class="line">0xA000	S_IFLNK（符号链接）</span><br><span class="line">0xC000	S_IFSOCK（套接字）</span><br><span class="line">— 内核文档</span><br></pre></td></tr></table></figure>
+
+<p>我们将在此处使用num_enum crate：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">$ cargo add num_enum@0.5</span><br><span class="line">    Updating crates.io index</span><br><span class="line">      Adding num_enum v0.5 to dependencies.</span><br><span class="line">             Features as of v0.5.0:</span><br><span class="line">             + std</span><br><span class="line">             - complex-expressions</span><br><span class="line">             - external_doc</span><br><span class="line">    Updating crates.io index</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> num_enum::*;</span><br><span class="line"><span class="keyword">use</span> std::convert::TryFrom;</span><br><span class="line"></span><br><span class="line"><span class="meta">#[derive(Debug, TryFromPrimitive)]</span></span><br><span class="line"><span class="meta">#[repr(u16)]</span></span><br><span class="line"><span class="keyword">enum</span> <span class="title class_">Filetype</span> &#123;</span><br><span class="line">    Fifo = <span class="number">0x1000</span>,</span><br><span class="line">    CharacterDevice = <span class="number">0x2000</span>,</span><br><span class="line">    Directory = <span class="number">0x4000</span>,</span><br><span class="line">    BlockDevice = <span class="number">0x6000</span>,</span><br><span class="line">    Regular = <span class="number">0x8000</span>,</span><br><span class="line">    SymbolicLink = <span class="number">0xA000</span>,</span><br><span class="line">    Socket = <span class="number">0xC000</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>并添加 getter Inode：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">filetype</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> Filetype &#123;</span><br><span class="line">    Filetype::<span class="title function_ invoke__">try_from</span>(<span class="keyword">self</span>.mode &amp; <span class="number">0xF000</span>).<span class="title function_ invoke__">unwrap</span>()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心贴士
+为了保持示例代码简洁，我们在这里使用unwrap()。
+
+如果我们以某种方式从错误的片中读取了一个 inode，或者如果该 inode 如果模式无效，我们的程序就会出现恐慌。
+
+这在实际的文件系统实现中是不可取的，但是 在这里它可以作为一个很好的健全性检查。
+</code></pre>
+<p>让我们试一试：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode_type</span> = root_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;root_inode_type:?&#125;) &#123;root_inode:#?&#125;&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">Superblock &#123;</span><br><span class="line">    magic: ef53,</span><br><span class="line">    block_size: 4096,</span><br><span class="line">    blocks_per_group: 32768,</span><br><span class="line">    inodes_per_group: 8192,</span><br><span class="line">    inode_size: 256,</span><br><span class="line">&#125;</span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>一切看起来都很好！</p>
+<p>现在我们确定我们正在处理一个目录，我们可以开始 阅读其条目。</p>
+<p>但首先 - 记得范围吗？这些就在我们刚刚读到的区块中！</p>
+<p>内核文档可以为您提供帮助。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">ExtentHeader</span> &#123;</span><br><span class="line">    entries: <span class="type">u64</span>,</span><br><span class="line">    depth: <span class="type">u64</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">ExtentHeader</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(slice: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(slice);</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">magic</span> = r.<span class="title function_ invoke__">u16</span>(<span class="number">0x0</span>)?;</span><br><span class="line">        <span class="built_in">assert_eq!</span>(magic, <span class="number">0xF30A</span>);</span><br><span class="line"></span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            entries: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x2</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            depth: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x6</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们来读一篇。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ext_header</span> = ExtentHeader::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;root_inode.block, <span class="number">0</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;ext_header:#?&#125;&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-<span class="title function_ invoke__">ext4</span> </span><br><span class="line">(cut)</span><br><span class="line">ExtentHeader &#123;</span><br><span class="line">    entries: <span class="number">1</span>,</span><br><span class="line">    depth: <span class="number">0</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>嗯，虽然不多，但同样，这些值是有意义的。已被关注 通过单个条目，因此我们知道 &#x2F; 的数据存储在单个范围中 连续的块。它的深度为0，这意味着它是一个叶节点。</p>
+<pre><code>酷熊的热心贴士
+在我们的例子中，我们假设 /、/etc 和 /etc/hosts 都只有 一个范围节点。
+
+这是有道理的，因为/只有 24 个孩子，只有 204 个孩子 对于 /etc，并且 /etc/hosts 比块 (4096) 短 (511)。
+
+但是，我们将使用 assert! 验证我们的假设。
+</code></pre>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[derive(Debug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Extent</span> &#123;</span><br><span class="line">    len: <span class="type">u64</span>,</span><br><span class="line">    start: <span class="type">u64</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">Extent</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(slice: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(slice);</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            len: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x4</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            <span class="comment">// the block number the extent points to is split</span></span><br><span class="line">            <span class="comment">// between upper 16-bits and lower 32-bits.</span></span><br><span class="line">            start: ((r.<span class="title function_ invoke__">u16</span>(<span class="number">0x6</span>)? <span class="keyword">as</span> <span class="type">u64</span>) &lt;&lt; <span class="number">32</span>) + r.<span class="title function_ invoke__">u32</span>(<span class="number">0x8</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们完整的范围读取代码变为：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main, after finding root_inode</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ext_header</span> = ExtentHeader::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;root_inode.block, <span class="number">0</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;ext_header:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="built_in">assert_eq!</span>(ext_header.depth, <span class="number">0</span>);</span><br><span class="line"><span class="built_in">assert_eq!</span>(ext_header.entries, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ext</span> = Extent::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;root_inode.block, <span class="number">12</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;:#?&#125;&quot;</span>, ext);</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-<span class="title function_ invoke__">ext4</span> </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: <span class="number">40755</span>,</span><br><span class="line">    size: <span class="number">4096</span>,</span><br><span class="line">&#125;</span><br><span class="line">ExtentHeader &#123;</span><br><span class="line">    entries: <span class="number">1</span>,</span><br><span class="line">    depth: <span class="number">0</span>,</span><br><span class="line">&#125;</span><br><span class="line">Extent &#123;</span><br><span class="line">    len: <span class="number">1</span>,</span><br><span class="line">    start: <span class="number">9319</span>,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>嘿，这些仍然是合理的值！</p>
+<p>据此可以找到&#x2F;区块9319的数据。</p>
+<p>让我们花点时间向 Inode 类型添加一个便捷方法：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">data</span>&lt;T&gt;(&amp;<span class="keyword">self</span>, sb: &amp;Superblock, dev: T) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Slice&lt;T&gt;&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    T: ReadAt,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ext_header</span> = ExtentHeader::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">self</span>.block, <span class="number">0</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext_header.depth, <span class="number">0</span>);</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext_header.entries, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ext</span> = Extent::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">self</span>.block, <span class="number">12</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext.len, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">offset</span> = ext.start * sb.block_size;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">len</span> = ext.len * sb.block_size;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(Slice::<span class="title function_ invoke__">new</span>(dev, offset, <span class="title function_ invoke__">Some</span>(len)))</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>然后转储&#x2F;数据的前 128 个字节，就好像它是一个字符串一样：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode_type</span> = root_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;root_inode_type:?&#125;) &#123;root_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_data</span> = root_inode.<span class="title function_ invoke__">data</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">data_start</span> = Reader::<span class="title function_ invoke__">new</span>(&amp;root_data).<span class="title function_ invoke__">vec</span>(<span class="number">0</span>, <span class="number">128</span>)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(&amp;data_start));</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">$ $ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-<span class="title function_ invoke__">ext4</span> </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: <span class="number">40755</span>,</span><br><span class="line">    size: <span class="number">4096</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">.</span><br><span class="line"> ..</span><br><span class="line"></span><br><span class="line">lost+<span class="title function_ invoke__">found</span>(</span><br><span class="line">           boot</span><br><span class="line">              swapfile�</span><br><span class="line">                       etc�media�</span><br><span class="line">                                 var</span><br><span class="line">bin@</span><br><span class="line"></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在，我不了解你，但这看起来非常令我兴奋。</p>
+<p>我们可以在其中看到一些顶级目录名称：lost+found、boot、 swapfile — 甚至 . 和 ..！ （当前目录和父目录， 分别）。</p>
+<p>让我们正确地阅读它们：目录项格式实际上很漂亮 直截了当。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#[derive(CustomDebug)]</span></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">DirectoryEntry</span> &#123;</span><br><span class="line">    <span class="meta">#[debug(skip)]</span></span><br><span class="line">    len: <span class="type">u64</span>,</span><br><span class="line">    inode: InodeNumber,</span><br><span class="line">    name: <span class="type">String</span>,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span> <span class="title class_">DirectoryEntry</span> &#123;</span><br><span class="line">    <span class="keyword">fn</span> <span class="title function_">new</span>(slice: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="keyword">Self</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">r</span> = Reader::<span class="title function_ invoke__">new</span>(slice);</span><br><span class="line">        <span class="comment">// adding `Reader::u8` is left as an exercise to the reader</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">name_len</span> = r.<span class="title function_ invoke__">u8</span>(<span class="number">0x6</span>)? <span class="keyword">as</span> <span class="type">usize</span>;</span><br><span class="line">        <span class="title function_ invoke__">Ok</span>(<span class="keyword">Self</span> &#123;</span><br><span class="line">            inode: <span class="title function_ invoke__">InodeNumber</span>(r.<span class="title function_ invoke__">u32</span>(<span class="number">0x0</span>)? <span class="keyword">as</span> <span class="type">u64</span>),</span><br><span class="line">            len: r.<span class="title function_ invoke__">u16</span>(<span class="number">0x4</span>)? <span class="keyword">as</span> <span class="type">u64</span>,</span><br><span class="line">            name: <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(&amp;r.<span class="title function_ invoke__">vec</span>(<span class="number">0x8</span>, name_len)?).<span class="title function_ invoke__">into</span>(),</span><br><span class="line">        &#125;)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们只需向 Inode 添加一个方法，该方法返回 DirectoryEntry 的 vec。 这并不适合所有用例，但它适合我们的用例！</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">dir_entries</span>(&amp;<span class="keyword">self</span>, sb: &amp;Superblock, dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">Vec</span>&lt;DirectoryEntry&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">data</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">data</span>(sb, dev)?;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">entries</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">offset</span>: <span class="type">u64</span> = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">loop</span> &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">entry</span> = DirectoryEntry::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;data, offset, <span class="literal">None</span>))?;</span><br><span class="line">        <span class="keyword">if</span> entry.inode.<span class="number">0</span> == <span class="number">0</span> &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        offset += entry.len;</span><br><span class="line">        entries.<span class="title function_ invoke__">push</span>(entry);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(entries)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>现在到了关键时刻：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main:</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode_type</span> = root_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;root_inode_type:?&#125;) &#123;root_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_entries</span> = root_inode.<span class="title function_ invoke__">dir_entries</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;root_entries:#?&#125;&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">[</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            2,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;.&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            2,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;..&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            11,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;lost+found&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            19398657,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;boot&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            12,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;swapfile&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    DirectoryEntry &#123;</span><br><span class="line">        inode: InodeNumber(</span><br><span class="line">            16252929,</span><br><span class="line">        ),</span><br><span class="line">        name: &quot;etc&quot;,</span><br><span class="line">    &#125;,</span><br><span class="line">    (cut)</span><br><span class="line">🎉🎉🎉</span><br></pre></td></tr></table></figure>
+
+<p>一切似乎都井然有序。</p>
+<p>让我们添加一个方便的方法来查找特定的孩子：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">child</span>(&amp;<span class="keyword">self</span>, name: &amp;<span class="type">str</span>, sb: &amp;Superblock, dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">Option</span>&lt;InodeNumber&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">entries</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">dir_entries</span>(sb, dev)?;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(entries</span><br><span class="line">        .<span class="title function_ invoke__">into_iter</span>()</span><br><span class="line">        .<span class="title function_ invoke__">filter</span>(|x| x.name == name)</span><br><span class="line">        .<span class="title function_ invoke__">map</span>(|x| x.inode)</span><br><span class="line">        .<span class="title function_ invoke__">next</span>())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心贴士
+为什么返回类型是Result&lt;Option&lt;T&gt;&gt;？
+
+嗯，从分区读取可能会失败 - 并且会返回Err(e)。
+
+从分区读取可能会成功，但可能没有子分区 用这个名字。这将返回 Ok(None)。
+
+最后，阅读可能会成功，我们可能会找到这样一个孩子，并且 这将返回 Ok(Some(n))。
+</code></pre>
+<p>让我们使用它：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;:?&#125;) &#123;:#?&#125;&quot;</span>, root_inode.<span class="title function_ invoke__">filetype</span>(), root_inode);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">etc_inode</span> = root_inode.<span class="title function_ invoke__">child</span>(<span class="string">&quot;etc&quot;</span>, &amp;sb, &amp;file)?;</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;etc_inode:?&#125;&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">Some(InodeNumber(16252929))</span><br><span class="line"></span><br><span class="line">$ stat /etc</span><br><span class="line">  File: /etc</span><br><span class="line">  Size: 12288           Blocks: 24         IO Block: 4096   directory</span><br><span class="line">Device: 803h/2051d      Inode: 16252929    Links: 146</span><br><span class="line">Access: (0755/drwxr-xr-x)  Uid: (    0/    root)   Gid: (    0/    root)</span><br><span class="line">Access: 2023-03-11 19:51:34.661133912 +0100</span><br><span class="line">Modify: 2023-03-11 19:47:58.858792961 +0100</span><br><span class="line">Change: 2023-03-11 19:47:58.858792961 +0100</span><br><span class="line"> Birth: 2022-10-01 21:18:52.867725869 +0200</span><br></pre></td></tr></table></figure>
+<p>一切都检查完毕。</p>
+<p>让我们更进一步，读取该索引节点：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode</span> = <span class="title function_ invoke__">InodeNumber</span>(<span class="number">2</span>).<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">root_inode_type</span> = root_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;root_inode_type:?&#125;) &#123;root_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">etc_inode</span> = root_inode</span><br><span class="line">    .<span class="title function_ invoke__">child</span>(<span class="string">&quot;etc&quot;</span>, &amp;sb, &amp;file)?</span><br><span class="line">    .<span class="title function_ invoke__">expect</span>(<span class="string">&quot;/etc should exist&quot;</span>)</span><br><span class="line">    .<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">etc_inode_type</span> = etc_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;etc_inode_type:?&#125;) &#123;etc_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 12288,</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>还是不错的。我们能在那里找到hosts吗？</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in main</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">hosts_inode</span> = etc_inode</span><br><span class="line">    .<span class="title function_ invoke__">child</span>(<span class="string">&quot;hosts&quot;</span>, &amp;sb, &amp;file)?</span><br><span class="line">    .<span class="title function_ invoke__">expect</span>(<span class="string">&quot;/etc/hosts should exist&quot;</span>)</span><br><span class="line">    .<span class="title function_ invoke__">inode</span>(&amp;sb, &amp;file)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">hosts_inode_type</span> = hosts_inode.<span class="title function_ invoke__">filetype</span>();</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;(&#123;hosts_inode_type:?&#125;) &#123;hosts_inode:#?&#125;&quot;</span>);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 12288,</span><br><span class="line">&#125;</span><br><span class="line">thread &#x27;main&#x27; panicked at &#x27;assertion failed: `(left == right)`</span><br><span class="line">  left: `2`,</span><br><span class="line"> right: `1`&#x27;, src/main.rs:110:9</span><br><span class="line">note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>啊!</p>
+<p>看，当我最初写这个系列时，早在 2019 年，就在安装在Lenovo X200上的ArchLinux系统（我知道对吧？），这个曾经可以工作。</p>
+<p>但现在不再这样了，因为我们的范围标头中有两个条目， 不只是一个。</p>
+<p>所以，没关系，我们可以稍微调整一下我们的代码！</p>
+<p>首先，我们添加一个 Inode::data_count 返回数据数量的方法 与 inode 关联的块：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">data_count</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">u64</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ext_header</span> = ExtentHeader::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">self</span>.block, <span class="number">0</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext_header.depth, <span class="number">0</span>);</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(ext_header.entries)</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>我们将更改 data 函数以获取 index，这样它就可以检索任何 数据块。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// in impl Inode</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// new! this method takes an index parameter 👇</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">data</span>&lt;T&gt;(&amp;<span class="keyword">self</span>, sb: &amp;Superblock, dev: T, index: <span class="type">u64</span>) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Slice&lt;T&gt;&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    T: ReadAt,</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ext_header</span> = ExtentHeader::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">self</span>.block, <span class="number">0</span>, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext_header.depth, <span class="number">0</span>);</span><br><span class="line">    <span class="comment">// 👇 new: (previously was asserting only 1 entry, now checking index)</span></span><br><span class="line">    <span class="built_in">assert!</span>(index &lt; ext_header.entries);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 👇 new: the offset depends of the index</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">offset</span> = <span class="number">12</span> * (index + <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">ext</span> = Extent::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;<span class="keyword">self</span>.block, offset, <span class="title function_ invoke__">Some</span>(<span class="number">12</span>)))?;</span><br><span class="line">    <span class="built_in">assert_eq!</span>(ext.len, <span class="number">1</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">offset</span> = ext.start * sb.block_size;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">len</span> = ext.len * sb.block_size;</span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(Slice::<span class="title function_ invoke__">new</span>(dev, offset, <span class="title function_ invoke__">Some</span>(len)))</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>现在，在 dir_entries 中，我们调用 self.data，我们实际上必须传递一个 指数！另外，我们的结束条件（找到 inode 编号为 0 的条目）仅有效 对于最后数据块。对于之前的那些，我们必须在到达时停下来 范围的末尾。</p>
+<p>Rust code<br>    &#x2F;&#x2F; in impl Inode</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">dir_entries</span>(&amp;<span class="keyword">self</span>, sb: &amp;Superblock, dev: &amp;<span class="keyword">dyn</span> ReadAt) <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;<span class="type">Vec</span>&lt;DirectoryEntry&gt;&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">entries</span> = <span class="type">Vec</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> <span class="variable">block_index</span> <span class="keyword">in</span> <span class="number">0</span>..<span class="keyword">self</span>.<span class="title function_ invoke__">data_count</span>()? &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">data</span> = <span class="keyword">self</span>.<span class="title function_ invoke__">data</span>(sb, dev, block_index)?;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">data_size</span> = data.<span class="title function_ invoke__">size</span>()?.<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">offset</span>: <span class="type">u64</span> = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">while</span> offset &lt; data_size &#123;</span><br><span class="line">            <span class="keyword">let</span> <span class="variable">entry</span> = DirectoryEntry::<span class="title function_ invoke__">new</span>(&amp;Slice::<span class="title function_ invoke__">new</span>(&amp;data, offset, <span class="literal">None</span>))?;</span><br><span class="line">            <span class="keyword">if</span> entry.inode.<span class="number">0</span> == <span class="number">0</span> &#123;</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            offset += entry.len;</span><br><span class="line">            entries.<span class="title function_ invoke__">push</span>(entry);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(entries)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在…</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 12288,</span><br><span class="line">&#125;</span><br><span class="line">(Regular) Inode &#123;</span><br><span class="line">    mode: 100644,</span><br><span class="line">    size: 220,</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>找到&#x2F;etc&#x2F;hosts！</p>
+<p>兴奋加剧</p>
+<p>我们可以将它作为字符串读取吗？</p>
+<p>Rust code<br>    &#x2F;&#x2F; in main</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">let</span> <span class="variable">hosts_data</span> = hosts_inode.<span class="title function_ invoke__">data</span>(&amp;sb, &amp;file, <span class="number">0</span>)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">hosts_data</span> = Reader::<span class="title function_ invoke__">new</span>(&amp;hosts_data).<span class="title function_ invoke__">vec</span>(<span class="number">0</span>, hosts_inode.size <span class="keyword">as</span> <span class="type">usize</span>)?;</span><br><span class="line"><span class="keyword">let</span> <span class="variable">hosts_data</span> = <span class="type">String</span>::<span class="title function_ invoke__">from_utf8_lossy</span>(&amp;hosts_data);</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;---------------------------------------------&quot;</span>);</span><br><span class="line"><span class="built_in">println!</span>(<span class="string">&quot;&#123;hosts_data&#125;&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ cargo b -q &amp;&amp; sudo ./target/debug/read-raw-ext4 </span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 4096,</span><br><span class="line">&#125;</span><br><span class="line">(Directory) Inode &#123;</span><br><span class="line">    mode: 40755,</span><br><span class="line">    size: 12288,</span><br><span class="line">&#125;</span><br><span class="line">(Regular) Inode &#123;</span><br><span class="line">    mode: 100644,</span><br><span class="line">    size: 220,</span><br><span class="line">&#125;</span><br><span class="line">---------------------------------------------</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">127.0.1.1       sonic</span><br><span class="line"></span><br><span class="line"># The following lines are desirable for IPv6 capable hosts</span><br><span class="line">::1     ip6-localhost ip6-loopback</span><br><span class="line">fe00::0 ip6-localnet</span><br><span class="line">ff00::0 ip6-mcastprefix</span><br><span class="line">ff02::1 ip6-allnodes</span><br><span class="line">ff02::2 ip6-allrouters</span><br></pre></td></tr></table></figure>
+
+<p>我们做到了！</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/reading-files-the-hard-way-3/" title="【译】读取文件的困难模式 三">https://fenixc9.github.io/reading-files-the-hard-way-3/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/rust/" rel="tag"># rust</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/reading-files-the-hard-way-2/" rel="prev" title="【译】读取文件的困难模式 二">
+      <i class="fa fa-chevron-left"></i> 【译】读取文件的困难模式 二
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/web-like-poem/" rel="next" title="读诗一样写web框架">
+      读诗一样写web框架 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9C%A8%E9%87%8E%E5%85%BD%E7%9A%84%E8%82%9A%E5%AD%90%E9%87%8C"><span class="nav-number">1.</span> <span class="nav-text">在野兽的肚子里</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%88%91%E4%BB%AC%E7%9A%84%E8%B7%AF%E5%BE%84%E9%83%BD%E5%8E%BB%E5%93%AA%E5%84%BF%E4%BA%86%EF%BC%9F"><span class="nav-number">2.</span> <span class="nav-text">我们的路径都去哪儿了？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%A0%E5%8F%AF%E4%BB%A5%E7%94%A8%E5%AE%83%E5%88%B6%E4%BD%9C%E4%B8%80%E4%B8%AA%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%EF%BC%88%E6%88%96%E8%80%85%E4%BD%A0%E5%8F%AF%E4%BB%A5%E5%90%97%EF%BC%9F%EF%BC%89"><span class="nav-number">3.</span> <span class="nav-text">你可以用它制作一个文件系统（或者你可以吗？）</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BE%93%E5%85%A5%E7%B4%A2%E5%BC%95%E8%8A%82%E7%82%B9"><span class="nav-number">4.</span> <span class="nav-text">输入索引节点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E5%89%A9%E4%BD%99%E9%97%AE%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">解决剩余问题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%8E%B0%E5%9C%A8%E6%9D%A5%E4%BD%93%E9%AA%8C%E4%B8%80%E4%B8%8B%E7%8E%B0%E5%AE%9E%E4%B8%96%E7%95%8C"><span class="nav-number">6.</span> <span class="nav-text">现在来体验一下现实世界</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AE%A9%E6%88%91%E4%BB%AC%E8%AF%BB%E5%8F%96%E6%95%B4%E4%B8%AA%E5%88%86%E5%8C%BA"><span class="nav-number">7.</span> <span class="nav-text">让我们读取整个分区</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%9D%97%E7%BB%84-Block-Group"><span class="nav-number">8.</span> <span class="nav-text">块组(Block Group)</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BB%E5%8F%96ext4%E4%B8%AD%E7%9A%84inode"><span class="nav-number">9.</span> <span class="nav-text">读取ext4中的inode</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4-1-2-%E5%AF%BB%E6%89%BE%E7%B4%A2%E5%BC%95%E8%8A%82%E7%82%B9"><span class="nav-number">10.</span> <span class="nav-text">4.1.2.寻找索引节点</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E2%9C%A8%E6%88%91%E4%BB%AC%E6%AD%A3%E5%9C%A8%E8%BF%9B%E6%AD%A5%E2%9C%A8"><span class="nav-number">11.</span> <span class="nav-text">✨我们正在进步✨</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'b677a92057c497b73f5af71924aacdfd',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="apisix是一种近几年流行的，基于OpenResty的，和kong类似，我们本文将了解他和kong的一些区别，并尝试一些简单例子。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="云原生网关apisix">
+<meta property="og:url" content="https://fenixc9.github.io/try-apisix/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="apisix是一种近几年流行的，基于OpenResty的，和kong类似，我们本文将了解他和kong的一些区别，并尝试一些简单例子。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/6.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/7.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/8.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/9.png">
+<meta property="og:image" content="https://fenixc9.github.io/try-apisix/10.png">
+<meta property="article:published_time" content="2023-04-07T09:09:34.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.199Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="网关">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/try-apisix/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/try-apisix/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>云原生网关apisix | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/try-apisix/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          云原生网关apisix
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-04-07 17:09:34" itemprop="dateCreated datePublished" datetime="2023-04-07T17:09:34+08:00">2023-04-07</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Kubernetes/" itemprop="url" rel="index"><span itemprop="name">Kubernetes</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">apisix是一种近几年流行的，基于OpenResty的，和kong类似，我们本文将了解他和kong的一些区别，并尝试一些简单例子。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="apisix是什么？"><a href="#apisix是什么？" class="headerlink" title="apisix是什么？"></a>apisix是什么？</h1><p>apisix和kong非常相似，是一种基于OpenResty的网关。目前已经进入apache:<br>项目地址：<a target="_blank" rel="noopener" href="https://github.com/apache/apisix">https://github.com/apache/apisix</a><br>这里apisix的开发者写了这样一篇文章介绍为什么要有apisix：<a target="_blank" rel="noopener" href="https://www.apiseven.com/blog/why-we-need-apache-apisix">https://www.apiseven.com/blog/why-we-need-apache-apisix</a><br>这里简单摘要一下nginx和kong的痛点：</p>
+<ul>
+<li>原生nginx不支持热更新配置，对于大型集群的网关，重新载入nginx配置会极为耗时，这个问题让他作为重度负载的网关非常致命，所以大多数情况下人们都会使用OpenResty的方案，在lua层面做路由。</li>
+<li>nginx原生不支持集群方案，只能在外部批量统一配置的情况保证集群一致。</li>
+<li>kong不支持mysql，而且可见的未来内似乎也没有支持的计划 <a target="_blank" rel="noopener" href="https://github.com/Kong/kong/issues/1867">https://github.com/Kong/kong/issues/1867</a> ┓( ´∀&#96; )┏，一些社区支持的mysql-kong也都处于数年未更新的状态。对于国内mysql远流行于PG的环境不是很友好。</li>
+<li>Kong 的路由使用的是遍历查找，当网关内有超过上千个路由时，它的性能就会出现比较急剧的下降。</li>
+</ul>
+<h1 id="apisix的架构"><a href="#apisix的架构" class="headerlink" title="apisix的架构"></a>apisix的架构</h1><p>先来认识下其基本架构<br><img src="/try-apisix/1.png" alt="1"><br>与kong将元数据保存在PG中不同，apisix选择将元数据保存在etcd。etcd能提供更强大的可用性，以及数据更新的及时性，能够使用etcd的watch机制毫秒级将控制面对配置的修改传播到数据面。</p>
+<p>数据面架构如下:<br><img src="/try-apisix/3.png" alt="3"><br>也是基于OpenResty。按照文档的描述，apisix支持丰富的插件，lua插件，多语言插件运行器，wasm支持。</p>
+<h1 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h1><p>我这里就直接helm部署到Kubernetes了。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">helm repo add apisix https://charts.apiseven.com</span><br><span class="line">helm repo update</span><br><span class="line">helm install apisix apisix/apisix --create-namespace  --namespace apisix</span><br></pre></td></tr></table></figure>
+
+<p>可以调整下其中的配置把dashboard打开。</p>
+<p><img src="/try-apisix/4.png" alt="4"><br>和konga非常类似。</p>
+<p>启动好了大概这些容器：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 apisix]# kubectl get po -napisix</span><br><span class="line">NAME                                READY   STATUS    RESTARTS        AGE</span><br><span class="line">apisix-7dfd477dbd-bh82q             1/1     Running   1 (7h40m ago)   17h</span><br><span class="line">apisix-dashboard-777b9d7f5b-wt5sq   1/1     Running   3 (7h39m ago)   17h</span><br><span class="line">apisix-etcd-0                       1/1     Running   1 (7h40m ago)   16h</span><br><span class="line">apisix-etcd-1                       1/1     Running   1 (7h40m ago)   17h</span><br><span class="line">apisix-etcd-2                       1/1     Running   1 (7h40m ago)   17h</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>一套etcd，apisix网关本体，和一个dashboard。</p>
+<p>此外为了便于测试rewrite相关插件的效果，我这边还部署了一套httpbin:<br>镜像 ： kennethreitz&#x2F;httpbin</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 apisix]# kubectl get po -napisix</span><br><span class="line">NAME                                READY   STATUS    RESTARTS        AGE</span><br><span class="line">apisix-7dfd477dbd-bh82q             1/1     Running   1 (7h40m ago)   17h</span><br><span class="line">apisix-dashboard-777b9d7f5b-wt5sq   1/1     Running   3 (7h39m ago)   17h</span><br><span class="line">apisix-etcd-0                       1/1     Running   1 (7h40m ago)   16h</span><br><span class="line">apisix-etcd-1                       1/1     Running   1 (7h40m ago)   17h</span><br><span class="line">apisix-etcd-2                       1/1     Running   1 (7h40m ago)   17h</span><br><span class="line">httpbin-6bbddd855-fd7qj             1/1     Running   0               33m</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>并建立httpbin对应的service。</p>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><ol>
+<li>创建路由</li>
+</ol>
+<p><img src="/try-apisix/5.png" alt="5"><br>我们基于域名匹配</p>
+<p><img src="/try-apisix/6.png" alt="6"><br>为httpbin</p>
+<p>插件配置里可以选择普通模式和编排模式，编排模式可视化的插件拼接还是比较酷的。这里我就先不配置插件了。</p>
+<p><img src="/try-apisix/7.png" alt="7"></p>
+<p>生成路由后，就可以通过<code>NodePort</code> 访问apisix的apisix-gateway这个service。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 apisix]# curl -iL -X GET &quot;http://192.168.31.170:30599/get?foo1=bar1&amp;foo2=bar2&quot; -H &quot;Host: abc.com&quot;</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Content-Length: 278</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Date: Wed, 05 Apr 2023 10:30:07 GMT</span><br><span class="line">Access-Control-Allow-Origin: *</span><br><span class="line">Access-Control-Allow-Credentials: true</span><br><span class="line">Server: APISIX/3.2.0</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  &quot;args&quot;: &#123;</span><br><span class="line">    &quot;foo1&quot;: &quot;bar1&quot;, </span><br><span class="line">    &quot;foo2&quot;: &quot;bar2&quot;</span><br><span class="line">  &#125;, </span><br><span class="line">  &quot;headers&quot;: &#123;</span><br><span class="line">    &quot;Accept&quot;: &quot;*/*&quot;, </span><br><span class="line">    &quot;Host&quot;: &quot;abc.com&quot;, </span><br><span class="line">    &quot;User-Agent&quot;: &quot;curl/7.29.0&quot;, </span><br><span class="line">    &quot;X-Forwarded-Host&quot;: &quot;abc.com&quot;</span><br><span class="line">  &#125;, </span><br><span class="line">  &quot;origin&quot;: &quot;192.168.31.170&quot;, </span><br><span class="line">  &quot;url&quot;: &quot;http://abc.com/get?foo1=bar1&amp;foo2=bar2&quot;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>然后我们加些插件试试<br>添加一个重新请求的。<br><img src="/try-apisix/8.png" alt="8"><br>点开proxy-rewrite插件 配置上：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;disable&quot;: false,</span><br><span class="line">  &quot;headers&quot;: &#123;</span><br><span class="line">    &quot;add&quot;: &#123;</span><br><span class="line">      &quot;X-Request-ID&quot;: &quot;112233&quot;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;remove&quot;: [</span><br><span class="line">      &quot;X-test&quot;</span><br><span class="line">    ],</span><br><span class="line">    &quot;set&quot;: &#123;</span><br><span class="line">      &quot;X-Api-Engine&quot;: &quot;apisix&quot;,</span><br><span class="line">      &quot;X-Api-Version&quot;: &quot;v1&quot;,</span><br><span class="line">      &quot;X-Api-useless&quot;: &quot;&quot;,</span><br><span class="line">      &quot;X-remote_addr&quot;: &quot;$remote_addr&quot;,</span><br><span class="line">      &quot;X-remote_port&quot;: &quot;$remote_port&quot;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>其中add是用于添加请求头，remove用于删除请求头，set用于覆盖请求头。</p>
+<p>client -&gt; 代理重写 -&gt; upstream(httpbin) -&gt; client </p>
+<p>这里请求到httpbin，整个http请求将会被封装为json返回。我们看看代理重写的插件是否能加上我们的几个请求头。</p>
+<p>再次请求：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 apisix]# curl -iL -X GET &quot;http://192.168.31.170:30599/get?foo1=bar1&amp;foo2=bar2&quot; -H &quot;Host: abc.com&quot;</span><br><span class="line">HTTP/1.1 200 OK</span><br><span class="line">Content-Type: application/json</span><br><span class="line">Content-Length: 408</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Date: Wed, 05 Apr 2023 10:40:54 GMT</span><br><span class="line">Access-Control-Allow-Origin: *</span><br><span class="line">Access-Control-Allow-Credentials: true</span><br><span class="line">Server: APISIX/3.2.0</span><br><span class="line"></span><br><span class="line">&#123;</span><br><span class="line">  &quot;args&quot;: &#123;</span><br><span class="line">    &quot;foo1&quot;: &quot;bar1&quot;, </span><br><span class="line">    &quot;foo2&quot;: &quot;bar2&quot;</span><br><span class="line">  &#125;, </span><br><span class="line">  &quot;headers&quot;: &#123;</span><br><span class="line">    &quot;Accept&quot;: &quot;*/*&quot;, </span><br><span class="line">    &quot;Host&quot;: &quot;abc.com&quot;, </span><br><span class="line">    &quot;User-Agent&quot;: &quot;curl/7.29.0&quot;, </span><br><span class="line">    &quot;X-Api-Engine&quot;: &quot;apisix&quot;, </span><br><span class="line">    &quot;X-Api-Version&quot;: &quot;v1&quot;, </span><br><span class="line">    &quot;X-Forwarded-Host&quot;: &quot;abc.com&quot;, </span><br><span class="line">    &quot;X-Remote-Addr&quot;: &quot;192.168.31.170&quot;, </span><br><span class="line">    &quot;X-Remote-Port&quot;: &quot;31539&quot;</span><br><span class="line">  &#125;, </span><br><span class="line">  &quot;origin&quot;: &quot;192.168.31.170&quot;, </span><br><span class="line">  &quot;url&quot;: &quot;http://abc.com/get?foo1=bar1&amp;foo2=bar2&quot;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>再测试下限流插件：<br><img src="/try-apisix/9.png" alt="9"></p>
+<p>点开插件配置为</p>
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">  <span class="attr">&quot;rate&quot;</span><span class="punctuation">:</span> <span class="number">1</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;burst&quot;</span><span class="punctuation">:</span> <span class="number">0</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;key_type&quot;</span><span class="punctuation">:</span> <span class="string">&quot;var&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;key&quot;</span><span class="punctuation">:</span> <span class="string">&quot;remote_addr&quot;</span><span class="punctuation">,</span></span><br><span class="line">  <span class="attr">&quot;rejected_code&quot;</span><span class="punctuation">:</span> <span class="number">503</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+<p>反复请求会报出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">[root@node1 apisix]# curl -iL -X GET &quot;http://192.168.31.170:30599/get?foo1=bar1&amp;foo2=bar2&quot; -H &quot;Host: abc.com&quot;</span><br><span class="line">HTTP/1.1 503 Service Temporarily Unavailable</span><br><span class="line">Date: Wed, 05 Apr 2023 10:50:30 GMT</span><br><span class="line">Content-Type: text/html; charset=utf-8</span><br><span class="line">Content-Length: 269</span><br><span class="line">Connection: keep-alive</span><br><span class="line">Server: APISIX/3.2.0</span><br><span class="line"></span><br><span class="line">&lt;html&gt;</span><br><span class="line">&lt;head&gt;&lt;title&gt;503 Service Temporarily Unavailable&lt;/title&gt;&lt;/head&gt;</span><br><span class="line">&lt;body&gt;</span><br><span class="line">&lt;center&gt;&lt;h1&gt;503 Service Temporarily Unavailable&lt;/h1&gt;&lt;/center&gt;</span><br><span class="line">&lt;hr&gt;&lt;center&gt;openresty&lt;/center&gt;</span><br><span class="line">&lt;p&gt;&lt;em&gt;Powered by &lt;a href=&quot;https://apisix.apache.org/&quot;&gt;APISIX&lt;/a&gt;.&lt;/em&gt;&lt;/p&gt;&lt;/body&gt;</span><br><span class="line">&lt;/html&gt;</span><br><span class="line">[root@node1 apisix]# </span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>其他插件不一一测试了，文档非常详细。</p>
+<h2 id="https"><a href="#https" class="headerlink" title="https"></a>https</h2><p>在证书中配置了证书后，https访问对应域名会自动使用相关证书。我们用cfssl生成一个自签名证书证书试试。将其上传到证书里:<br><img src="/try-apisix/10.png" alt="10"></p>
+<pre><code>这里补充个知识点 SNI和SAN有什么区别：
+SAN和SNI都是在SSL证书中用于多域名支持的技术，不过它们的作用不同：
+● SAN（Subject Alternative Names）：是在证书中设置的一个字段，用于指定该证书可以绑定哪些域名或主机名。在TLS握手的过程中，客户端会将请求的域名信息发送给服务器，在服务器返回证书的时候，如果证书中包含了请求的域名，就可以建立安全连接。SAN可以实现一个证书绑定多个域名的效果，比如 *.example.com 和 www.example.com 可以在同一个证书中绑定，也可以绑定不同的二级域名或顶级域名。
+● SNI（Server Name Indication）：是在TLS握手的过程中，客户端发送请求的域名给服务器的一个扩展字段。服务器根据这个字段，选择使用哪个SSL证书返回给客户端。SNI可以实现同一个IP地址上部署多个域名，使用不同的SSL证书加密通信的效果。在使用SNI前，客户端和服务器之间的通信只能使用IP地址和端口号，无法实现多域名共享一个IP地址的效果。
+因此，SAN和SNI虽然都与SSL证书中多域名支持有关，但是作用不同。SAN是证书中的一个字段，用于指定可以绑定的多个域名；而SNI是TLS握手过程中的一个扩展字段，用于选择使用哪个SSL证书返回给客户端，实现同一个IP地址上部署多个域名的效果。
+</code></pre>
+<h2 id="GRPC转码"><a href="#GRPC转码" class="headerlink" title="GRPC转码"></a>GRPC转码</h2><p>还有个强大的功能是将外界的http请求转为grpc。</p>
+<p>这里我用tonic中的example快速启动了一个helloworld server<br><a target="_blank" rel="noopener" href="https://github.com/hyperium/tonic/blob/master/examples/src/helloworld/server.rs">https://github.com/hyperium/tonic/blob/master/examples/src/helloworld/server.rs</a></p>
+<p>里面的监听地址改为0.0.0.0:50051即可部署在k8s集群节点上或者pod内都可以。</p>
+<p>对应的proto为:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">syntax = &quot;proto3&quot;;</span><br><span class="line"></span><br><span class="line">option java_multiple_files = true;</span><br><span class="line">option java_package = &quot;io.grpc.examples.helloworld&quot;;</span><br><span class="line">option java_outer_classname = &quot;HelloWorldProto&quot;;</span><br><span class="line"></span><br><span class="line">package helloworld;</span><br><span class="line"></span><br><span class="line">service Greeter &#123;</span><br><span class="line">  rpc SayHello (HelloRequest) returns (HelloReply) &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">message HelloRequest &#123;</span><br><span class="line">  string name = 1;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">message HelloReply &#123;</span><br><span class="line">  string message = 1;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+<p>调用admin API配置proto协议:</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">curl http://node1:31004/apisix/admin/protos/1 -H &#x27;X-API-KEY: edd1c9f034335f136f87ad84b625c8f1&#x27; -X PUT -d &#x27;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;content&quot; : &quot;syntax = \&quot;proto3\&quot;;</span><br><span class="line">    package helloworld;</span><br><span class="line">    service Greeter &#123;</span><br><span class="line">        rpc SayHello (HelloRequest) returns (HelloReply) &#123;&#125;</span><br><span class="line">    &#125;</span><br><span class="line">    message HelloRequest &#123;</span><br><span class="line">        string name = 1;</span><br><span class="line">    &#125;</span><br><span class="line">    message HelloReply &#123;</span><br><span class="line">        string message = 1;</span><br><span class="line">    &#125;&quot;</span><br><span class="line">&#125;&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>配置路由</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">curl http://node1:31004/apisix/admin/routes/111 -H &#x27;X-API-KEY: edd1c9f034335f136f87ad84b625c8f1&#x27; -X PUT -d &#x27;</span><br><span class="line">&#123;</span><br><span class="line">    &quot;methods&quot;: [&quot;GET&quot;],</span><br><span class="line">    &quot;uri&quot;: &quot;/grpctest&quot;,</span><br><span class="line">    &quot;plugins&quot;: &#123;</span><br><span class="line">        &quot;grpc-transcode&quot;: &#123;</span><br><span class="line">            &quot;proto_id&quot;: &quot;1&quot;,</span><br><span class="line">            &quot;service&quot;: &quot;helloworld.Greeter&quot;,</span><br><span class="line">            &quot;method&quot;: &quot;SayHello&quot;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    &quot;upstream&quot;: &#123;</span><br><span class="line">        &quot;scheme&quot;: &quot;grpc&quot;,</span><br><span class="line">        &quot;type&quot;: &quot;roundrobin&quot;,</span><br><span class="line">        &quot;nodes&quot;: &#123;</span><br><span class="line">            &quot;node1:50051&quot;: 1</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>这里指明了我们需要的grpc转码插件。并指定了proto配置id。</p>
+<p>最后我们验证下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"> curl -i http://node1:31001/ggrpc?name=world</span><br><span class="line"></span><br><span class="line">&#123;&quot;message&quot;:&quot;Hello world!&quot;&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+
+<h1 id="云原生"><a href="#云原生" class="headerlink" title="云原生"></a>云原生</h1><p>除了网关之外，apisix也推出了ServiceMesh，总的来说是想东西南北流量一把抓。但是总的来说，apisix最合适的定位还是ingress-controller。</p>
+<p>此外，Gateway API 是 Kubernetes 中下一代的 Ingress 规范，致力于提供富有表现力，可扩展和面向角色的接口来发展 Kubernetes 的网络，各个 Ingress controller 项目都在积极推进对该规范的支持。</p>
+<h3 id="Gateway-对比-Ingress-有那些改进"><a href="#Gateway-对比-Ingress-有那些改进" class="headerlink" title="Gateway 对比 Ingress 有那些改进"></a>Gateway 对比 Ingress 有那些改进</h3><ul>
+<li>Gateway支持基于头的匹配，支持对请求头增删修改，这些功能之前只能将相关配置放在annotation中的方式，由ingress自行处理。 现在这些配置终于被k8s收编了。</li>
+<li>跨命名空间引用，ingress-class虽然可以跨命名空间生效，但是ingress API却只能对当前命名空间生效，有时我们想代理另一个命名空间的资源，但是没有这个命名空间的权限就比较蛋疼了。Gateway目前是支持跨命名空间引用服务的。</li>
+</ul>
+<p>还有其他一些优点这里就不一一列举了。总之后续ingress有可能被Gateway Api取代，目前nginx-ingress还没支持Gateway的计划，但是apisix目前已经支持了，这也是选择apisix一个有分量的理由。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/try-apisix/" title="云原生网关apisix">https://fenixc9.github.io/try-apisix/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+              <a href="/tags/%E7%BD%91%E5%85%B3/" rel="tag"># 网关</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/cni-flannel/" rel="prev" title="CNI学习系列2 Flannel">
+      <i class="fa fa-chevron-left"></i> CNI学习系列2 Flannel
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/cni-calico/" rel="next" title="CNI学习系列3 calico">
+      CNI学习系列3 calico <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#apisix%E6%98%AF%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="nav-number">1.</span> <span class="nav-text">apisix是什么？</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#apisix%E7%9A%84%E6%9E%B6%E6%9E%84"><span class="nav-number">2.</span> <span class="nav-text">apisix的架构</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%83%A8%E7%BD%B2"><span class="nav-number">3.</span> <span class="nav-text">部署</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">实验</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#https"><span class="nav-number">4.1.</span> <span class="nav-text">https</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#GRPC%E8%BD%AC%E7%A0%81"><span class="nav-number">4.2.</span> <span class="nav-text">GRPC转码</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BA%91%E5%8E%9F%E7%94%9F"><span class="nav-number">5.</span> <span class="nav-text">云原生</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Gateway-%E5%AF%B9%E6%AF%94-Ingress-%E6%9C%89%E9%82%A3%E4%BA%9B%E6%94%B9%E8%BF%9B"><span class="nav-number">5.0.1.</span> <span class="nav-text">Gateway 对比 Ingress 有那些改进</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '288f6d7902455268a2416241e61b3b93',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

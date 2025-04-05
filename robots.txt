@@ -1,0 +1,15 @@
+User-agent: *
+Allow: /
+Allow: /archives/
+Allow: /tags/
+Allow: /categories/
+Allow: /about/
+Allow: /css/
+Allow: /js/
+Allow: /fonts/
+
+Disallow: /vendors/
+Disallow: /fancybox/
+
+Sitemap: https://fenix0.com/sitemap.xml
+

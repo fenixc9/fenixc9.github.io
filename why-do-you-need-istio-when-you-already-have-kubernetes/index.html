@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="如果你已经听过service mesh，也尝试过istio，你也许会有如下问题： 1. 为什么Istio跑在Kubernetes上。 2. 在云原生应用架构中，K8s和service mesh到底扮演什么角色？ 3. Istio扩展了K8s的那个切面？解决了什么问题？ 4. K8s，Envoy，Istio之间是什么关系？ 本文将带你走近K8s和istio的内部机制，此外，我还会介绍K8s的负载均">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】为什么有Kubernetes了还要Istio？">
+<meta property="og:url" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="如果你已经听过service mesh，也尝试过istio，你也许会有如下问题： 1. 为什么Istio跑在Kubernetes上。 2. 在云原生应用架构中，K8s和service mesh到底扮演什么角色？ 3. Istio扩展了K8s的那个切面？解决了什么问题？ 4. K8s，Envoy，Istio之间是什么关系？ 本文将带你走近K8s和istio的内部机制，此外，我还会介绍K8s的负载均">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/2.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/3.webp">
+<meta property="og:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/4.webp">
+<meta property="article:published_time" content="2023-01-27T06:13:40.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.208Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="云原生">
+<meta property="article:tag" content="ServiceMesh">
+<meta property="article:tag" content="翻译">
+<meta property="article:tag" content="istio">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp">
+
+<link rel="canonical" href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】为什么有Kubernetes了还要Istio？ | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】为什么有Kubernetes了还要Istio？
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-27 14:13:40" itemprop="dateCreated datePublished" datetime="2023-01-27T14:13:40+08:00">2023-01-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/" itemprop="url" rel="index"><span itemprop="name">云原生</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description"> 如果你已经听过service mesh，也尝试过istio，你也许会有如下问题： 1. 为什么Istio跑在Kubernetes上。 2. 在云原生应用架构中，K8s和service mesh到底扮演什么角色？ 3. Istio扩展了K8s的那个切面？解决了什么问题？ 4. K8s，Envoy，Istio之间是什么关系？ 本文将带你走近K8s和istio的内部机制，此外，我还会介绍K8s的负载均衡，并解释为什么我们有了k8s还需要Istio。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p><em>原文 <a target="_blank" rel="noopener" href="https://thenewstack.io/why-do-you-need-istio-when-you-already-have-kubernetes/">https://thenewstack.io/why-do-you-need-istio-when-you-already-have-kubernetes/</a></em></p>
+<p>K8s本质上是对<em>基于声明式配置的应用</em> 做生命周期管理，Istio本质上是做应用内流量治理，安全治理和可观察性。如果你已经用K8s构建了一个稳定的应用，你如何在两个服务之间配置一个负载均衡和流控？这时我们就需要Istio登场了。</p>
+<p>Envoy引入的xDS协议，被包含Istio，MOSN在内的众多开源软件支持。Istio开源了xDS作为ServiceMesh，云原生基础设置。Envoy能胜任可基于API配置的，多种现代的代理场景，如API网关，ServiceMesh边车代理网关，边界网关。</p>
+<p>本文包含如下内容：</p>
+<ol>
+<li>kube-proxy角色的描述</li>
+<li>K8s对于微服务治理的局限性。</li>
+<li>对istio能力的介绍</li>
+<li>对一些概念的对比，K8s，Envoy，ServiceMesh</li>
+</ol>
+<h1 id="Kubernetes-vs-Service-Mesh"><a href="#Kubernetes-vs-Service-Mesh" class="headerlink" title="Kubernetes vs Service Mesh"></a>Kubernetes vs Service Mesh</h1><p>下面的示意图K8s和ServiceMesh（每Pod1sidecar模型）在服务访问上的区别。<br><img src="/why-do-you-need-istio-when-you-already-have-kubernetes/1.webp" alt="1"></p>
+<h2 id="流量转发"><a href="#流量转发" class="headerlink" title="流量转发"></a>流量转发</h2><p>每个K8s的节点都部署了一个可以和APIServer通信的kube-proxy，获取集群信息，配置iptables，把请求直接发给EndPoint。</p>
+<h2 id="服务发现"><a href="#服务发现" class="headerlink" title="服务发现"></a>服务发现</h2><p><img src="/why-do-you-need-istio-when-you-already-have-kubernetes/2.webp" alt="2"><br>Istio可以使用K8s的服务注册，也可以通过控制面的适配器(Adapter)对接其他服务发现系统生成数据面的透明代理的配置（作为CRD保存在etcd中）。数据面的透明代理作为边车容器部署在每个应用的Pod中，所有这些边车容器都会请求控制面来同步代理配置。这里说代理是“透明”的，是因为应用容器完全感觉不到代理的存在。kube-proxy组件也需要拦截流量，区别在于kube-proxy拦截进出K8s Node的流量，而边车(sidecar)代理是拦截进出Pod的流量。</p>
+<h2 id="ServiceMesh的缺点"><a href="#ServiceMesh的缺点" class="headerlink" title="ServiceMesh的缺点"></a>ServiceMesh的缺点</h2><p>当K8s每个节点都跑了大量Pod时，给每个Pod添加原始路由转发将会增加响应的延迟，这是因为边车拦截带来了更多的跳数也消耗了更多资源。为了细粒度管理流量，Istio引入了一系列抽象，这会带来更多的学习成本，但是随着Istio逐渐流行，这个情况会缓解。</p>
+<h2 id="ServiceMesh的优点"><a href="#ServiceMesh的优点" class="headerlink" title="ServiceMesh的优点"></a>ServiceMesh的优点</h2><p>首先，kube-proxy的配置是全局的，不能从服务的粒度管理，然而，Istio基于边车代理能做到更细的流量管理，带来更多弹性。</p>
+<h2 id="Kube-proxy的缺点"><a href="#Kube-proxy的缺点" class="headerlink" title="Kube-proxy的缺点"></a>Kube-proxy的缺点</h2><p>首先，当某个Pod不能正常工作时，它不会自动尝试另一个Pod。每个Pod都有健康检查机制，当Pod健康检查出问题时，kubelet将会重启Pod，kube-proxy将会移除相关转发规则。此外，NodePort模式的Service不支持TLS，或者其他更负责的路由机制。</p>
+<p>kube-proxy实现同一个Service的多个Pod之间的负载均衡。但是你怎么做多个Service之间的细粒度管理，比如根据应用的版本，按照百分比切分流量（他们都是同一个Service，但是不同的部署）或者做金丝雀发布（灰度发布）或者蓝绿发布？</p>
+<p>Kubernetes社区给出了一种方式来用部署做金丝雀发布：本质上就是通过给部署的Pod打标签。</p>
+<h1 id="Kubernetes-Ingress-vs-Istio-Gateway"><a href="#Kubernetes-Ingress-vs-Istio-Gateway" class="headerlink" title="Kubernetes Ingress vs. Istio Gateway"></a>Kubernetes Ingress vs. Istio Gateway</h1><h2 id="Kubernetes-Ingress"><a href="#Kubernetes-Ingress" class="headerlink" title="Kubernetes Ingress"></a>Kubernetes Ingress</h2><p>如上面所说，kube-proxy只能路由K8s集群内的流量。K8s的Pod是通过CNI创建的网络中定位的。Ingress  是专门用于和集群外通信的K8s中的资源对象，是由位于K8s边缘节点的Ingress控制器来驱动的，负责管理南北向流量。Ingress必须依赖Ingress控制器，比如nginx controller和 traefik。Ingress只适配Http流量，非常简单易用。它只能通过匹配有限的几个字段来路由流量，比如service，port，path等。路由比如mysql，redis和其他rpc等tcp流量是不可能的。这就是为何你在ingress资源注解中别人会写nginx配置语言。直接路由南北流量的唯一方式就是使用Service的LoadBalancer模式或者NodePort模式，前者依赖云供应商的支持，后者需要额外的端口管理。</p>
+<h2 id="Istio-Gateway"><a href="#Istio-Gateway" class="headerlink" title="Istio Gateway"></a>Istio Gateway</h2><p>Istio Gateway功能上和Ingress 类似，那就是负责南北向流量进出集群。Istio Gateway规范描述了负责在网格边缘接收链接的负载均衡。规范还描述了一系列端口和使用这些端口的协议，比如负载均衡的SNI配置。Gateway是CRD扩展也服用了边车代理的能力，看这里的详细配置 <a target="_blank" rel="noopener" href="https://istio.io/latest/docs/reference/config/networking/gateway/?utm_source=thenewstack&utm_medium=website&utm_campaign=platform">https://istio.io/latest/docs/reference/config/networking/gateway/?utm_source=thenewstack&amp;utm_medium=website&amp;utm_campaign=platform</a></p>
+<h1 id="Envoy"><a href="#Envoy" class="headerlink" title="Envoy"></a>Envoy</h1><p>Envoy是Istio的默认边车代理。Istio扩展了其基于xDS控制面的协议。我们在讨论xDS协议之前需要先熟悉下相关术语。下图是协议的基本项和他们在Envoy中的结构，看这里有细节：</p>
+<p><a target="_blank" rel="noopener" href="https://www.envoyproxy.io/?utm_source=thenewstack&utm_medium=website&utm_campaign=platform">https://www.envoyproxy.io/?utm_source=thenewstack&amp;utm_medium=website&amp;utm_campaign=platform</a></p>
+<p><img src="/why-do-you-need-istio-when-you-already-have-kubernetes/3.webp" alt="3"></p>
+<h2 id="基本术语"><a href="#基本术语" class="headerlink" title="基本术语"></a>基本术语</h2><ul>
+<li><p>下游（Downstream）下游Host链接Envoy，发送请求，接收响应；就是我们发送请求的Host。</p>
+</li>
+<li><p>上游（Upstream）上游接收来自Envoy的链接和请求，返回响应；也就是接收请求的Host。</p>
+</li>
+<li><p>监听器（Listener）listener是实名网络地址（比如端口，unix domain socket）下游客户端能链接监听器，Envoy会暴露一两个监听器给下游Host来连接。</p>
+</li>
+<li><p>集群（Cluster）一个集群是一组供Envoy连接的逻辑独立的上游Host。Envoy通过服务发现发现集群的成员。集群的成员的健康状态由主动健康检查决定，Envoy根据负责均衡策略决定路由到集群那个成员。</p>
+</li>
+</ul>
+<p>Envoy可以配置多个Listener，每个Listener可以配置一个过滤器链，过滤器链是可扩展的，我们可以简单的修改流量的行为，比如加密和私有rpc等。<br>xDS协议是Envoy提议的，是Istio默认边车代理，但是只要实现了xDS协议，那它理论上就能当作Istio的边车代理，比如蚂蚁集群开源的MOSN。</p>
+<p><img src="/why-do-you-need-istio-when-you-already-have-kubernetes/4.webp" alt="4"></p>
+<p>Istio是功能丰富的ServiceMesh，包含如下能力：</p>
+<ul>
+<li><p>流量治理：Istio最基本的功能</p>
+</li>
+<li><p>策略控制：访问控制，遥测，配额管理，账单。</p>
+</li>
+<li><p>可观察性：在边车代理中实现。</p>
+</li>
+<li><p>安全认证：Citadel组件负责key和证书管理。</p>
+</li>
+</ul>
+<h2 id="流量治理"><a href="#流量治理" class="headerlink" title="流量治理"></a>流量治理</h2><p>下面的CRD是Istio用来做流量治理的：</p>
+<ul>
+<li><p>Gateway：描述了一个运行在边缘网络的负载均衡器用来接收入站出站的TCP，Http连接。</p>
+</li>
+<li><p>VirtualService：实际上把Gateway和K8s Service 连接到一起。还提供了额外的操作：比如定义一组能应用于某个Host上的流量路由规则。</p>
+</li>
+<li><p>DestinationRule：DestinationRule定义了路由后的流量策略。简单来说，它定义了流量是如何路由的。此外还能定义负载均衡策略，连接池大小，还有一些探测（比如从连接池中移除不健康的节点）。</p>
+</li>
+<li><p>EnvoyFilter：此配置描述了proxy的过滤器，一般由pilot自动生成，通常很少有用户会用到。</p>
+</li>
+<li><p>ServiceEntry：默认情况下，Istio ServiceMesh中的Service没有能力对mesh外部做服务发现。ServiceEntry允许额外的服务加入到Isito的服务注册中来，并允许mesh内自动发现的服务访问并路由那些手动加入的service。</p>
+</li>
+</ul>
+<h1 id="Kubernetes-vs-xDS-vs-Istio"><a href="#Kubernetes-vs-xDS-vs-Istio" class="headerlink" title="Kubernetes vs. xDS vs. Istio"></a>Kubernetes vs. xDS vs. Istio</h1><p>回顾过k8s kube-proxy，xDS, and Istio组件的流量治理抽象后，我们来对比下流量治理这方面三者的组件，协议（注意，它们并不完全等价）：</p>
+<table>
+<thead>
+<tr>
+<th>Kubernetes</th>
+<th>xDS</th>
+<th>Istio service mesh</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Endpoint</td>
+<td>Endpoint</td>
+<td>WorkloadEntry</td>
+</tr>
+<tr>
+<td>Service</td>
+<td>Route</td>
+<td>VirtualService</td>
+</tr>
+<tr>
+<td>kube-proxy</td>
+<td>Route</td>
+<td>DestinationRule</td>
+</tr>
+<tr>
+<td>kube-proxy</td>
+<td>Listener</td>
+<td>EnvoyFilter</td>
+</tr>
+<tr>
+<td>Ingress</td>
+<td>Listener</td>
+<td>Gateway</td>
+</tr>
+<tr>
+<td>Service</td>
+<td>Cluster</td>
+<td>ServiceEntry</td>
+</tr>
+</tbody></table>
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><ul>
+<li><p>k8s的职责在于应用的生命周期管理，尤其是部署和管理（扩展，自动回复，释放）。</p>
+</li>
+<li><p>k8s为微服务提供了一个可扩展，高可靠的部署管理平台。</p>
+</li>
+<li><p>service mesh是基于透明代理的，在服务之间通过边车拦截流量，通过控制面管理流量的。</p>
+</li>
+<li><p>service mesh将流量治理从k8s中解耦出来，消除了service mesh内流量治理对于kube-proxy的依赖；通过提供更接近微服务应用层的抽象，来管理Service的流量，安全，可观察性。</p>
+</li>
+<li><p>xDS是ServiceMesh配置的标准协议之一。</p>
+</li>
+<li><p>ServiceMesh是K8s的服务的更高层次的抽象。</p>
+</li>
+</ul>
+<h1 id="结论"><a href="#结论" class="headerlink" title="结论"></a>结论</h1><p>如果说K8s管理的对象是Pod，那么ServiceMesh管理的对象就是Service，实际上就是K8s来管理微服务在上层应用ServiceMesh。如果你甚至不想管理微服务，你可以使用KNative这样的Serverless平台，但这是后话了。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/" title="【译】为什么有Kubernetes了还要Istio？">https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Kubernetes/" rel="tag"># Kubernetes</a>
+              <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" rel="tag"># 云原生</a>
+              <a href="/tags/ServiceMesh/" rel="tag"># ServiceMesh</a>
+              <a href="/tags/%E7%BF%BB%E8%AF%91/" rel="tag"># 翻译</a>
+              <a href="/tags/istio/" rel="tag"># istio</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-mini-blockchain/" rel="prev" title="自己动手实现区块链">
+      <i class="fa fa-chevron-left"></i> 自己动手实现区块链
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/ebpf-and-servicemesh/" rel="next" title="【译】eBPF能用于ServiceMesh吗？">
+      【译】eBPF能用于ServiceMesh吗？ <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Kubernetes-vs-Service-Mesh"><span class="nav-number">1.</span> <span class="nav-text">Kubernetes vs Service Mesh</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E9%87%8F%E8%BD%AC%E5%8F%91"><span class="nav-number">1.1.</span> <span class="nav-text">流量转发</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9C%8D%E5%8A%A1%E5%8F%91%E7%8E%B0"><span class="nav-number">1.2.</span> <span class="nav-text">服务发现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ServiceMesh%E7%9A%84%E7%BC%BA%E7%82%B9"><span class="nav-number">1.3.</span> <span class="nav-text">ServiceMesh的缺点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#ServiceMesh%E7%9A%84%E4%BC%98%E7%82%B9"><span class="nav-number">1.4.</span> <span class="nav-text">ServiceMesh的优点</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Kube-proxy%E7%9A%84%E7%BC%BA%E7%82%B9"><span class="nav-number">1.5.</span> <span class="nav-text">Kube-proxy的缺点</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Kubernetes-Ingress-vs-Istio-Gateway"><span class="nav-number">2.</span> <span class="nav-text">Kubernetes Ingress vs. Istio Gateway</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#Kubernetes-Ingress"><span class="nav-number">2.1.</span> <span class="nav-text">Kubernetes Ingress</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Istio-Gateway"><span class="nav-number">2.2.</span> <span class="nav-text">Istio Gateway</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Envoy"><span class="nav-number">3.</span> <span class="nav-text">Envoy</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E6%9C%AF%E8%AF%AD"><span class="nav-number">3.1.</span> <span class="nav-text">基本术语</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%B5%81%E9%87%8F%E6%B2%BB%E7%90%86"><span class="nav-number">3.2.</span> <span class="nav-text">流量治理</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Kubernetes-vs-xDS-vs-Istio"><span class="nav-number">4.</span> <span class="nav-text">Kubernetes vs. xDS vs. Istio</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E8%AE%BA"><span class="nav-number">6.</span> <span class="nav-text">结论</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '938bf3308d3119a6d9f3a7a4d9cbedc7',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

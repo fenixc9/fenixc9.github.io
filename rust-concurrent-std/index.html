@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="探讨Rust并发编程的系列之一，本文将着重分析Thread。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust并发系列1-Thread">
+<meta property="og:url" content="https://fenixc9.github.io/rust-concurrent-std/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="探讨Rust并发编程的系列之一，本文将着重分析Thread。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-15T13:05:58.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.191Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://fenixc9.github.io/rust-concurrent-std/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Rust并发系列1-Thread | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/rust-concurrent-std/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Rust并发系列1-Thread
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-01-15 21:05:58" itemprop="dateCreated datePublished" datetime="2023-01-15T21:05:58+08:00">2023-01-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">探讨Rust并发编程的系列之一，本文将着重分析Thread。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="Rust线程"><a href="#Rust线程" class="headerlink" title="Rust线程"></a>Rust线程</h1><p>Rust 的线程模型是 1:1 模型，一个Rust Thread即对应一个内核线程，可以最小化运行时。</p>
+<h1 id="如何创建线程"><a href="#如何创建线程" class="headerlink" title="如何创建线程"></a>如何创建线程</h1><h2 id="spawn"><a href="#spawn" class="headerlink" title="spawn"></a>spawn</h2><p>类似C的fork，java的Runnable，Go的go func，传入function在另一个线程中执行。<br>一个例子：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::thread;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;start &#123;:?&#125;&quot;</span>, thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>());</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">j</span> = std::thread::<span class="title function_ invoke__">spawn</span>(|| &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;Hello from a thread! &#123;:?&#125;&quot;</span>,thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>()) ;</span><br><span class="line">    &#125;);</span><br><span class="line">    j.<span class="title function_ invoke__">join</span>().<span class="title function_ invoke__">unwrap</span>();</span><br><span class="line">&#125;</span><br><span class="line">---------</span><br><span class="line">start <span class="title function_ invoke__">ThreadId</span>(<span class="number">1</span>)</span><br><span class="line">Hello from a thread! <span class="title function_ invoke__">ThreadId</span>(<span class="number">2</span>)</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><code>std::thread::spawn</code> 函数签名为:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">spawn</span>&lt;F, T&gt;(f: F) <span class="punctuation">-&gt;</span> JoinHandle&lt;T&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    F: <span class="title function_ invoke__">FnOnce</span>() <span class="punctuation">-&gt;</span> T,</span><br><span class="line">    F: <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    T: <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">&#123;</span><br><span class="line">    Builder::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">spawn</span>(f).<span class="title function_ invoke__">expect</span>(<span class="string">&quot;failed to spawn thread&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>接受一个F实现了<code>FnOnce</code>，这语义上Rust给我们的保证：意味着我们传入的闭包只会被调用一次。同时此F返回T。我们在spawn中传入闭包后，fork线程出来执行此闭包。</p>
+<p>其次spawn返回<code>JoinHandle</code> ，对此执行<code>join</code> 将调用<code>libc::pthread_join</code> 返回 <code>crate::result::Result&lt;T, Box&lt;dyn Any + Send + &#39;static&gt;&gt;</code> 这里T是我们传入闭包的返回值， 而错误的trait object如果存在，则表示thread发生了panic。</p>
+<h2 id="scope"><a href="#scope" class="headerlink" title="scope"></a>scope</h2><p>scope的则保证其闭包中的<code>spawn</code> 的出的闭包在其结束时自动join。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">n</span> = Instant::<span class="title function_ invoke__">now</span>();</span><br><span class="line">    thread::<span class="title function_ invoke__">scope</span>(|s| &#123;</span><br><span class="line">        s.<span class="title function_ invoke__">spawn</span>(|| &#123;</span><br><span class="line">            <span class="title function_ invoke__">sleep</span>(Duration::<span class="title function_ invoke__">from_secs</span>(<span class="number">2</span>));</span><br><span class="line">        &#125;);</span><br><span class="line">        s.<span class="title function_ invoke__">spawn</span>(|| &#123;</span><br><span class="line">            <span class="title function_ invoke__">sleep</span>(Duration::<span class="title function_ invoke__">from_secs</span>(<span class="number">4</span>));</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;&quot;</span>, Instant::<span class="title function_ invoke__">now</span>() - n);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">------------</span><br><span class="line">output:</span><br><span class="line"></span><br><span class="line"><span class="number">4.00290675</span>s</span><br></pre></td></tr></table></figure>
+
+<h1 id="threadlocal"><a href="#threadlocal" class="headerlink" title="threadlocal"></a>threadlocal</h1><p>将元素保存在线程本地的存储里，只有线程自己可以访问。与Java的<code>ThreadLocal</code> 基本相同。<code>threadlocal</code> 宏 中声明好static的变量后，就可以:</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">thread_local! &#123;</span><br><span class="line">    <span class="keyword">static</span> FOO: std::cell::RefCell&lt;<span class="type">u32</span>&gt;  = RefCell::<span class="title function_ invoke__">new</span>(<span class="number">1</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这里FOO会被封装为<code>LocalKey&lt;std::cell::RefCell&lt;u32&gt;&gt;</code>。Localkey为<code>T</code>,<code>Cell&lt;T&gt;</code>,<code>RefCell&lt;t&gt;</code> 各实现了一套API。<br>其中<br>为所有类型T都实现了<code>with</code>，<code>try_with</code>，<code>initialize_with</code> 。他们都为闭包提供了<code>不可变引用</code>。<br>对于普通类型T，threadlocal不直接提供其对象的可变引用。这里需要借助<code>内部可变性</code> ：<code>Cell</code>和<code>RefCell</code> 。</p>
+<p><code>LocalKey</code> 为类型<code>Cell&lt;T&gt;</code> 实现了set，get，take，replace T支持整体替换。其中get需实现Copy。从语义上来看和Cell也基本一致：直接替换<code>threadlocal</code> 中。</p>
+<p><code>LocalKey</code> 为类型<code>RefCell&lt;T&gt;</code> 实现了<code>with_borrow</code>和<code>with_borrow_mut</code>。提供的API和RefCell一致提供了局部可变性。</p>
+<p>一套基本的使用方式：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::&#123;</span><br><span class="line">    borrow::Borrow,</span><br><span class="line">    cell::RefCell,</span><br><span class="line">    thread::&#123;<span class="keyword">self</span>, sleep&#125;,</span><br><span class="line">    time::&#123;Duration, Instant&#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line">thread_local! &#123;</span><br><span class="line">    <span class="keyword">static</span> FOO: std::cell::RefCell&lt;<span class="type">u32</span>&gt;  = RefCell::<span class="title function_ invoke__">new</span>(<span class="number">1</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    thread::<span class="title function_ invoke__">scope</span>(|s| &#123;</span><br><span class="line">        s.<span class="title function_ invoke__">spawn</span>(|| &#123;</span><br><span class="line">            <span class="title function_ invoke__">sleep</span>(Duration::<span class="title function_ invoke__">from_secs</span>(<span class="number">2</span>));</span><br><span class="line">            FOO.<span class="title function_ invoke__">with</span>(|f| &#123;</span><br><span class="line">                *f.<span class="title function_ invoke__">borrow_mut</span>() = <span class="number">4</span>;</span><br><span class="line">                <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;  [1] &#123;&#125;&quot;</span>, thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>(), f.<span class="title function_ invoke__">borrow</span>());</span><br><span class="line">            &#125;);</span><br><span class="line">        &#125;);</span><br><span class="line">        s.<span class="title function_ invoke__">spawn</span>(|| &#123;</span><br><span class="line">            <span class="title function_ invoke__">sleep</span>(Duration::<span class="title function_ invoke__">from_secs</span>(<span class="number">4</span>));</span><br><span class="line">            FOO.<span class="title function_ invoke__">with</span>(|f| &#123;</span><br><span class="line">                <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;  [2] &#123;&#125;&quot;</span>, thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>(), f.<span class="title function_ invoke__">borrow</span>());</span><br><span class="line">            &#125;)</span><br><span class="line">        &#125;);</span><br><span class="line">        FOO.<span class="title function_ invoke__">with</span>(|f| &#123;</span><br><span class="line">            <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;  [4] &#123;&#125;&quot;</span>, thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>(), f.<span class="title function_ invoke__">borrow</span>());</span><br><span class="line">        &#125;);</span><br><span class="line">    &#125;);</span><br><span class="line">    FOO.<span class="title function_ invoke__">with</span>(|f| &#123;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;&#123;:?&#125;  [3] &#123;&#125;&quot;</span>, thread::<span class="title function_ invoke__">current</span>().<span class="title function_ invoke__">id</span>(), f.<span class="title function_ invoke__">borrow</span>());</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line">----------------</span><br><span class="line">output:</span><br><span class="line"><span class="title function_ invoke__">ThreadId</span>(<span class="number">1</span>)  [<span class="number">4</span>] <span class="number">1</span></span><br><span class="line"><span class="title function_ invoke__">ThreadId</span>(<span class="number">2</span>)  [<span class="number">1</span>] <span class="number">4</span></span><br><span class="line"><span class="title function_ invoke__">ThreadId</span>(<span class="number">3</span>)  [<span class="number">2</span>] <span class="number">1</span></span><br><span class="line"><span class="title function_ invoke__">ThreadId</span>(<span class="number">1</span>)  [<span class="number">3</span>] <span class="number">1</span></span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>可以看出：</p>
+<ol>
+<li>3跟4是跑在同一个线程，scope并不会创建新的线程。</li>
+<li>点位4对FOO的修改，点位2并不能观察到说明这里确实是threadlocal生效了。</li>
+</ol>
+<h1 id="Send-x2F-Sync"><a href="#Send-x2F-Sync" class="headerlink" title="Send&#x2F;Sync"></a>Send&#x2F;Sync</h1><p>两个 标记trait</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">unsafe</span> auto <span class="keyword">trait</span> <span class="title class_">Send</span> &#123; &#125;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">unsafe</span> auto <span class="keyword">trait</span> <span class="title class_">Sync</span> &#123; &#125;</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>实现Send的类型可以在线程间安全的传递其所有权</li>
+<li>实现Sync的类型可以在线程间安全的共享(通过引用)</li>
+</ul>
+<p>由于这两个为auto trait。所以在 Rust 中，几乎所有类型都默认实现了Send和Sync。而且由于这两个特征都是可自动派生的trait。意味着一个复合类型(例如结构体), 只要它内部的所有成员都实现了Send或者Sync，那么它就自动实现了Send或Sync。但是也会有些类型因为某些原因实现了<code>!Send</code> 显示表明这个类型不能安全地在线程间传递。比如裸指针* mut，Rc等。</p>
+<p>下面是一个裸指针的例子</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">b</span> = <span class="type">Box</span>::<span class="title function_ invoke__">new</span>(<span class="number">1</span>);</span><br><span class="line">    <span class="keyword">let</span> <span class="variable">r</span> = <span class="type">Box</span>::<span class="title function_ invoke__">into_raw</span>(b);</span><br><span class="line">    thread::<span class="title function_ invoke__">spawn</span>(<span class="keyword">move</span> || &#123;</span><br><span class="line">        <span class="keyword">let</span> <span class="variable">b</span> = <span class="keyword">unsafe</span> &#123; <span class="type">Box</span>::<span class="title function_ invoke__">from_raw</span>(r) &#125;;</span><br><span class="line">        <span class="built_in">println!</span>(<span class="string">&quot;b = &#123;&#125;&quot;</span>, b);</span><br><span class="line">    &#125;);</span><br><span class="line">&#125;</span><br><span class="line">-------------</span><br><span class="line">error[E0277]: `*<span class="keyword">mut</span> <span class="type">i32</span>` cannot be sent between threads safely</span><br><span class="line">   -<span class="punctuation">-&gt;</span> src/main.rs:<span class="number">17</span>:<span class="number">19</span></span><br><span class="line">    |</span><br><span class="line"><span class="number">17</span>  |       thread::<span class="title function_ invoke__">spawn</span>(<span class="keyword">move</span> || &#123;</span><br><span class="line">    |       ------------- ^------</span><br><span class="line">    |       |             |</span><br><span class="line">    |  _____|_____________within this `[closure@src/main.rs:<span class="number">17</span>:<span class="number">19</span>: <span class="number">17</span>:<span class="number">26</span>]`</span><br><span class="line">    | |     |</span><br><span class="line">    | |     required by a bound introduced by this call</span><br><span class="line"><span class="number">18</span>  | |         <span class="keyword">let</span> <span class="variable">b</span> = <span class="keyword">unsafe</span> &#123; <span class="type">Box</span>::<span class="title function_ invoke__">from_raw</span>(r) &#125;;</span><br><span class="line"><span class="number">19</span>  | |         <span class="built_in">println!</span>(<span class="string">&quot;b = &#123;&#125;&quot;</span>, b);</span><br><span class="line"><span class="number">20</span>  | |     &#125;);</span><br><span class="line">    | |_____^ `*<span class="keyword">mut</span> <span class="type">i32</span>` cannot be sent between threads safely</span><br><span class="line">    |</span><br></pre></td></tr></table></figure>
+<p>编译失败。</p>
+<p>我们回头看thread这里会发现：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">spawn</span>&lt;F, T&gt;(f: F) <span class="punctuation">-&gt;</span> JoinHandle&lt;T&gt;</span><br><span class="line"><span class="keyword">where</span></span><br><span class="line">    F: <span class="title function_ invoke__">FnOnce</span>() <span class="punctuation">-&gt;</span> T,</span><br><span class="line">    F: <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">    T: <span class="built_in">Send</span> + <span class="symbol">&#x27;static</span>,</span><br><span class="line">&#123;</span><br><span class="line">    Builder::<span class="title function_ invoke__">new</span>().<span class="title function_ invoke__">spawn</span>(f).<span class="title function_ invoke__">expect</span>(<span class="string">&quot;failed to spawn thread&quot;</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>函数为FnOnce要求：我们的闭包配合move使用，设计意图是避免我们借用了捕获的变量，而导致另一个线程数据被回收后，其引用仍在此线程被使用的问题。</p>
+<p>函数要求闭包F支持Send，由于闭包在编译时会将捕获的变量转为结构体。<strong>如果要求此结构体支持Send，则其中的每个字段都必须支持Send</strong>。Rust只允许存在一个活跃的可变引用，多个不可变引用。所以Arc&#x2F;Rc没有实现DerefMut，只实现了Deref，<strong>所有被引用计数指针包装的东西都只能有不可变引用</strong>。</p>
+<p>这时我们想修改引用计数指针内的东西只能寄希望于内部可变性 ：整体替换（Cell），或者基于运行时检查的借用（Refcell）。然而Cell和RefCell都明确实现了!Sync 表示不支持多线程。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span>&gt; !marker::<span class="built_in">Send</span> <span class="keyword">for</span> <span class="title class_">Rc</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span>&gt; !marker::<span class="built_in">Sync</span> <span class="keyword">for</span> <span class="title class_">Rc</span>&lt;T&gt; &#123;&#125;</span><br></pre></td></tr></table></figure>
+
+<p>而Arc呢？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span> + <span class="built_in">Sync</span> + <span class="built_in">Send</span>&gt; <span class="built_in">Send</span> <span class="keyword">for</span> <span class="title class_">Arc</span>&lt;T&gt; &#123;&#125;</span><br><span class="line"><span class="meta">#[stable(feature = <span class="string">&quot;rust1&quot;</span>, since = <span class="string">&quot;1.0.0&quot;</span>)]</span></span><br><span class="line"><span class="keyword">unsafe</span> <span class="keyword">impl</span>&lt;T: ?<span class="built_in">Sized</span> + <span class="built_in">Sync</span> + <span class="built_in">Send</span>&gt; <span class="built_in">Sync</span> <span class="keyword">for</span> <span class="title class_">Arc</span>&lt;T&gt; &#123;&#125; </span><br></pre></td></tr></table></figure>
+
+
+<p>我们再回头梳理下Rust这里的设计思路：</p>
+<ol>
+<li>由于thread 的闭包要求我们使用FnOnce，所以我们必须提供所有权给闭包，而不是引用。</li>
+<li>提供所有权给闭包这里其实分两种情况<ol>
+<li>一种就是单纯的把数据从一个线程move到另一个线程，这种情况其实只要数据实现了Send就可以了。大部分基本的数据结构都默认支持，因为这里不存在任何跨线程的数据共享，内存的回收，生命周期全部都随着move 一并交付给新的线程，和原线程没有关系（对于普通的数据类型而言）。</li>
+<li>另一种则是存在跨线程共享所有权，对于Rust则意味着必须有引用计数，Rc或者Arc。而Rc明确不支持Sync，Send。从实际实现的角度来看，Rc中也没有任何同步原语。那么Rust将我们的逼到了最后一条路，Arc。</li>
+</ol>
+</li>
+<li>对于Arc来说，只要其内部元素T支持Sync + Send，Arc<T>就支持Sync + Send。因此对于大部分自动Send + Sync的类型Arc<T> 就可以实现线程共享。</T></T></li>
+<li>Arc和Rc都只能获取不可变引用，换句话说，Arc<T> 只能读。一般配合引用计数的是内部可变性，然而Cell，RefCell都标记了!Sync 所以这条路也走不通。那如何提供跨线程的内部可变性呢？</T></li>
+</ol>
+<p>下篇文章我们将讨论标准库的sync包。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/rust-concurrent-std/" title="Rust并发系列1-Thread">https://fenixc9.github.io/rust-concurrent-std/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/%E5%B9%B6%E5%8F%91/" rel="tag"># 并发</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/union-find/" rel="prev" title="并查集与应用">
+      <i class="fa fa-chevron-left"></i> 并查集与应用
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/rust-concurrent-std-2/" rel="next" title="Rust并发系列2-Lock">
+      Rust并发系列2-Lock <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Rust%E7%BA%BF%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">Rust线程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%88%9B%E5%BB%BA%E7%BA%BF%E7%A8%8B"><span class="nav-number">2.</span> <span class="nav-text">如何创建线程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#spawn"><span class="nav-number">2.1.</span> <span class="nav-text">spawn</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#scope"><span class="nav-number">2.2.</span> <span class="nav-text">scope</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#threadlocal"><span class="nav-number">3.</span> <span class="nav-text">threadlocal</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Send-x2F-Sync"><span class="nav-number">4.</span> <span class="nav-text">Send&#x2F;Sync</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'cf3b2bea836febd88ef32ff410010fe8',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

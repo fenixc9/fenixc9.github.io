@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="如何用Rust构建无锁数据结构">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】Rust无锁数据结构">
+<meta property="og:url" content="https://fenixc9.github.io/rust_lock_free/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="如何用Rust构建无锁数据结构">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/rust_lock_free/1.webp">
+<meta property="og:image" content="https://fenixc9.github.io/rust_lock_free/2.webp">
+<meta property="article:published_time" content="2022-11-24T17:36:48.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.197Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="Lock">
+<meta property="article:tag" content="Concurrent">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/rust_lock_free/1.webp">
+
+<link rel="canonical" href="https://fenixc9.github.io/rust_lock_free/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】Rust无锁数据结构 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/rust_lock_free/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】Rust无锁数据结构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-11-25 01:36:48" itemprop="dateCreated datePublished" datetime="2022-11-25T01:36:48+08:00">2022-11-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Rust/" itemprop="url" rel="index"><span itemprop="name">Rust</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">如何用Rust构建无锁数据结构</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>众所周知，垃圾回收的一大优势就是构建高性能无锁数据结构。手动做这些数据结构的内存管理并不简单，GC使之变成非常简单的事。<br>这篇文章要说明，使用Rust，能为并发数据结构构建Api：</p>
+<ul>
+<li>使实现无锁数据结构像GC一样简单</li>
+<li>静态安全的安全防卫，防止误用内存管理机制</li>
+<li>和GC有充足的竞争力</li>
+</ul>
+<p>在我下面要展示的benchmark中，Rust用一个很容易写的代码轻松击败了Java的无锁实现。<br>我在一个新的叫 “crossbeam” 的库中实现了 <em>基于分代的内存回收</em>（epoch-based memory reclamation）”，已经可以在你的数据结构中用了。本文会包含一些无锁数据结构，分代算法，和Rust API的背景知识。</p>
+<h2 id="Benchmark"><a href="#Benchmark" class="headerlink" title="Benchmark"></a>Benchmark</h2><p>在深入API设计和分代回收的使用前，我们先直入主题：性能。</p>
+<p>为了测试我的Crossbeam执行GC时的开销，我基于它实现了一个基础的无锁队列（Michael-Scott 队列），并且用scala实现了相同的队列。通常来说，基于JVM的语言对于无锁数据结构是“优秀的GC”的一个优秀的测试场景。<br>作为这些实现的补充，我们对比了：</p>
+<ol>
+<li>一个更高效的分段式队列：会分配节点（node）到多个槽（slot）中，我用Rust基于Crossbeam实现了这个队列。</li>
+<li>一个被Mutex保护的Rust单线程队列。</li>
+<li>一个 java.util.concurrent的队列的实现（ConcurrentLinkedQueue）实际上是一个Michael-Scott 队列的优化变种。</li>
+</ol>
+<p>我用两种方式测试这些队列：</p>
+<ul>
+<li>多生产，单消费场景：2个线程持续发送消息，1个线程接受消息，二者都在一个密集的循环中执行。</li>
+<li>多生产，多消费场景：2个线程持续发送消息，2个线程接受消息，二者都在一个密集的循环中执行。</li>
+</ul>
+<p>像这样的Benchmark对于衡量一个无锁结构在多线程的竞争下的可扩展性非常有代表性——多个线程竞争以同时并发更新。构建生产级队列实现时，应benchmark多个变种，它的目的是衡量内存管理机制的损耗。对于MPSC的测试，我也会对比Rust内置channel中用的算法，它对这种场景（MPSC，它不支持MPMC）有优化。<br>测试机是4核，2.6GHz， Intel Core i7 16G内存。</p>
+<p>这里是结果：<br><img src="/rust_lock_free/1.webp" alt="结果1"><br><img src="/rust_lock_free/2.webp" alt="结果1"></p>
+<h2 id="分析"><a href="#分析" class="headerlink" title="分析"></a>分析</h2><p>我们主要讨论Crossbeam的实现——实际上还没有优化——在所有场景下都很有竞争力。在Rust和JVM侧都有可能使用一些更聪明和特殊的队列，但是这些结果显示，至少他们的损耗是合理的。<br>注意，Java&#x2F;Scala版本MPMC测试比MPSC测试结果好的多，为什么呢？<br>答案很简单：<strong>垃圾回收</strong>。在MPSC测试中，生产者生产超过了消费速率，这意味着队列的数据将缓慢增长。这将会增大每次垃圾回收的损耗，因为它会遍历所有数据集。<br>在分代体系中，管理内存的损耗是相对固定的：它与线程数量成正比，而不是和活跃的数据量。这会带来更好的，更可预测的性能。<br>最后，我们没有包含的一项对比（因为这会让其他的柱状图看起来太矮了）是Rust中使用Mutex包着Deque。对于MPMC测试性能在3040ns&#x2F;ops祖佑，比crossbeam慢上20倍。这可以说是为何无锁结构如此重要的完美诠释，让我们开始看下它们到底是啥吧。</p>
+<h2 id="无锁数据结构"><a href="#无锁数据结构" class="headerlink" title="无锁数据结构"></a>无锁数据结构</h2><p>当你想从多个线程使用（并且修改）一个数据结构时，你需要同步。最简单的方法是一个全局锁，在Rust中，就是把数据结构整个包装在一个Mutex中，然后就完事了。</p>
+<p>问题是，这种粗糙的同步意味着多个线程访问数据结构时总是需要协调，即使是访问某些脱节的数据也是如此。这也意味着即使仅有一个线程尝试读，也会产生写操作：更新锁状态，由于这个锁是全局单点，这些写操作也会给CPU总线带来大量缓存失效的流量。即使你使用了大量细粒度的锁也会带来死锁，优先级错乱的危害，你可能还是没能解决性能问题。</p>
+<p>一个更激进的选择是无锁数据结构，它使用原子操作来直接修改数据结构，不会有更近一步的同步，它们通常比基于锁的设计更快，更可扩展，更鲁棒。</p>
+<p>这篇文章不会给出一个无锁编程的全面教程，核心观念是如果没有全局锁，想确定何时释放内存是很困难的。许多公布的算法基本都会假定存在一个“垃圾回收器（GC）”或者其他什么回收内存的东西。所以在我们真正用Rust搞无锁并发之前，我们需要讨论下内存回收的故事，这个这篇文章要讨论的东西。</p>
+<h2 id="Treiber栈"><a href="#Treiber栈" class="headerlink" title="Treiber栈"></a>Treiber栈</h2><p>说点实在的，我们看下无锁数据结构的“hello world” ： Treiber栈。这个栈看起来像个单向链表，所有修改都发生在头节点：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#![feature(box_raw)]</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::ptr::&#123;<span class="keyword">self</span>, null_mut&#125;;</span><br><span class="line"><span class="keyword">use</span> std::sync::atomic::AtomicPtr;</span><br><span class="line"><span class="keyword">use</span> std::sync::atomic::Ordering::&#123;Relaxed, Release, Acquire&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Stack</span>&lt;T&gt; &#123;</span><br><span class="line">    head: AtomicPtr&lt;Node&lt;T&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Node</span>&lt;T&gt; &#123;</span><br><span class="line">    data: T,</span><br><span class="line">    next: *<span class="keyword">mut</span> Node&lt;T&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; Stack&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> Stack&lt;T&gt; &#123;</span><br><span class="line">        Stack &#123;</span><br><span class="line">            head: AtomicPtr::<span class="title function_ invoke__">new</span>(<span class="title function_ invoke__">null_mut</span>()),</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>从pop开始最简单。要pop，你只需要做loop循环，获取一个head的快照，然后做<code>compare-and-swap</code> 用下一个指针替换掉快照就可以了。</p>
+<p>注意：<code>compare_and_swap</code> 如果老值匹配，将原子替换AtopmicPtr的值从老值到新值。另外对这篇文章你如果不熟悉 Acquire， Release，Relaxed可以忽略它们。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Stack&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">pop</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">// take a snapshot</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">head</span> = <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Acquire);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// we observed the stack empty</span></span><br><span class="line">            <span class="keyword">if</span> head == <span class="title function_ invoke__">null_mut</span>() &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">let</span> <span class="variable">next</span> = <span class="keyword">unsafe</span> &#123; (*head).next &#125;;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// if snapshot is still good, update from `head` to `next`</span></span><br><span class="line">                <span class="keyword">if</span> <span class="keyword">self</span>.head.<span class="title function_ invoke__">compare_and_swap</span>(head, next, Release) == head &#123;</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// extract out the data from the now-unlinked node</span></span><br><span class="line">                    <span class="comment">// **NOTE**: leaks the node!</span></span><br><span class="line">                    <span class="keyword">return</span> <span class="title function_ invoke__">Some</span>(<span class="keyword">unsafe</span> &#123; ptr::<span class="title function_ invoke__">read</span>(&amp;(*head).data) &#125;)</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>ptr::read</code> 是Rust中在没有静态&#x2F;动态追踪的情况下提取数据所有权的方式。</p>
+<ul>
+<li>我们此处用到compare_and_swap的原子性来保证只有一个线程会调用<code>ptr::read</code></li>
+<li>此实现永远不会释放Node，所以调用data的释放函数永不会被调用。</li>
+</ul>
+<p>以上两点保证我们能安全地调用<code>ptr::read</code>。</p>
+<p>push也十分类似：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Stack&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">self</span>, t: T) &#123;</span><br><span class="line">        <span class="comment">// allocate the node, and immediately turn it into a *mut pointer</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">n</span> = <span class="type">Box</span>::<span class="title function_ invoke__">into_raw</span>(<span class="type">Box</span>::<span class="title function_ invoke__">new</span>(Node &#123;</span><br><span class="line">            data: t,</span><br><span class="line">            next: <span class="title function_ invoke__">null_mut</span>(),</span><br><span class="line">        &#125;));</span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">// snapshot current head</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">head</span> = <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Relaxed);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// update `next` pointer with snapshot</span></span><br><span class="line">            <span class="keyword">unsafe</span> &#123; (*n).next = head; &#125;</span><br><span class="line"></span><br><span class="line">            <span class="comment">// if snapshot is still good, link in new node</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">self</span>.head.<span class="title function_ invoke__">compare_and_swap</span>(head, n, Release) == head &#123;</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>如果我们在有GC的语言里编写了上面的代码，我们已经完工了，但是我们写的是Rust，这就会导致内存泄漏。具体来说，pop的实现从Stack上移除node时，没有去释放node指针导致的。</p>
+<p>假如我们这么做了会发生什么呢？</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// extract out the data from the now-unlinked node</span></span><br><span class="line"><span class="keyword">let</span> <span class="variable">ret</span> = <span class="title function_ invoke__">Some</span>(<span class="keyword">unsafe</span> &#123; ptr::<span class="title function_ invoke__">read</span>(&amp;(*head).data) &#125;);</span><br><span class="line"></span><br><span class="line"><span class="comment">// free the node</span></span><br><span class="line">mem::<span class="title function_ invoke__">drop</span>(<span class="type">Box</span>::<span class="title function_ invoke__">from_raw</span>(head));</span><br><span class="line"></span><br><span class="line"><span class="keyword">return</span> ret</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>问题是其他线程可能也在通知执行pop，那些线程可能已经有了一个快照，在我们是否这个节点后，没有任何东西能阻止这个线程用这个快照读 (*head).next，use-after-free的bug就产生了。</p>
+<p>这就是难点了。我们想使用无锁算法，但是大多都跟上面的stack类似，我们没有一个清晰的时间点可以安全的删除一个节点，这该怎么办？</p>
+<h2 id="Epoch-based-reclamation"><a href="#Epoch-based-reclamation" class="headerlink" title="Epoch-based reclamation"></a>Epoch-based reclamation</h2><p>目前有几种不是基于GC的方式能在无锁的情况下管理内存，但是他们都满足下面几个规则：</p>
+<ol>
+<li>有两个访问数据结构的方式：数据结构，和其他线程的对数据结构的快照，在我们删除一个节点之前，我们必须知道它不会以上面的任何方式访问了。</li>
+<li>一旦一个节点断开同数据结构的连接，不再有新的能访问到它的快照产生。</li>
+</ol>
+<p>其中一个最优雅有希望的回收体系是<code>Keir Fraser的epoch-based reclamation</code> ，他在他的PhD论文中非常详细的描述了这个体系。</p>
+<p>这个体系的基本思想是把数据结构（第一个可达性）中断开链接（unlink）的节点隐藏起来，直到他们可以被安全的删除。在我们能删除一个被隐藏的节点之前，我们必须知道所有所有访问这个数据结构的线程此时已经完成了他们的操作。这意味着没有任何快照了（并且此时也没有线程会创建新的快照了）。困难的部分是在没有锁的前提下做到上面的几点。否则我们将失去我们用无锁本来的目的了。</p>
+<h2 id="Epoch体系工作的基础是："><a href="#Epoch体系工作的基础是：" class="headerlink" title="Epoch体系工作的基础是："></a>Epoch体系工作的基础是：</h2><p>一个全局分代计数器，可取值0，1，2</p>
+<ul>
+<li><p>每个epoch配置一个垃圾链表</p>
+</li>
+<li><p>每个线程配置一个活跃标记</p>
+</li>
+<li><p>每个线程自己有一个分代计数器，取值也是0，1，2</p>
+</li>
+</ul>
+<p>分代的目的是当没有线程访问，垃圾可以被安全地释放时，可以被发现。不同于传统GC，它不要求遍历全部活跃数据，它纯粹就是检测分代计数器。</p>
+<p>当一个线程想给此线程提交一个操作。它首先标记自己为active，然后更新自己的epoch计数器和全局计数器相同。如果线程从数据结构中删除一个节点，它会把节点加到当前全局分代的垃圾链表中（注意，此处将垃圾加到全局分代链表而不是自己的分代的链表很重要），当他完成自己的操作时，清空活跃标记。<br>当尝试回收垃圾时（这个操作什么时候都能做），一个线程遍历所有参与的线程的活跃标记，检测是否所有线程在当前分代。如果是，它将尝试对全局分代计数增加1（最终对3取模）。如果增加成功，两代之前的垃圾就可以被回收了。<br>为什么我们会需要分代，因为“垃圾回收”是并发完成的，任何时候都可能有线程在两代里（新的和老的）。但是我们增加全局分代前会检测所有活跃线程都在老分代里，我确认没有线程会在第三个分代里。<br>这个体系设计得很小心，大部分时候，访问数据的线程已经缓存的数据或者在threadlocal。做GC实际上就是修改下全局计数或者读一下别的线程的计数。分代法的算法透明，方便使用，性能可以与其他方法匹敌。<br>它和Rust所有权系统也十分匹配。</p>
+<h2 id="Rust-API"><a href="#Rust-API" class="headerlink" title="Rust API"></a>Rust API</h2><p>我们希望Rust API反馈 分代回收机制的基本原则。</p>
+<ol>
+<li><p>当操作共享数据时，线程必须在“活跃”状态</p>
+</li>
+<li><p>当一个线程是活跃状态，所有从数据结构中读出的数据，将保留到线程“不活跃”为止。</p>
+</li>
+</ol>
+<p>只要满足了epoch API的约束，我们就受影响于Rust所有权系统，所有权基于资源管理系统（也叫RAII）。这会帮助我们正确地使用epoch管理体系。</p>
+<h2 id="Guard"><a href="#Guard" class="headerlink" title="Guard"></a>Guard</h2><p>如果要操作一个无锁数据结构，你首先要申请一个guard，它是一个有所有权的值，表示当前线程被标记为“活跃”。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Guard</span> &#123; ... &#125;</span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">pin</span>() <span class="punctuation">-&gt;</span> Guard;</span><br></pre></td></tr></table></figure>
+<p>pin函数标记当前线程为活跃，并且加载全局分代，也会尝试GC（细节后面详述）。Guard的析构通过标记当前线程为“不活跃”来退出分代管理。</p>
+<p>由于 Guard 代表了“活跃” ，guard的引用 &amp;’a Guard 也保证线程在 ‘a 的整个生命周期里是活跃的，这正是我们在无锁算法里需要给快照绑定的生命周期。</p>
+<p>要用这个guard，Crossbeam提供了三个指针类型：</p>
+<p>Owned<T> ，和Box<T> 类似，指向了并发数据结构中那些还没被公开的独占的数据。</T></T></p>
+<p>Shared&lt;’a,T&gt;，和&amp;’a T 类似，指向了共享数据，这些数据对于数据结构可能可达，也可能不可达，但是Crossbeam保证在 ‘a 期间它不会被释放。</p>
+<p>Atomic<T> 类似于 std::sync::atomic::AtomicPtr ,为Shared和Owned提供指针原子更新，并且将它们和Guard关联在一起。</T></p>
+<p>我们逐个看下这些东西：</p>
+<h2 id="Owned和Shared指针"><a href="#Owned和Shared指针" class="headerlink" title="Owned和Shared指针"></a>Owned和Shared指针</h2><p>Owned指针有类似Box的api</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Owned</span>&lt;T&gt; &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; Owned&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>(t: T) <span class="punctuation">-&gt;</span> Owned&lt;T&gt;;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; Deref <span class="keyword">for</span> <span class="title class_">Owned</span>&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">type</span> <span class="title class_">Target</span> = T;</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; DerefMut <span class="keyword">for</span> <span class="title class_">Owned</span>&lt;T&gt; &#123; ... &#125;</span><br></pre></td></tr></table></figure>
+<p>Shared&lt;’a,T&gt;指针类似于&amp;’a T，它是Copy的，但他会解引用为&amp;’a T。这是一种传达它的生命周期是‘a的hacky的方式。不同于Owned，我们没有办法直接创建Shared。相反，Shared指针应从Atomic中读，我们后面会看到。</p>
+<h2 id="Atomic"><a href="#Atomic" class="headerlink" title="Atomic"></a>Atomic</h2><p>这个库的核心就是Atomic，它提供了访问可空指针的原子操作，它把库中其他的类型连在一起：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">Atomic</span>&lt;T&gt; &#123; ... &#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="comment">/// Create a new, null atomic pointer.</span></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">null</span>() <span class="punctuation">-&gt;</span> Atomic&lt;T&gt;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们逐个看下这些精心设计的API</p>
+<h2 id="Loading"><a href="#Loading" class="headerlink" title="Loading"></a>Loading</h2><p>首先，从Atomic中load：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">load</span>&lt;<span class="symbol">&#x27;a</span>&gt;(&amp;<span class="keyword">self</span>, ord: Ordering, _: &amp;<span class="symbol">&#x27;a</span> Guard) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;Shared&lt;<span class="symbol">&#x27;a</span>, T&gt;&gt;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>为了执行这个load操作，我们必须传入一个Guard。正如上面解释的，这是保证线程在整个’a生命周期内都处于激活状态的方式。它将返回一个生命周期被绑定给guard的Option的Shared指针（如果Atomic当前是null的话就是None）。</p>
+<p>比较这个Atomic和标准库load时返回*mut T的AtomicPtr非常有趣。由于用了分代，我们可以保证解引用’a 的指针是安全的，而标准库的AtomicPtr没有任何这种保证。</p>
+<h2 id="Storing"><a href="#Storing" class="headerlink" title="Storing"></a>Storing</h2><p>写操作（store）因为这几个指针类型会更复杂些。</p>
+<p>如果我们只是想写一个Owned指针或者null值，我们甚至不需要当前线程为“活跃”，我们只需要把所有权转移到数据结构中就可以了，不需要指针的生命周期的任何保证。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">store</span>(&amp;<span class="keyword">self</span>, val: <span class="type">Option</span>&lt;Owned&lt;T&gt;&gt;, ord: Ordering);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>有时，我们想把所有权转移到数据结构中，并且立刻尝试获取Shared指针，例如我们想给数据结构中的节点加个链接，在那种情况下我们必须把Shared的生命周期和guard绑定。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">store_and_ref</span>&lt;<span class="symbol">&#x27;a</span>&gt;(&amp;<span class="keyword">self</span>,</span><br><span class="line">                             val: Owned&lt;T&gt;,</span><br><span class="line">                             ord: Ordering,</span><br><span class="line">                             _: &amp;<span class="symbol">&#x27;a</span> Guard)</span><br><span class="line">                             <span class="punctuation">-&gt;</span> Shared&lt;<span class="symbol">&#x27;a</span>, T&gt;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注意val的运行时表现和返回值的是完全一样的，我们传了一个指针进去，它又把相同的指针返回出来了。但是所有权的情况这时却彻底改变了。</p>
+<p>最后，我们还能存一个共享指针到数据结构中：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">store_shared</span>(&amp;<span class="keyword">self</span>, val: <span class="type">Option</span>&lt;Shared&lt;T&gt;&gt;, ord: Ordering);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>这个操作不要求guard，这是因为我们也没学到任何有关指针生命周期的东西（译：裸指针不携带生命周期信息）。</p>
+<h2 id="CAS操作"><a href="#CAS操作" class="headerlink" title="CAS操作"></a>CAS操作</h2><p>这个我们有些非常相似的操作，最简单的场景就是用一个新型的Owned指针交换Shared指针。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">cas</span>(&amp;<span class="keyword">self</span>,</span><br><span class="line">               old: <span class="type">Option</span>&lt;Shared&lt;T&gt;&gt;,</span><br><span class="line">               new: <span class="type">Option</span>&lt;Owned&lt;T&gt;&gt;,</span><br><span class="line">               ord: Ordering)</span><br><span class="line">               <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), <span class="type">Option</span>&lt;Owned&lt;T&gt;&gt;&gt;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>跟store一样，这个操作也不需要guard，它不产生新的生命周期。Result表明CAS是否成功，如果没有，新指针的所有权还是会返回给调用方。</p>
+<p>我们再讨论一个衍生物 store_and_ref：</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">cas_and_ref</span>&lt;<span class="symbol">&#x27;a</span>&gt;(&amp;<span class="keyword">self</span>,</span><br><span class="line">                           old: <span class="type">Option</span>&lt;Shared&lt;T&gt;&gt;,</span><br><span class="line">                           new: Owned&lt;T&gt;,</span><br><span class="line">                           ord: Ordering,</span><br><span class="line">                           _: &amp;<span class="symbol">&#x27;a</span> Guard)</span><br><span class="line">                           <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;Shared&lt;<span class="symbol">&#x27;a</span>, T&gt;, Owned&lt;T&gt;&gt;;</span><br></pre></td></tr></table></figure>
+<p>在这种情况下，成功的CAS返回Shared指针指向我们刚插入的数据。</p>
+<p>最后我们可以用一个Shared指针替换另一个</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span>&lt;T&gt; Atomic&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">cas_shared</span>(&amp;<span class="keyword">self</span>,</span><br><span class="line">                             old: <span class="type">Option</span>&lt;Shared&lt;T&gt;&gt;,</span><br><span class="line">                             new: <span class="type">Option</span>&lt;Shared&lt;T&gt;&gt;,</span><br><span class="line">                             ord: Ordering)</span><br><span class="line">                             <span class="punctuation">-&gt;</span> <span class="type">bool</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>返回true时代表cas成功了。</p>
+<h2 id="释放内存"><a href="#释放内存" class="headerlink" title="释放内存"></a>释放内存</h2><p>当然，所有上面的组件都是服务于共同的目标：释放不可达内存。当一个节点从数据结构中断开链接后，将其断开链接的线程可以提醒guard，内存应该回收了。</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">impl</span> <span class="title class_">Guard</span> &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">unsafe</span> <span class="keyword">fn</span> <span class="title function_">unlinked</span>&lt;T&gt;(&amp;<span class="keyword">self</span>, val: Shared&lt;T&gt;);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>此操作添加Shared指针到相关垃圾链表，允许它两代后被回收。<br>此操作是unsafe，这是因为它假定：</p>
+<ol>
+<li><p>此 Shared 指针在数据结构中不可达</p>
+</li>
+<li><p>没有别的线程会调用unlinked</p>
+</li>
+</ol>
+<p>重要的是，其他线程可能会继续引用这个Shared，分代系统必须在此指针被真正释放前保证没有线程这么做。<br>此处的Shared指针和Guard没有生命周期关联，如果我们有可达的Shared指针，我们就知道此指针来自的guard已经活跃了。</p>
+<h2 id="基于分代的Treiber栈"><a href="#基于分代的Treiber栈" class="headerlink" title="基于分代的Treiber栈"></a>基于分代的Treiber栈</h2><p>不用怀疑，这就是使用crossbeam epoch API 构建的Treiber栈的代码</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">use</span> std::sync::atomic::Ordering::&#123;Acquire, Release, Relaxed&#125;;</span><br><span class="line"><span class="keyword">use</span> std::ptr;</span><br><span class="line"></span><br><span class="line"><span class="keyword">use</span> crossbeam::mem::epoch::&#123;<span class="keyword">self</span>, Atomic, Owned&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">pub</span> <span class="keyword">struct</span> <span class="title class_">TreiberStack</span>&lt;T&gt; &#123;</span><br><span class="line">    head: Atomic&lt;Node&lt;T&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">struct</span> <span class="title class_">Node</span>&lt;T&gt; &#123;</span><br><span class="line">    data: T,</span><br><span class="line">    next: Atomic&lt;Node&lt;T&gt;&gt;,</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">impl</span>&lt;T&gt; TreiberStack&lt;T&gt; &#123;</span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">new</span>() <span class="punctuation">-&gt;</span> TreiberStack&lt;T&gt; &#123;</span><br><span class="line">        TreiberStack &#123;</span><br><span class="line">            head: Atomic::<span class="title function_ invoke__">new</span>()</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">push</span>(&amp;<span class="keyword">self</span>, t: T) &#123;</span><br><span class="line">        <span class="comment">// allocate the node via Owned</span></span><br><span class="line">        <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">n</span> = Owned::<span class="title function_ invoke__">new</span>(Node &#123;</span><br><span class="line">            data: t,</span><br><span class="line">            next: Atomic::<span class="title function_ invoke__">new</span>(),</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// become active</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">guard</span> = epoch::<span class="title function_ invoke__">pin</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">// snapshot current head</span></span><br><span class="line">            <span class="keyword">let</span> <span class="variable">head</span> = <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Relaxed, &amp;guard);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// update `next` pointer with snapshot</span></span><br><span class="line">            n.next.<span class="title function_ invoke__">store_shared</span>(head, Relaxed);</span><br><span class="line"></span><br><span class="line">            <span class="comment">// if snapshot is still good, link in the new node</span></span><br><span class="line">            <span class="keyword">match</span> <span class="keyword">self</span>.head.<span class="title function_ invoke__">cas_and_ref</span>(head, n, Release, &amp;guard) &#123;</span><br><span class="line">                <span class="title function_ invoke__">Ok</span>(_) =&gt; <span class="keyword">return</span>,</span><br><span class="line">                <span class="title function_ invoke__">Err</span>(owned) =&gt; n = owned,</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pub</span> <span class="keyword">fn</span> <span class="title function_">pop</span>(&amp;<span class="keyword">self</span>) <span class="punctuation">-&gt;</span> <span class="type">Option</span>&lt;T&gt; &#123;</span><br><span class="line">        <span class="comment">// become active</span></span><br><span class="line">        <span class="keyword">let</span> <span class="variable">guard</span> = epoch::<span class="title function_ invoke__">pin</span>();</span><br><span class="line"></span><br><span class="line">        <span class="keyword">loop</span> &#123;</span><br><span class="line">            <span class="comment">// take a snapshot</span></span><br><span class="line">            <span class="keyword">match</span> <span class="keyword">self</span>.head.<span class="title function_ invoke__">load</span>(Acquire, &amp;guard) &#123;</span><br><span class="line">                <span class="comment">// the stack is non-empty</span></span><br><span class="line">                <span class="title function_ invoke__">Some</span>(head) =&gt; &#123;</span><br><span class="line">                    <span class="comment">// read through the snapshot, *safely*!</span></span><br><span class="line">                    <span class="keyword">let</span> <span class="variable">next</span> = head.next.<span class="title function_ invoke__">load</span>(Relaxed, &amp;guard);</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// if snapshot is still good, update from `head` to `next`</span></span><br><span class="line">                    <span class="keyword">if</span> <span class="keyword">self</span>.head.<span class="title function_ invoke__">cas_shared</span>(<span class="title function_ invoke__">Some</span>(head), next, Release) &#123;</span><br><span class="line">                        <span class="keyword">unsafe</span> &#123;</span><br><span class="line">                            <span class="comment">// mark the node as unlinked</span></span><br><span class="line">                            guard.<span class="title function_ invoke__">unlinked</span>(head);</span><br><span class="line"></span><br><span class="line">                            <span class="comment">// extract out the data from the now-unlinked node</span></span><br><span class="line">                            <span class="keyword">return</span> <span class="title function_ invoke__">Some</span>(ptr::<span class="title function_ invoke__">read</span>(&amp;(*head).data))</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                <span class="comment">// we observed the stack empty</span></span><br><span class="line">                <span class="literal">None</span> =&gt; <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h2 id="一些结论"><a href="#一些结论" class="headerlink" title="一些结论"></a>一些结论</h2><ul>
+<li>这个算法的基本逻辑和前面那个依赖GC的版本一样，除了我们显示的将pop出的节点标记的unlinked。总的来说，直接用现成的无锁算法是有可能的（我们现写的算法依赖GC）我们直接用Crossbeam把它们实现了。</li>
+<li>我们取完快照后，我们可以不用unsafe解引用了，因为guard保证它的存活。</li>
+<li>用compare-and-swap来保证只有一个线程调用 ptr::read ，并且epoch回收系统不会运行析构，仅仅回收内存。</li>
+</ul>
+<p>关于回收最后一点需要多说一些，所以我们以讨论垃圾来收尾API描述这节。</p>
+<h2 id="垃圾管理"><a href="#垃圾管理" class="headerlink" title="垃圾管理"></a>垃圾管理</h2><p>Crossbeam的设计理念是把分代管理当作所有数据结构共享的一个服务，有一个全局静态的分代计数和每个线程一个threadlocal。由于不需要为每个数据结构执行setup， 这令epoch API用起来非常简。这也意味着epoch的空间占用只跟线程数相关和数据结构数无关。<br>crossbeam实现的和现有的epoch论文的不同就是：crossbeam每个线程配置的自己的垃圾链表。这意味着，当我们调用unlinked时，此节点将被加入到threadlocal的区域，而不是全局垃圾链表中（这会减少一些额外的同步）。</p>
+<p>每次你调用epoch::pin() ，当前线程都会检测释放本地垃圾超过了回收阈值，如果超过了，分代系统会开始收集。同时，任何时候<br>你调用epoch::pin() 如果此时全局计数大于thread的快照，当前线程就会收集一些自己的垃圾。为了避免垃圾列表的全局同步，这个系统将垃圾收集的工作分给所有访问数据的线程。<br>由于GC只能在所有线程都在当前代的时候发生，不可能总是能收集垃圾。但是在实际应用中，某个线程的垃圾很少会超过阈值。</p>
+<p>这里需要注意：如果线程退出，它必须对它的垃圾做些什么，否则GC可能失败。所以crossbeam的实现还加了全局垃圾链表，作为线程退出后，垃圾处理的最后一个防线。这些全局垃圾链表是在线程成功增加全局分代时收集的。</p>
+<p>最后，“收集”垃圾到底是什么意思？正如前面说的，此库只释放内存，不会运行析构。<br>概念上讲，框架将对象的析构分为两部分：1. 释放&#x2F;移动内部的数据，2. 释放保护这个结构的对象。前者在调用unlinked时候就会发生，此时仅有一个线程拥有对象，但是没有能力真正释放它。后者发生在当此对象明确不在被引用后，不确定的时候。这就抛给用户一个责任：通过快照访问数据在释放前只能读。但是这是那些倾向于把数据和容器有清晰分界的无锁结构里常见的情况。<br>用这种方式切分对象，意味着析构在可预测的时间内会被同步执行，缓解了GC的一个痛点，允许框架使用非’static 和非 Send数据。</p>
+<h2 id="前面的路"><a href="#前面的路" class="headerlink" title="前面的路"></a>前面的路</h2><p>crossbeam还是项目初期。目前的工作主要是为探索大量Rust无锁数据结构打好基础，我希望crossbeam最终能为Rust扮演类似java中java.util.concurrent的角色：包含hashmap，工作窃取队列，和轻量任务引擎。如果你对此有兴趣，我希望能帮上忙。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/rust_lock_free/" title="【译】Rust无锁数据结构">https://fenixc9.github.io/rust_lock_free/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Rust/" rel="tag"># Rust</a>
+              <a href="/tags/Lock/" rel="tag"># Lock</a>
+              <a href="/tags/Concurrent/" rel="tag"># Concurrent</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/cuckoohash/" rel="next" title="布谷鸟哈希">
+      布谷鸟哈希 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Benchmark"><span class="nav-number">1.</span> <span class="nav-text">Benchmark</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%97%A0%E9%94%81%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84"><span class="nav-number">3.</span> <span class="nav-text">无锁数据结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Treiber%E6%A0%88"><span class="nav-number">4.</span> <span class="nav-text">Treiber栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%97%AE%E9%A2%98"><span class="nav-number">5.</span> <span class="nav-text">问题</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Epoch-based-reclamation"><span class="nav-number">6.</span> <span class="nav-text">Epoch-based reclamation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Epoch%E4%BD%93%E7%B3%BB%E5%B7%A5%E4%BD%9C%E7%9A%84%E5%9F%BA%E7%A1%80%E6%98%AF%EF%BC%9A"><span class="nav-number">7.</span> <span class="nav-text">Epoch体系工作的基础是：</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Rust-API"><span class="nav-number">8.</span> <span class="nav-text">Rust API</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Guard"><span class="nav-number">9.</span> <span class="nav-text">Guard</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Owned%E5%92%8CShared%E6%8C%87%E9%92%88"><span class="nav-number">10.</span> <span class="nav-text">Owned和Shared指针</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Atomic"><span class="nav-number">11.</span> <span class="nav-text">Atomic</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Loading"><span class="nav-number">12.</span> <span class="nav-text">Loading</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Storing"><span class="nav-number">13.</span> <span class="nav-text">Storing</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#CAS%E6%93%8D%E4%BD%9C"><span class="nav-number">14.</span> <span class="nav-text">CAS操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8A%E6%94%BE%E5%86%85%E5%AD%98"><span class="nav-number">15.</span> <span class="nav-text">释放内存</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E5%88%86%E4%BB%A3%E7%9A%84Treiber%E6%A0%88"><span class="nav-number">16.</span> <span class="nav-text">基于分代的Treiber栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E7%BB%93%E8%AE%BA"><span class="nav-number">17.</span> <span class="nav-text">一些结论</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9E%83%E5%9C%BE%E7%AE%A1%E7%90%86"><span class="nav-number">18.</span> <span class="nav-text">垃圾管理</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E9%9D%A2%E7%9A%84%E8%B7%AF"><span class="nav-number">19.</span> <span class="nav-text">前面的路</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '0dc1280792fae72757695f95b0ab41c7',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

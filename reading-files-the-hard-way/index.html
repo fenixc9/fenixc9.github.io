@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】读取文件的困难模式 一">
+<meta property="og:url" content="https://fenixc9.github.io/reading-files-the-hard-way/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fasterthanli.me/static/video/reading-files-the-hard-way/file-manager.cc374e345c3b0861.mp4">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/2.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/4.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/6.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/7.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way/8.svg">
+<meta property="article:published_time" content="2023-12-16T12:56:26.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.187Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fasterthanli.me/static/video/reading-files-the-hard-way/file-manager.cc374e345c3b0861.mp4">
+
+<link rel="canonical" href="https://fenixc9.github.io/reading-files-the-hard-way/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>【译】读取文件的困难模式 一 | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/reading-files-the-hard-way/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          【译】读取文件的困难模式 一
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-12-16 20:56:26" itemprop="dateCreated datePublished" datetime="2023-12-16T20:56:26+08:00">2023-12-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>原文链接 <a target="_blank" rel="noopener" href="https://fasterthanli.me/series/reading-files-the-hard-way/part-1">https://fasterthanli.me/series/reading-files-the-hard-way/part-1</a></p>
+<p>每个人都知道如何使用文件。您只需打开文件资源管理器、Finder， 或文件管理器，然后“砰”的一声——里面塞满了文件。有文件夹和 眼睛所能看到的范围内的文件。这是真正的 filapalooza。我从来没有听到过有人抱怨他们的计算机上没有足够的文件。</p>
+<p>但是什么是文件？读取文件到底意味着什么？</p>
+<p>这就是我们这个系列的文章要找出的答案。首先，通过最简单的方式读取文件，最用户友好的方式，然后剥离抽象层，直到我们越来越深入直到进入<em>野兽</em>的内脏。</p>
+<p>就本文而言，我们对特定文件感兴趣：<code>/etc/hosts</code> 。 这是大多数 Unix-like 系统中都会存在的一个文件，用于映射域名（如 example.org） 到 IP 地址（如 127.0.0.1）。<a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man5/hosts.5.html#NOTES">它还有精彩的背景故事</a>。 要阅读它，我们只需使用 GUI：</p>
+<p><img src="https://fasterthanli.me/static/video/reading-files-the-hard-way/file-manager.cc374e345c3b0861.mp4" alt="原文作者的视频"></p>
+<h1 id="先决条件"><a href="#先决条件" class="headerlink" title="先决条件"></a>先决条件</h1><p>在我们继续之前：如果您想继续阅读本文，您需要一个Linux系统。一个真正的Linux，<em>而不是 WSL1</em>。如果您已经在运行 Linux，那就太好了！如果不， 我建议设置一个Manjaro虚拟机。</p>
+<p>如果您以前从未设置过虚拟机，VirtualBox 就可以完成这项工作，而且使用起来相当容易。事实上，我正是用VirtualBox 中的 Manjaro 来写这篇文章的：</p>
+<p><img src="/reading-files-the-hard-way/1.png" alt="1"></p>
+<p>使用默认设置的基本安装足以应付本文文章的一部分。 Ubuntu 或 Fedora 安装也可以正常工作，并且 WSL2 可能也可以工作。</p>
+<p>好吧，让我们回到正题吧！</p>
+<h1 id="处理文件的命令行工具"><a href="#处理文件的命令行工具" class="headerlink" title="处理文件的命令行工具"></a>处理文件的命令行工具</h1><p>到目前为止，我们已经打开文件管理器并成功读取了文件。如果这是我们唯一的 有了处理文件的经验（我希望！），我们的心中的文件心智模型可能如下所示：</p>
+<p><img src="/reading-files-the-hard-way/2.svg" alt="2"></p>
+<p>…但文件实际上并不存在于图形用户界面中。他们住.. 某处，在更深，更深的某处。我可以证明一下。</p>
+<p>如果我们切换到文本终端，并完全关闭 GUI，我们仍然可以访问 文件：</p>
+<p><img src="/reading-files-the-hard-way/3.png" alt="3"></p>
+<p>这是完全相同的文件。我不打算在这里展示它，但是如果我们编辑或删除 从 GUI 或文本终端打开文件，更改将反映在各处。这说明它们必须指向同一位置。</p>
+<p>我们的心智模型可以升级到更加优越的：<br><img src="/reading-files-the-hard-way/4.svg" alt="4"></p>
+<pre><code>我们学到了什么？
+无论我们是否使用图形工具（如鼠标垫）或命令行工具（如 cat)，类似 /etc/hosts 的名称始终引用同一个文件。
+</code></pre>
+<h1 id="使用node-js读取文件"><a href="#使用node-js读取文件" class="headerlink" title="使用node.js读取文件"></a>使用node.js读取文件</h1><p>到目前为止，我们一直在手动读取文件（无论是图形方式，还是使用 终端）。这一切都很好，但是如果您想读取大量文件怎么办？</p>
+<p>让我们尝试一下node.js：</p>
+<p>JavaScript code</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">// require returns an object that has a `readFileSync` member,</span></span><br><span class="line"><span class="comment">// this is a destructuring assignment.</span></span><br><span class="line"><span class="keyword">const</span> &#123; readFileSync &#125; = <span class="built_in">require</span>(<span class="string">&quot;fs&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// let&#x27;s use the synchronous variant for now.</span></span><br><span class="line"><span class="keyword">const</span> contents = <span class="title function_">readFileSync</span>(<span class="string">&quot;/etc/hosts&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// in a browser, this logs to the developer tools.</span></span><br><span class="line"><span class="comment">// in node.js, this just prints to the terminal.</span></span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(contents);</span><br></pre></td></tr></table></figure>
+<p>运行这段代码会得到以下输出：</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ node readfile.<span class="property">js</span></span><br><span class="line">&lt;<span class="title class_">Buffer</span> <span class="number">31</span> <span class="number">32</span> <span class="number">37</span> 2e <span class="number">30</span> 2e <span class="number">30</span> 2e <span class="number">31</span> <span class="number">09</span> 6c 6f <span class="number">63</span> <span class="number">61</span> 6c <span class="number">68</span> 6f <span class="number">73</span> <span class="number">74</span> 0a <span class="number">31</span> <span class="number">32</span> <span class="number">37</span></span><br><span class="line">2e <span class="number">30</span> 2e <span class="number">31</span> 2e <span class="number">31</span> <span class="number">09</span> <span class="number">62</span> 6c <span class="number">69</span> 6e 6b <span class="number">70</span> <span class="number">61</span> <span class="number">64</span> 0a 3a 3a <span class="number">31</span> <span class="number">09</span> 6c 6f <span class="number">63</span> <span class="number">61</span> 6c <span class="number">68</span></span><br><span class="line">6f ... <span class="number">425</span> more bytes&gt;</span><br></pre></td></tr></table></figure>
+<p>这看起来根本不像文本。事实上，它在输出中说得对： 它只是一堆字节。它们可以是任何东西！我们只是<code>选择将它们解释为文本</code>。像 cat 这样的终端命令通常是面向文本的， 所以他们通常假设我们正在处理文本文件。</p>
+<p>如果我们想要文本，我们将不得不将这些字节解释为一些 文本编码 - UTF-8 听起来像是一个安全的选择。 幸运的是，node.js 带有一个字符串解码器工具：</p>
+<p>JavaScript code</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">const</span> &#123; readFileSync &#125; = <span class="built_in">require</span>(<span class="string">&quot;fs&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> &#123; <span class="title class_">StringDecoder</span> &#125; = <span class="built_in">require</span>(<span class="string">&quot;string_decoder&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> bytes = <span class="title function_">readFileSync</span>(<span class="string">&quot;/etc/hosts&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> decoder = <span class="keyword">new</span> <span class="title class_">StringDecoder</span>(<span class="string">&quot;utf8&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> text = decoder.<span class="title function_">write</span>(bytes);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(text);</span><br></pre></td></tr></table></figure>
+<p>运行此命令会得到预期的输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ node readfile.js</span><br><span class="line">127.0.0.1       localhost</span><br><span class="line">127.0.1.1       blinkpad</span><br><span class="line">::1     localhost ip6-localhost ip6-loopback</span><br><span class="line">ff02::1 ip6-allnodes</span><br><span class="line">ff02::2 ip6-allrouters</span><br></pre></td></tr></table></figure>
+<p>但在这里，我们走了很长的路回家，只是为了表明一个观点。你其实可以 将文件的编码直接传递给 readFileSync，这使得 代码更短。</p>
+<p>JavaScript code</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">const</span> &#123; readFileSync &#125; = <span class="built_in">require</span>(<span class="string">&quot;fs&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">const</span> text = <span class="title function_">readFileSync</span>(<span class="string">&quot;/etc/hosts&quot;</span>, &#123; <span class="attr">encoding</span>: <span class="string">&quot;utf8&quot;</span> &#125;);</span><br><span class="line"><span class="variable language_">console</span>.<span class="title function_">log</span>(text);</span><br></pre></td></tr></table></figure>
+<p>这给出了完全相同的输出。而不是返回 Buffer， readFileSync 现在直接返回 String。一切都工作地很好。</p>
+<p>如果我们在非文本文件上使用此代码会发生什么？例如，<code>/bin/true</code> ？</p>
+<p><img src="/reading-files-the-hard-way/5.png" alt="5"></p>
+<p>虽然里面有一些字符串，但是输出都是乱码 并填充替换字符。它甚至弄乱了我的终端， 所以我后来不得不使用命令reset.</p>
+<p>顺便说一句：如果我们真的想从 <code>/bin/true</code> 获取字符串， 我们本来可以使用 strings 命令（令人震惊！）：</p>
+<p>Shell session</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta prompt_"></span></span><br><span class="line"><span class="meta prompt_">$ </span><span class="language-bash">strings /bin/true | <span class="built_in">head</span> -15</span></span><br><span class="line">/lib64/ld-linux-x86-64.so.2</span><br><span class="line">__cxa_finalize</span><br><span class="line">__libc_start_main</span><br><span class="line">__cxa_atexit</span><br><span class="line">dcgettext</span><br><span class="line">error</span><br><span class="line">abort</span><br><span class="line">nl_langinfo</span><br><span class="line">__fpending</span><br><span class="line">fileno</span><br><span class="line">__freading</span><br><span class="line">fflush</span><br><span class="line">__errno_location</span><br><span class="line">fclose</span><br><span class="line">lseek</span><br></pre></td></tr></table></figure>
+<pre><code>我们学到了什么？
+文件只是字节的集合。要对它们做任何有用的事情，我们必须解释它们。 UTF-8 是一种常见的文本编码。
+</code></pre>
+<h1 id="使用-Rust-读取文件"><a href="#使用-Rust-读取文件" class="headerlink" title="使用 Rust 读取文件"></a>使用 Rust 读取文件</h1><p>让我们进入编译语言的领地，度过一段热烈的时光。</p>
+<p>如果我们使用<code>cargo new readfile</code>，请进入readfile目录并编辑 src&#x2F;main.rs是这样的：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::&#123;</span><br><span class="line">    fs::File,</span><br><span class="line">    io::&#123;Error, Read&#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), Error&gt; &#123;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">file</span> = File::<span class="title function_ invoke__">open</span>(<span class="string">&quot;/etc/hosts&quot;</span>)?;</span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">text</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    file.<span class="title function_ invoke__">read_to_string</span>(&amp;<span class="keyword">mut</span> text)?;</span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, text);</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+注意：正如 Pascal 所指出的 出，我们 可以只使用 std::fs::read_to_string。
+
+但是这样我们就学不到那么多东西了！我们使用 ReadAt 特征 在第 3 部分中，我认为很高兴看到其中的差异。
+</code></pre>
+<p>然后 <code>cargo run</code> 将打印 &#x2F;etc&#x2F;hosts 的内容（作为文本）。 当然，我们也可以运行 <code>cargo build</code> 并获得编译后的可执行文件 在target&#x2F;debug&#x2F;readfile中。</p>
+<pre><code>酷熊的热心小贴士
+&lt;Rust 编程语言&gt;是对这门语言的简单介绍。
+
+如果您想休息一下来浏览一下，可以免费在线获取前几章，酷熊不会怪你的。
+</code></pre>
+<p>为了我们这些Rust新手的利益，我将逐一介绍 部分并解释它的作用。 （如果代码对您来说很明显，请随意跳至下一节）</p>
+<p>这是一个主函数 - 它是程序启动时运行的函数：</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>由于我们要执行可能失败的操作，例如读取文件， 我们可以使用返回结果的 main 形式。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;T, E&gt; &#123;&#125;</span><br></pre></td></tr></table></figure>
+<p>Result 是一个泛型类型，T 是……结果的类型（如果一切顺利的话）。 如果出现问题，E 是错误的类型。</p>
+<p>在我们的例子中，我们并没有真正得到结果，因此对于 T 我们可以只使用 空元组，()。至于错误类型，E，唯一容易出错的操作是 I&#x2F;O（输入-输出），因此我们可以使用std::io::Error。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::io::Error;</span><br><span class="line"></span><br><span class="line"><span class="comment">// `Error` is the type we just imported above with `use`</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), Error&gt; &#123;</span><br><span class="line">    <span class="comment">// `Ok` is a variant of `Result` that indicates success. The pair of</span></span><br><span class="line">    <span class="comment">// parentheses inside is an empty tuple, just like we promised we&#x27;d return</span></span><br><span class="line">    <span class="comment">// Since this expression is the *last thing* in our function, and there</span></span><br><span class="line">    <span class="comment">// is no semi-colon (`;`) after it, it will get returned.</span></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>接下来，我们注意到，与我们的 node.js 示例不同，这里我们必须打开 a 在<code>read</code>之前先将其<code>open</code>。</p>
+<p>Rust code</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::&#123;</span><br><span class="line">    io::Error,</span><br><span class="line">    fs::File,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), Error&gt; &#123;</span><br><span class="line">    <span class="comment">// `File::open()` *also* returns a `Result&lt;File, Error&gt;`.</span></span><br><span class="line">    <span class="comment">// The `?` sigil means: if it returns an error, then we</span></span><br><span class="line">    <span class="comment">// should also return that error. If it returns a result,</span></span><br><span class="line">    <span class="comment">// then assign it to file and carry on.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="variable">file</span> = File::<span class="title function_ invoke__">open</span>(<span class="string">&quot;/etc/hosts&quot;</span>)?;</span><br><span class="line"></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>按照目前的情况，该程序打开该文件，但不对其执行任何操作。 （事实上​​，编译器会警告我们这一点）。</p>
+<p><code>std::fs::File</code> 实现的 <code>std::io::Read</code> 特征中定义了一个 <code>read_to_string</code> 方法，听起来和我们想要的的一模一样：</p>
+<ul>
+<li>我们需要use该特征，以便我们可以使用它的方法。</li>
+<li>我们需要一个可以读取文件的字符串。</li>
+</ul>
+<p>注意：</p>
+<ul>
+<li>字符串必须是可变的，因为我们正在更改它（通过将文件的内容写入其中）。</li>
+<li>文件还必须是可变的，因为从中<strong>读取的内容会改变文件中的位置 - 这是可变的，但是不是文件本身可变，而是文件的句柄（handle）</strong>。<br>最后，我们可以使用println宏来打印它。由于它是一个宏， 我们需要在它的名字后面写一个感叹号来调用它。</li>
+</ul>
+<p>Rust code<br>&#x2F;&#x2F; import everything we need</p>
+<figure class="highlight rust"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="keyword">use</span> std::&#123;</span><br><span class="line">    fs::File,</span><br><span class="line">    io::&#123;Error, Read&#125;,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="comment">// main is fallible, it can fail because of an I/O error</span></span><br><span class="line"><span class="keyword">fn</span> <span class="title function_">main</span>() <span class="punctuation">-&gt;</span> <span class="type">Result</span>&lt;(), Error&gt; &#123;</span><br><span class="line">    <span class="comment">// open the file, return early if it fails.</span></span><br><span class="line">    <span class="comment">// the `file` binding is `mut`, which means mutable,</span></span><br><span class="line">    <span class="comment">// so we can take a mutable reference to it later.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">file</span> = File::<span class="title function_ invoke__">open</span>(<span class="string">&quot;/etc/hosts&quot;</span>)?;</span><br><span class="line">    <span class="comment">// create an empty string, have a mutable binding to it,</span></span><br><span class="line">    <span class="comment">// so we can take a mutable reference to it later.</span></span><br><span class="line">    <span class="keyword">let</span> <span class="keyword">mut </span><span class="variable">text</span> = <span class="type">String</span>::<span class="title function_ invoke__">new</span>();</span><br><span class="line">    <span class="comment">// call `Read::read_to_string` on the file, pass it</span></span><br><span class="line">    <span class="comment">// a mutable reference to our destination string.</span></span><br><span class="line">    <span class="comment">// The signature for `read_to_string` takes `&amp;mut self`,</span></span><br><span class="line">    <span class="comment">// so this line actually takes a mutable reference to file too.</span></span><br><span class="line">    file.<span class="title function_ invoke__">read_to_string</span>(&amp;<span class="keyword">mut</span> text)?;</span><br><span class="line">    <span class="comment">// at this point, `file` can be dropped, because we don&#x27;t</span></span><br><span class="line">    <span class="comment">// use it anymore. this also frees OS resources associated with it.</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// call the println macro, our format string is just `&#123;&#125;`,</span></span><br><span class="line">    <span class="comment">// which will format an argument that implements the `std::fmt::Display`</span></span><br><span class="line">    <span class="comment">// trait. In our case, `String` just prints its contents as, well, text.</span></span><br><span class="line">    <span class="built_in">println!</span>(<span class="string">&quot;&#123;&#125;&quot;</span>, text);</span><br><span class="line"></span><br><span class="line">    <span class="comment">// everything went fine, signal sucess with an empty (tuple) result.</span></span><br><span class="line">    <span class="title function_ invoke__">Ok</span>(())</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>希望这足够清楚，即使对于那些不熟悉 Rust 的人来说也是如此。</p>
+<pre><code>我们学到了什么？
+在Rust中，我们必须首先创建一个新的字符串，以接收文件的内容。
+
+打开文件和读取文件都是可能失败的操作。
+
+任何变更都必须通过 mut 关键字明确允许。从一个读取文件是一个可变的，因为它改变了我们在文件中的位置。
+</code></pre>
+<h1 id="用C读取文件"><a href="#用C读取文件" class="headerlink" title="用C读取文件"></a>用C读取文件</h1><p>C标准库为我们提供了“高级”的库。界面打开 并读取文件，所以让我们尝试一下。</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> &#123;</span><br><span class="line">    FILE *file = fopen(<span class="string">&quot;/etc/hosts&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (!file) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;could not open file\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> buffer_size = <span class="number">16</span>;</span><br><span class="line">    <span class="type">char</span> *buffer = <span class="built_in">malloc</span>(buffer_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        <span class="type">size_t</span> size = fread(buffer, <span class="number">1</span>, buffer_size - <span class="number">1</span>, file);</span><br><span class="line">        <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        buffer[size] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;%s&quot;</span>, buffer);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>好吧，这很痛苦，让我们回顾一下：首先我们需要打开文件。自从 这是一个“高级”的API，我们可以通过字符串常量指定模式。 我们只对阅读感兴趣。</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">FILE *file = fopen(<span class="string">&quot;/etc/hosts&quot;</span>, <span class="string">&quot;r&quot;</span>);</span><br></pre></td></tr></table></figure>
+<p>然后，我们必须进行一些错误检查。请注意，我们不会 能够告诉为什么我们无法打开该文件，只是它不起作用。 我们必须调用更多函数才能做到这一点。</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (!file) &#123;</span><br><span class="line">    <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;could not open file\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后，就像在 Rust 中一样，我们必须分配一个缓冲区。注意，这里不保证说此时它是一个字符串 - 它只是一个存储字节的地方。我任意选择“16字节”这样它就足够短，我们会注意到我们的阅读逻辑是错误的（希望如此）。</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">const</span> <span class="type">size_t</span> buffer_size = <span class="number">16</span>;</span><br><span class="line"><span class="type">char</span> *buffer = <span class="built_in">malloc</span>(buffer_size);</span><br></pre></td></tr></table></figure>
+<p>然后，我们只是尝试重复读取一个缓冲区，直到达到 错误或文件结尾。同样，正确的错误处理需要 更多代码和更多函数调用。</p>
+<p>Rust 免费为我们提供了这一切。只是说一下。</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">    <span class="comment">// the arguments are: destination buffer, member size,</span></span><br><span class="line">    <span class="comment">// number of members to read, and `FILE*` handle</span></span><br><span class="line">    <span class="type">size_t</span> size = fread(buffer, <span class="number">1</span>, buffer_size - <span class="number">1</span>, file);</span><br><span class="line">    <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    buffer[size] = <span class="string">&#x27;\0&#x27;</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;%s&quot;</span>, buffer);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>哦，C 语言中另一个有趣的地方。没有字符串类型。但这没关系，因为 <code>printf</code> 的 %s 格式化程序一旦遇到 null 就会停止 字节。只要我们永远不会忘记设置它，并且永远不会忽略错误（怎么会有人犯这种错误？）那么我们绝对不会暴露敏感信息信息或允许远程代码执行。这里没什么可看的。</p>
+<p><img src="/reading-files-the-hard-way/6.svg" alt="6"></p>
+<p>最后，我们确保打印最后的换行符，因为这就是行为良好的 CLI（命令行界面）应用程序可以做到这一点。我们return了0，因为显然对于C来说0代表成功（除非它不是，并且这意味着错误 - 这要看情况）。</p>
+<pre><code>我们学到了什么？
+在C中，没有字符串，只有“数组”。字节数。使用stdio时，我们必须 手动分配一个缓冲区来读取文件。如果缓冲区不是 足够大，我们就得反复读进去。
+
+返回的 FILE* 是一个不透明结构体，引用打开的 文件。我们只能将它与其他 stdio 函数一起使用，永远不要查看内部。fopen
+
+C 很容易搬起石头砸自己的爪子：因为一个错误挂掉，忘记以空字节 (\0) 终止字符串，忘记检查返回值或错误地测试它们。
+
+酷熊的热心小贴士
+学习C很重要，因为很多项目都是用它写的。
+
+但如今，通常有更好的替代方案。
+</code></pre>
+<h1 id="不使用stdio的情况下使用-C-读取文件"><a href="#不使用stdio的情况下使用-C-读取文件" class="headerlink" title="不使用stdio的情况下使用 C 读取文件"></a>不使用stdio的情况下使用 C 读取文件</h1><p>上面的API这仍然太高级了。 <code>fopen</code>、<code>fclose</code>、<code>fread</code>、<code>fwrite</code> 函数族为我们做了很多事情。例如，他们进行缓冲。</p>
+<p>所以如果你运行这个程序：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123;</span><br><span class="line">        <span class="comment">// this is the roundabout way to spell `printf`</span></span><br><span class="line">        <span class="comment">// point is, `printf` is in the `f` family.</span></span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stdout</span>, <span class="string">&quot;.&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// woops, that&#x27;s illegal</span></span><br><span class="line">    *((<span class="type">char</span>*) <span class="number">0xBADBADBAD</span>) = <span class="number">43</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后它什么也不打印：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ gcc -O3 --std=c99 -Wall -Wpedantic woops.c -o woops</span><br><span class="line">$ ./woops</span><br><span class="line">[1]    22082 segmentation fault (core dumped)  ./woops</span><br></pre></td></tr></table></figure>
+<p>因为这些点实际上直到换行符出现也没被打印。它们只是存储在内存缓冲区中。但是程序崩溃了，因此退出处理程序无法运行，所以没有任何内容写入终端。</p>
+<pre><code>酷熊的热心小贴士
+这行：
+
+C code
+*((char*) 0xBADBADBAD) = 43;
+...导致分段错误因为我们正在写入的内存是 几乎肯定在我们进程的地址空间中无效。
+
+但是，我们不能指望这种情况总会发生。在一些嵌入 系统，这将是 默默地破坏数据或什么也不做。
+</code></pre>
+<p>但是！如果我们使用 open、read、write、close，现在我们就开始使用低级API。这个程序：</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">()</span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">20</span>; i++) &#123;</span><br><span class="line">        <span class="comment">// hey that line&#x27;s different</span></span><br><span class="line">        write(STDOUT_FILENO, <span class="string">&quot;.&quot;</span>, <span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// still illegal</span></span><br><span class="line">    *((<span class="type">char</span>*) <span class="number">0xBADBADBAD</span>) = <span class="number">43</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>…产生预期的输出：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ gcc -O3 --std=c99 -Wall -Wpedantic woops.c -o woops &amp;&amp; ./woops</span><br><span class="line">....................[1]    22741 segmentation fault (core dumped)  ./woops</span><br></pre></td></tr></table></figure>
+<pre><code>酷熊的热心小贴士
+-O3 是第三级优化。 -Wall 表示“所有警告”。 -Wpedantic 相当于要求被烘烤的编译器。
+</code></pre>
+<p>那么，我们可以更新我们的 readfile 程序以使用文件描述符吗 &lt;stdio.h&gt;？绝对！</p>
+<p>C code</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdbool.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="comment">// that&#x27;s a whole lot of headers, sorry</span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span> **argv)</span> &#123;</span><br><span class="line">    <span class="type">int</span> fd = open(<span class="string">&quot;/etc/hosts&quot;</span>, O_RDONLY);</span><br><span class="line">    <span class="comment">// oh look this time &#x27;0&#x27; does not mean error!</span></span><br><span class="line">    <span class="keyword">if</span> (fd == <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;could not open file\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="type">const</span> <span class="type">size_t</span> buffer_size = <span class="number">16</span>;</span><br><span class="line">    <span class="type">char</span> *buffer = <span class="built_in">malloc</span>(buffer_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">        <span class="comment">// this time the size is signed!</span></span><br><span class="line">        <span class="type">ssize_t</span> size = read(fd, buffer, buffer_size);</span><br><span class="line">        <span class="comment">// and, again, -1 means error</span></span><br><span class="line">        <span class="keyword">if</span> (size == <span class="number">-1</span>) &#123;</span><br><span class="line">            <span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;an error happened while reading the file&quot;</span>);</span><br><span class="line">            <span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// 0 means end of file, probably?</span></span><br><span class="line">        <span class="keyword">if</span> (size == <span class="number">0</span>) &#123;</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="comment">// no need to null-terminate here, just pass</span></span><br><span class="line">        <span class="comment">// a size to write().</span></span><br><span class="line">        write(STDOUT_FILENO, buffer, size);</span><br><span class="line">    &#125;</span><br><span class="line">    </span><br><span class="line">    write(STDOUT_FILENO, <span class="string">&quot;\n&quot;</span>, <span class="number">1</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>哇哦，是的，现在这太冗长了，我们现在肯定是真正的程序员了。</p>
+<pre><code>我们学到了什么？
+stdio 是一个“高级”接口。出于性能考虑，处理缓冲的文件接口。
+
+open()、read() 和 write() 函数属于较低级别。使用这些时， 我们应该自带缓冲！
+</code></pre>
+<h1 id="一点自省"><a href="#一点自省" class="headerlink" title="一点自省"></a>一点自省</h1><p>还记得我们使用cat打印&#x2F;etc&#x2F;hosts的内容吗？</p>
+<p>天啊，那时我们还年轻。</p>
+<p>嗯，cat 几乎随每个 Unix-like 系统一起提供，他们肯定是真正的程序员写的。如果有办法了解他们的秘密就好了。</p>
+<p>事实证明，strace正是我们要的。</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ strace cat /etc/hosts</span><br><span class="line">execve(&quot;/usr/bin/cat&quot;, [&quot;cat&quot;, &quot;/etc/hosts&quot;], 0x7ffee7075518 /* 60 vars */) = 0</span><br><span class="line">brk(NULL)                               = 0x560f3346c000</span><br><span class="line">arch_prctl(0x3001 /* ARCH_??? */, 0x7fff4452be80) = -1 EINVAL (Invalid argument)</span><br><span class="line">mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fe562a81000</span><br><span class="line">access(&quot;/etc/ld.so.preload&quot;, R_OK)      = -1 ENOENT (No such file or directory)</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/ld.so.cache&quot;, O_RDONLY|O_CLOEXEC) = 3</span><br><span class="line">newfstatat(3, &quot;&quot;, &#123;st_mode=S_IFREG|0644, st_size=88313, ...&#125;, AT_EMPTY_PATH) = 0</span><br><span class="line">mmap(NULL, 88313, PROT_READ, MAP_PRIVATE, 3, 0) = 0x7fe562a6b000</span><br><span class="line">close(3)                                = 0</span><br><span class="line">openat(AT_FDCWD, &quot;/lib/x86_64-linux-gnu/libc.so.6&quot;, O_RDONLY|O_CLOEXEC) = 3</span><br><span class="line">read(3, &quot;\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0&gt;\0\1\0\0\0\3206\2\0\0\0\0\0&quot;..., 832) = 832</span><br><span class="line">(cut)</span><br></pre></td></tr></table></figure>
+<p>strace 是做什么的？它“跟踪系统调用和信号”。稍后会详细介绍。 此时，我们所知道的是它打印了很多行，而我们不知道 关心他们所有人。</p>
+<p>我们只想知道cat如何读取文件！答案就在附近某处 跟踪结束：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY) = 3</span><br><span class="line">newfstatat(3, &quot;&quot;, &#123;st_mode=S_IFREG|0644, st_size=220, ...&#125;, AT_EMPTY_PATH) = 0</span><br><span class="line">fadvise64(3, 0, 0, POSIX_FADV_SEQUENTIAL) = 0</span><br><span class="line">mmap(NULL, 139264, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x7fe562a46000</span><br><span class="line">read(3, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 131072) = 220</span><br><span class="line">write(1, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 220127.0.0.1 localhost</span><br></pre></td></tr></table></figure>
+<p>嘿，这很熟悉！让我们与 readfile 二进制文件的 strace 进行比较。 （C 语言使用 open、read 和 write）。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ strace ./readfile</span><br><span class="line">(cut)</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY) = 3</span><br><span class="line">getrandom(&quot;\x99\x17\x0c\x29\x8c\xf3\x28\x2e&quot;, 8, GRND_NONBLOCK) = 8</span><br><span class="line">brk(NULL)                               = 0x55cabb575000</span><br><span class="line">brk(0x55cabb596000)                     = 0x55cabb596000</span><br><span class="line">read(3, &quot;127.0.0.1\tlocalh&quot;, 16)        = 16</span><br><span class="line">write(1, &quot;127.0.0.1\tlocalh&quot;, 16127.0.0.1       localh)       = 16</span><br></pre></td></tr></table></figure>
+<p>所以，看起来，最终，readfile 和 cat 做了同样的事情，除了 cat：</p>
+<ul>
+<li><p>使用fstat系统调用来找出文件的大小，</p>
+</li>
+<li><p>分配适当大小的缓冲区</p>
+</li>
+<li><p>在一个系统调用中读取整个文件</p>
+</li>
+<li><p>还在一个系统调用中写入整个文件</p>
+<p>  我们学到了什么？<br>  strace 工具使我们能够了解程序的底层功能。</p>
+<p>  并非所有内容都会显示在 strace 跟踪中，但很多有趣的东西都会显示。</p>
+<p>  酷熊的热心小贴士<br>  cat 命令的名称来自“catenate”，是“concatenate”的同义词。</p>
+</li>
+</ul>
+<h1 id="更新我们的心理模型"><a href="#更新我们的心理模型" class="headerlink" title="更新我们的心理模型"></a>更新我们的心理模型</h1><p>现在，看起来有很多一堆读取文件的方法。取决于 根据您使用的语言 - C 甚至为您提供了两种开箱即用的方法！</p>
+<p>我们现在的心理模型可能是这样的：</p>
+<p><img src="/reading-files-the-hard-way/7.svg" alt="7"></p>
+<p>…但我们可以很容易地反驳这一点。</p>
+<p>如果我们跟踪第一个程序（node.js），我们会发现：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ strace node ./readfile.js</span><br><span class="line">(cut)</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY|O_CLOEXEC) = 17</span><br><span class="line">statx(17, &quot;&quot;, AT_STATX_SYNC_AS_STAT|AT_EMPTY_PATH, STATX_ALL, &#123;stx_mask=STATX_ALL|STATX_MNT_ID, stx_attributes=0, stx_mode=S_IFREG|0644, stx_size=220, ...&#125;) = 0</span><br><span class="line">read(17, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 220) = 220</span><br><span class="line">close(17)</span><br></pre></td></tr></table></figure>
+<p>就像其他一样，它使用 open 和 read！而不是 fstat， 它使用 statx，返回 扩展文件状态。</p>
+<pre><code>酷熊的热心小贴士
+“状态”是指文件的大小是以字节为单位的，它属于哪个用户和组 各种时间戳和其他较低级别的信息，我们将得到 到以后。
+</code></pre>
+<p>同样，如果我们追踪 Rust 的情况，我们会发现：</p>
+<p>Shell session</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line">$ strace readfile-rs/target/debug/readfile-rs</span><br><span class="line">(cut)</span><br><span class="line">openat(AT_FDCWD, &quot;/etc/hosts&quot;, O_RDONLY|O_CLOEXEC) = 3</span><br><span class="line">statx(0, NULL, AT_STATX_SYNC_AS_STAT, STATX_ALL, NULL) = -1 EFAULT (Bad address)</span><br><span class="line">statx(3, &quot;&quot;, AT_STATX_SYNC_AS_STAT|AT_EMPTY_PATH, STATX_ALL, &#123;stx_mask=STATX_ALL|STATX_MNT_ID, stx_attributes=0, stx_mode=S_IFREG|0644, stx_size=220, ...&#125;) = 0</span><br><span class="line">lseek(3, 0, SEEK_CUR)                   = 0</span><br><span class="line">read(3, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 220) = 220</span><br><span class="line">read(3, &quot;&quot;, 32)                         = 0</span><br><span class="line">write(1, &quot;127.0.0.1\tlocalhost\n127.0.1.1\tso&quot;..., 220127.0.0.1 localhost</span><br></pre></td></tr></table></figure>
+<p>它还使用open和read。</p>
+<p>因此，无论我们使用什么语言，我们总是会回到openat， read、write。</p>
+<p>让我们更新我们的思维模型：</p>
+<p><img src="/reading-files-the-hard-way/8.svg" alt="8"></p>
+<pre><code>我们学到了什么？
+Node.js、Rust 和 C 应用程序最终都使用相同的几个函数： open()、read()、write()等
+</code></pre>
+<h1 id="你做到了！"><a href="#你做到了！" class="headerlink" title="你做到了！"></a>你做到了！</h1><p>哇，有很多内容要讲。但你还是坚持到了最后！</p>
+<p>我们正在快速浏览大量材料。不完全也没关系 了解一切。其中许多主题可能会更深入地涵盖 在某些时候在单独的文章中。</p>
+<p>如果第 1 部分没有教给您太多内容，也没关系！有时候提醒是件好事。 接下来的部分确实要低得多。我确信你身上有某些东西 不知道。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/reading-files-the-hard-way/" title="【译】读取文件的困难模式 一">https://fenixc9.github.io/reading-files-the-hard-way/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/linux/" rel="tag"># linux</a>
+              <a href="/tags/rust/" rel="tag"># rust</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/rust-impl-unsafe-lru/" rel="prev" title="Rust实现的LRU安全吗？">
+      <i class="fa fa-chevron-left"></i> Rust实现的LRU安全吗？
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/dove-in-memory/" rel="next" title="我记忆中的那只鸽子">
+      我记忆中的那只鸽子 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%85%88%E5%86%B3%E6%9D%A1%E4%BB%B6"><span class="nav-number">1.</span> <span class="nav-text">先决条件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E6%96%87%E4%BB%B6%E7%9A%84%E5%91%BD%E4%BB%A4%E8%A1%8C%E5%B7%A5%E5%85%B7"><span class="nav-number">2.</span> <span class="nav-text">处理文件的命令行工具</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8node-js%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">使用node.js读取文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%BF%E7%94%A8-Rust-%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">使用 Rust 读取文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%94%A8C%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">5.</span> <span class="nav-text">用C读取文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%8D%E4%BD%BF%E7%94%A8stdio%E7%9A%84%E6%83%85%E5%86%B5%E4%B8%8B%E4%BD%BF%E7%94%A8-C-%E8%AF%BB%E5%8F%96%E6%96%87%E4%BB%B6"><span class="nav-number">6.</span> <span class="nav-text">不使用stdio的情况下使用 C 读取文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E7%82%B9%E8%87%AA%E7%9C%81"><span class="nav-number">7.</span> <span class="nav-text">一点自省</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E6%88%91%E4%BB%AC%E7%9A%84%E5%BF%83%E7%90%86%E6%A8%A1%E5%9E%8B"><span class="nav-number">8.</span> <span class="nav-text">更新我们的心理模型</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BD%A0%E5%81%9A%E5%88%B0%E4%BA%86%EF%BC%81"><span class="nav-number">9.</span> <span class="nav-text">你做到了！</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : 'eb0fa867e5f5e38f570447250cc261e0',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Microsoft YaHei:300,300italic,400,400italic,700,700italic|Noto Serif SC:300,300italic,400,400italic,700,700italic&display=swap&subset=latin,latin-ext">
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+  <link rel="stylesheet" href="/lib/pace/pace-theme-minimal.min.css">
+  <script src="/lib/pace/pace.min.js"></script>
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"always","padding":10,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":false,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":true,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":{"gitalk":{"order":-2}}},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"manual"},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="学习python数据分析系列，本篇学习对于python计算，分析一个非常重要的库numpy">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习python数据分析 三 numpy（2）">
+<meta property="og:url" content="https://fenixc9.github.io/py-sci-03/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习python数据分析系列，本篇学习对于python计算，分析一个非常重要的库numpy">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/6.png">
+<meta property="article:published_time" content="2023-05-02T10:00:03.000Z">
+<meta property="article:modified_time" content="2025-04-05T03:45:29.176Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="python">
+<meta property="article:tag" content="numpy">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://fenixc9.github.io/py-sci-03/1.png">
+
+<link rel="canonical" href="https://fenixc9.github.io/py-sci-03/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>学习python数据分析 三 numpy（2） | ByteDrift</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">ByteDrift</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+  <a role="button" class="book-mark-link book-mark-link-fixed"></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://fenixc9.github.io/py-sci-03/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/a.jpeg">
+      <meta itemprop="name" content="fenix">
+      <meta itemprop="description" content="程序员，无可救药的理想主义者">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ByteDrift">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          学习python数据分析 三 numpy（2）
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-05-02 18:00:03" itemprop="dateCreated datePublished" datetime="2023-05-02T18:00:03+08:00">2023-05-02</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2025-04-05 11:45:29" itemprop="dateModified" datetime="2025-04-05T11:45:29+08:00">2025-04-05</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/python/" itemprop="url" rel="index"><span itemprop="name">python</span></a>
+                </span>
+            </span>
+
+          
+            <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv" style="display: none;">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-eye"></i>
+              </span>
+              <span class="post-meta-item-text">阅读次数：</span>
+              <span id="busuanzi_value_page_pv"></span>
+            </span>
+            <div class="post-description">学习python数据分析系列，本篇学习对于python计算，分析一个非常重要的库numpy</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h1 id="相关性"><a href="#相关性" class="headerlink" title="相关性"></a>相关性</h1><h3 id="多项式"><a href="#多项式" class="headerlink" title="多项式"></a>多项式</h3><p>poly1d是NumPy中的一个类，用于表示一元多次多项式，即一个多项式只有一个自变量。poly1d的主要作用是方便用户对多项式进行各种运算，如加、减、乘、除、取幂、求导数和积分等。<br>在使用poly1d时，用户可以将一组多项式系数作为参数传入，例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建一个一元二次多项式 p(x) = 2x^2 + 3x + 4</span></span><br><span class="line">p = np.poly1d([<span class="number">2</span>, <span class="number">3</span>, <span class="number">4</span>])</span><br></pre></td></tr></table></figure>
+
+<p>创建完多项式后，用户可以对多项式进行各种运算。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 求多项式的值</span></span><br><span class="line"><span class="built_in">print</span>(p(<span class="number">1</span>))  <span class="comment"># 输出：9</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 求多项式的导数</span></span><br><span class="line">p_deriv = p.deriv()</span><br><span class="line"><span class="built_in">print</span>(p_deriv)  <span class="comment"># 输出：Poly1d([4, 3], dtype=int32)</span></span><br></pre></td></tr></table></figure>
+<p>除了使用系数来创建多项式之外，还可以使用多项式的根来创建多项式。例如：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建一个一元三次多项式 p(x) = (x-1)(x-2)(x-3) = x^3 - 6x^2 + 11x - 6</span></span><br><span class="line">p = np.poly1d([<span class="number">1</span>, -<span class="number">6</span>, <span class="number">11</span>, -<span class="number">6</span>])</span><br></pre></td></tr></table></figure>
+
+<p>这里的多项式系数是通过多项式的根来计算得到的。</p>
+<p>求导的一个演示<br>这里我们将poly1d转为了五元四次方程（多项式）<br>x ^ 4 + x^3 * 2+ x^2 * 3 + x * 4 + 5</p>
+<p>其中每循环一次就求导并绘制</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">p = poly1d([<span class="number">1</span>,<span class="number">2</span>,<span class="number">3</span>,<span class="number">4</span>,<span class="number">5</span>])</span><br><span class="line"></span><br><span class="line">x = linspace(-<span class="number">10</span>,<span class="number">10</span>,<span class="number">50</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">0</span>,<span class="number">3</span>):</span><br><span class="line">    y = p(x)</span><br><span class="line">    plt.plot(x,y)</span><br><span class="line">    p = p.deriv()</span><br></pre></td></tr></table></figure>
+
+<p><img src="/py-sci-03/1.png" alt="1"></p>
+<h3 id="多项式拟合"><a href="#多项式拟合" class="headerlink" title="多项式拟合"></a>多项式拟合</h3><p>多项式拟合本质上是numpy.polyfit是一个函数，用于拟合一系列数据点的多项式系数。它使用最小二乘法来拟合数据，将数据拟合为给定次数的多项式形式。</p>
+<p>具体来说，numpy.polyfit(x, y, deg, rcond&#x3D;None, full&#x3D;False, cov&#x3D;False)函数接受以下参数：</p>
+<ul>
+<li>x：一维数组，表示数据点的x坐标。</li>
+<li>y：一维数组，表示数据点的y坐标。</li>
+<li>deg：整数，表示拟合多项式的次数。</li>
+<li>rcond：可选参数，浮点数。控制奇异值在拟合过程中的影响。</li>
+<li>full：可选参数，布尔值。如果为True，则返回完整输出，包括残差、排名、奇异值以及拟合系数的协方差矩阵。</li>
+<li>cov：可选参数，布尔值。如果为True，则返回拟合系数的协方差矩阵。<br>该函数返回一个一维数组，表示拟合多项式的系数。可以使用numpy.polyval函数将该系数用于计算多项式的值。</li>
+</ul>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> numpy <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> datetime</span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_price</span>(<span class="params">price</span>):</span><br><span class="line">    <span class="keyword">return</span> <span class="built_in">float</span>(price[<span class="number">1</span>:])</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">parse_date</span>(<span class="params">s</span>):</span><br><span class="line">    <span class="keyword">return</span> datetime.datetime.strptime(s.decode(<span class="string">&#x27;ascii&#x27;</span>),<span class="string">&quot;%m/%d/%Y&quot;</span>).date().weekday()</span><br><span class="line"><span class="built_in">all</span> = genfromtxt(<span class="string">&#x27;jd_all.csv&#x27;</span>,delimiter=<span class="string">&#x27;,&#x27;</span>,skip_header=<span class="number">1</span>,names=<span class="literal">True</span>,converters=&#123;<span class="number">3</span>:parse_price,<span class="number">4</span>:parse_price,<span class="number">5</span>:parse_price,<span class="number">0</span>:parse_date&#125;,usecols=(<span class="number">5</span>)).astype(<span class="string">&#x27;float&#x27;</span>)[<span class="number">0</span>:<span class="number">100</span>]</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p>加载了京东的股价前100个点。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">a=linspace(<span class="number">0</span>,<span class="number">100</span>,<span class="number">100</span>)</span><br><span class="line"><span class="comment"># 拟合</span></span><br><span class="line">fit = polyfit(a,<span class="built_in">all</span>,<span class="number">10</span>)</span><br><span class="line">y2 = poly1d(fit)(a) </span><br><span class="line"><span class="comment"># 画出原股价和拟合曲线</span></span><br><span class="line">plt.plot(a,y2)</span><br><span class="line">plt.plot(a,<span class="built_in">all</span>)</span><br></pre></td></tr></table></figure>
+
+<p><img src="/py-sci-03/2.png" alt="2"></p>
+<p>这里的10是拟合次数，拟合次数多了后，蓝色曲线就会过拟合。这里将其调整为50后，甚至会报出警告<br><img src="/py-sci-03/3.png" alt="3"></p>
+<h3 id="相关系数"><a href="#相关系数" class="headerlink" title="相关系数"></a>相关系数</h3><p>这里我选了同济科技600846，上海临港600848某段时间内的开票价格。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> matplotlib.pyplot <span class="keyword">as</span> plt</span><br><span class="line"><span class="keyword">import</span> numpy</span><br><span class="line"></span><br><span class="line">p1 = numpy.load(<span class="string">&#x27;600846.npy&#x27;</span>)[<span class="number">0</span>:<span class="number">600</span>]</span><br><span class="line">p2 = numpy.load(<span class="string">&#x27;600848.npy&#x27;</span>)[<span class="number">0</span>:<span class="number">600</span>]</span><br><span class="line">x=numpy.linspace(<span class="number">0</span>,<span class="number">1000</span>,<span class="number">600</span>)</span><br><span class="line">plt.plot(x,p1)</span><br><span class="line">plt.plot(x,p2)</span><br></pre></td></tr></table></figure>
+<p><img src="/py-sci-03/4.png" alt="4"></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">numpy.corrcoef(p1,p2)</span><br><span class="line"></span><br><span class="line">array([[<span class="number">1.</span>        , <span class="number">0.11821975</span>],</span><br><span class="line">       [<span class="number">0.11821975</span>, <span class="number">1.</span>        ]])</span><br></pre></td></tr></table></figure>
+<p>0.118</p>
+<p>改为建设银行601939，工商银行601398后<br><img src="/py-sci-03/5.png" alt="5"></p>
+<p>相关系数为 0.93021558，非常立竿见影。</p>
+<h3 id="汉宁窗口"><a href="#汉宁窗口" class="headerlink" title="汉宁窗口"></a>汉宁窗口</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">w =numpy.hanning(N)</span><br><span class="line">p4=numpy.convolve(w/w.<span class="built_in">sum</span>(),p1)[N-<span class="number">1</span>:-N+<span class="number">1</span>]</span><br><span class="line">plt.plot(x[N-<span class="number">1</span>:],p1[N-<span class="number">1</span>:])</span><br><span class="line">plt.plot(x[N-<span class="number">1</span>:],p4)</span><br></pre></td></tr></table></figure>
+
+<p><img src="/py-sci-03/6.png" alt="6"></p>
+<p>通常我们应该在使用这种方法降噪后，后再尝试拟合。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>fenix
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://fenixc9.github.io/py-sci-03/" title="学习python数据分析 三 numpy（2）">https://fenixc9.github.io/py-sci-03/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/python/" rel="tag"># python</a>
+              <a href="/tags/numpy/" rel="tag"># numpy</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/py-sci-02/" rel="prev" title="学习python数据分析 二 numpy（1）">
+      <i class="fa fa-chevron-left"></i> 学习python数据分析 二 numpy（1）
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/py-sci-04/" rel="next" title="学习python数据分析 四 pandas (1)">
+      学习python数据分析 四 pandas (1) <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+    <div class="comments" id="gitalk-container"></div>
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E6%80%A7"><span class="nav-number">1.</span> <span class="nav-text">相关性</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E9%A1%B9%E5%BC%8F"><span class="nav-number">1.0.1.</span> <span class="nav-text">多项式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%9A%E9%A1%B9%E5%BC%8F%E6%8B%9F%E5%90%88"><span class="nav-number">1.0.2.</span> <span class="nav-text">多项式拟合</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9B%B8%E5%85%B3%E7%B3%BB%E6%95%B0"><span class="nav-number">1.0.3.</span> <span class="nav-text">相关系数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B1%89%E5%AE%81%E7%AA%97%E5%8F%A3"><span class="nav-number">1.0.4.</span> <span class="nav-text">汉宁窗口</span></a></li></ol></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="fenix"
+      src="/images/a.jpeg">
+  <p class="site-author-name" itemprop="name">fenix</p>
+  <div class="site-description" itemprop="description">程序员，无可救药的理想主义者</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">64</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">19</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">65</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/fenixc9" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;fenixc9" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2020 – 
+  <span itemprop="copyrightYear">2025</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">fenix</span>
+</div>
+
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+        
+<div class="busuanzi-count">
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+    <span class="post-meta-item" id="busuanzi_container_site_uv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-divider">|</span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv" style="display: none;">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
+</div>
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,255' opacity='0.5' zIndex='-1' count='99' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+<script src="/js/bookmark.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.css">
+
+<script>
+NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
+  NexT.utils.getScript('https://cdn.staticfile.org/gitalk/1.8.0/gitalk.min.js', () => {
+    var gitalk = new Gitalk({
+      clientID    : 'd02b822b1f8e730490ab',
+      clientSecret: '6e5b6fb476f3b8735a09beeb43bdbc5f160c9849',
+      repo        : 'blog_comment',
+      owner       : 'fenixc9',
+      admin       : ['fenixc9'],
+      id          : '3c8aa8228611aa51838ba0dc8e734229',
+        language: 'zh-CN',
+      distractionFreeMode: true
+    });
+    gitalk.render('gitalk-container');
+  }, window.Gitalk);
+});
+</script>
+
+</body>
+</html>
