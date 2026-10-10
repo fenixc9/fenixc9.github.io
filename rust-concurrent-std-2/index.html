@@ -1,0 +1,1243 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/rust-concurrent-std-2/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="探讨Rust并发编程的系列之一，本文将着重分析中的锁和Arc">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust并发系列2-Lock">
+<meta property="og:url" content="https://fenixc9.github.io/rust-concurrent-std-2/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="探讨Rust并发编程的系列之一，本文将着重分析中的锁和Arc">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-01-17T17:31:39.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.689Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="并发">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Rust并发系列2-Lock · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Rust并发系列2-Lock</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-01-18 01:31" pubdate>
+          2023年1月18日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          37 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(22)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Rust并发系列2-Lock</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="mutex"><a href="#mutex" class="headerlink" title="mutex"></a>mutex</h1><p>上篇我们讨论了跨线程修改数据需要Arc<T> T支持Send + Sync。而Arc只能给出不可变引用的支持，如果要可变引用还需要别的容器。</p>
+<p>首先来认识下mutex：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">unsafe</span> <span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span> + <span class="hljs-built_in">Send</span>&gt; <span class="hljs-built_in">Send</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">Mutex</span>&lt;T&gt; &#123;&#125;
+<span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">unsafe</span> <span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span> + <span class="hljs-built_in">Send</span>&gt; <span class="hljs-built_in">Sync</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">Mutex</span>&lt;T&gt; &#123;&#125;</code></pre></div>
+<p>没毛病，两个都实现了。</p>
+<h2 id="mutex的构造"><a href="#mutex的构造" class="headerlink" title="mutex的构造"></a>mutex的构造</h2><div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Mutex</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; &#123;
+    inner: sys::MovableMutex,
+    poison: poison::Flag,
+    data: UnsafeCell&lt;T&gt;,
+&#125;
+
+
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Mutex</span> &#123;
+    inner: UnsafeCell&lt;libc::pthread_mutex_t&gt;,
+&#125;
+
+<span class="hljs-title function_ invoke__">pub</span>(<span class="hljs-keyword">crate</span>) <span class="hljs-keyword">type</span> <span class="hljs-title class_">MovableMutex</span> = LazyBox&lt;Mutex&gt;;</code></pre></div>
+
+<p>可以简单的看到在笔者的mac平台，这里mutex的实际实现为<code>libc::pthread_mutex_t</code>。</p>
+<h2 id="API"><a href="#API" class="headerlink" title="API"></a>API</h2><h3 id="lock"><a href="#lock" class="headerlink" title="lock"></a>lock</h3><p>调用pthread_mutex的lockapi阻塞线程直到抢到锁，同时返回<code>Result&lt;Guard, PoisonError&lt;Guard&gt;&gt;;</code></p>
+<ol>
+<li>如果加锁成功：返回Guard。</li>
+<li>如果另一个已经持有锁的线程突然panic没有正确释放锁，返回锁中毒错误(PoisonError)。</li>
+</ol>
+<p>对于加锁成功其返回的<code>MutexGuard</code>。我们可以看到其实现了deref，那么我们可以直接对这个guard调用<code>支持不可变引用</code>的函数。</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; Deref <span class="hljs-keyword">for</span> <span class="hljs-title class_">MutexGuard</span>&lt;<span class="hljs-symbol">&#x27;_</span>, T&gt; &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Target</span> = T;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">deref</span>(&amp;<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> &amp;T &#123;
+        <span class="hljs-keyword">unsafe</span> &#123; &amp;*<span class="hljs-keyword">self</span>.lock.data.<span class="hljs-title function_ invoke__">get</span>() &#125;
+    &#125;
+&#125;</code></pre></div>
+<h3 id="MutexGuard"><a href="#MutexGuard" class="headerlink" title="MutexGuard"></a>MutexGuard</h3><p>如果要进一步解引用，可以使用<code>*</code> 运算符。由于MutexGuard实现了Sync</p>
+<p>Send+Sync标记为：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; !<span class="hljs-built_in">Send</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">MutexGuard</span>&lt;<span class="hljs-symbol">&#x27;_</span>, T&gt; &#123;&#125;
+<span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;mutexguard&quot;</span>, since = <span class="hljs-string">&quot;1.19.0&quot;</span>)]</span>
+<span class="hljs-keyword">unsafe</span> <span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span> + <span class="hljs-built_in">Sync</span>&gt; <span class="hljs-built_in">Sync</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">MutexGuard</span>&lt;<span class="hljs-symbol">&#x27;_</span>, T&gt; &#123;&#125;</code></pre></div>
+<p>所以解引用后可以支持多线程访问修改数据。</p>
+<h3 id="使用案例"><a href="#使用案例" class="headerlink" title="使用案例"></a>使用案例</h3><div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">o</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(Mutex::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-number">100</span>));
+    thread::<span class="hljs-title function_ invoke__">scope</span>(|s| &#123;
+        <span class="hljs-keyword">for</span> <span class="hljs-variable">i</span> <span class="hljs-keyword">in</span> <span class="hljs-number">0</span>..<span class="hljs-number">10</span> &#123;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">o</span> = o.<span class="hljs-title function_ invoke__">clone</span>();
+            s.<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">move</span> || &#123;
+                <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">o</span> = o.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+                *o += <span class="hljs-number">1</span>;
+                <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;thread:&#123;&#125;: &#123;&#125;&quot;</span>, i, *o);
+            &#125;);
+        &#125;
+    &#125;);
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;&#125;&quot;</span>,o.<span class="hljs-title function_ invoke__">clone</span>().<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>());
+&#125;
+------------------
+thread:<span class="hljs-number">0</span>: <span class="hljs-number">101</span>
+thread:<span class="hljs-number">3</span>: <span class="hljs-number">102</span>
+thread:<span class="hljs-number">7</span>: <span class="hljs-number">103</span>
+thread:<span class="hljs-number">6</span>: <span class="hljs-number">104</span>
+thread:<span class="hljs-number">1</span>: <span class="hljs-number">105</span>
+thread:<span class="hljs-number">2</span>: <span class="hljs-number">106</span>
+thread:<span class="hljs-number">5</span>: <span class="hljs-number">107</span>
+thread:<span class="hljs-number">8</span>: <span class="hljs-number">108</span>
+thread:<span class="hljs-number">4</span>: <span class="hljs-number">109</span>
+thread:<span class="hljs-number">9</span>: <span class="hljs-number">110</span>
+<span class="hljs-number">110</span></code></pre></div>
+
+<p>对于MutexGuard存在栈上自动释放就代表Mutex的释放</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; <span class="hljs-built_in">Drop</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">MutexGuard</span>&lt;<span class="hljs-symbol">&#x27;_</span>, T&gt; &#123;
+    <span class="hljs-meta">#[inline]</span>
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">drop</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) &#123;
+        <span class="hljs-keyword">unsafe</span> &#123;
+            <span class="hljs-keyword">self</span>.lock.poison.<span class="hljs-title function_ invoke__">done</span>(&amp;<span class="hljs-keyword">self</span>.poison);
+            <span class="hljs-keyword">self</span>.lock.inner.<span class="hljs-title function_ invoke__">raw_unlock</span>();
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>对于竞争较为激烈，且占用锁的线程持有时间较长的场景，使用mutex是比较合适的，否则应该使用<code>parking_lot</code>这个crate。</p>
+<h1 id="读写锁RWLock"><a href="#读写锁RWLock" class="headerlink" title="读写锁RWLock"></a>读写锁RWLock</h1><p>和mutex类似</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">RwLock</span> &#123;
+    inner: UnsafeCell&lt;libc::pthread_rwlock_t&gt;,
+    write_locked: UnsafeCell&lt;<span class="hljs-type">bool</span>&gt;, <span class="hljs-comment">// guarded by the `inner` RwLock</span>
+    num_readers: AtomicUsize,
+&#125;</code></pre></div>
+<p>只不过read，write返回两类<code>guard</code>。</p>
+<p>语义上和posix读写锁也是一致的，读读共存，读写互斥，写写互斥。</p>
+<h1 id="Arc"><a href="#Arc" class="headerlink" title="Arc"></a>Arc</h1><p>从定义来讲是支持多线程的引用计数。作为Rc不能支持多线程的补充。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Arc</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; &#123;
+    ptr: NonNull&lt;ArcInner&lt;T&gt;&gt;,
+    phantom: PhantomData&lt;ArcInner&lt;T&gt;&gt;,
+&#125;</code></pre></div>
+<p>和Rc一样支持强引用，弱引用</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">ArcInner</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; &#123;
+    strong: atomic::AtomicUsize,
+    weak: atomic::AtomicUsize,
+    data: T,
+&#125;</code></pre></div>
+
+<p>和Rc一样，在Clone时增加引用计数，只不过这里是支持Sync的Atomic计数</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[stable(feature = <span class="hljs-string">&quot;rust1&quot;</span>, since = <span class="hljs-string">&quot;1.0.0&quot;</span>)]</span>
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; <span class="hljs-built_in">Clone</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">Rc</span>&lt;T&gt; &#123;
+ <span class="hljs-keyword">fn</span> <span class="hljs-title function_">clone</span>(&amp;<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> Arc&lt;T&gt; &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">old_size</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">inner</span>().strong.<span class="hljs-title function_ invoke__">fetch_add</span>(<span class="hljs-number">1</span>, Relaxed);
+        <span class="hljs-keyword">if</span> old_size &gt; MAX_REFCOUNT &#123;
+            <span class="hljs-title function_ invoke__">abort</span>();
+        &#125;
+        <span class="hljs-keyword">unsafe</span> &#123; <span class="hljs-keyword">Self</span>::<span class="hljs-title function_ invoke__">from_inner</span>(<span class="hljs-keyword">self</span>.ptr) &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>和Rc一样drop减少引用计数：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">fn</span> <span class="hljs-title function_">drop</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) &#123;
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">inner</span>().strong.<span class="hljs-title function_ invoke__">fetch_sub</span>(<span class="hljs-number">1</span>, Release) != <span class="hljs-number">1</span> &#123;
+        <span class="hljs-keyword">return</span>;
+    &#125;
+    acquire!(<span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">inner</span>().strong);
+
+    <span class="hljs-keyword">unsafe</span> &#123;
+        <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">drop_slow</span>();
+    &#125;
+&#125;
+</code></pre></div>
+
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>前一章thread中提及，FnOnce只接受所有权形式的闭包，这就意味着我们只能将我们需要跨线程共享的数据封装在Arc中才能共享所有权。这也是我们前面的案例中必须使用Arc的原因。</p>
+<h1 id="Once"><a href="#Once" class="headerlink" title="Once"></a>Once</h1><p>保证只执行一次的锁，常用于做懒汉式初始化。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">o</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(std::sync::Once::<span class="hljs-title function_ invoke__">new</span>());
+    thread::<span class="hljs-title function_ invoke__">scope</span>(|s| &#123;
+        <span class="hljs-keyword">for</span> <span class="hljs-variable">i</span> <span class="hljs-keyword">in</span> <span class="hljs-number">0</span>..<span class="hljs-number">10</span> &#123;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">i</span> = o.<span class="hljs-title function_ invoke__">clone</span>();
+            s.<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">move</span> || &#123;
+                <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;thread run ...&quot;</span>);
+                i.<span class="hljs-title function_ invoke__">call_once</span>(|| &#123;<span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;called&quot;</span>)&#125;);
+            &#125;);
+        &#125;
+    &#125;);
+&#125;
+-----------
+thread run ...
+called
+thread run ...
+thread run ...
+thread run ...
+thread run ...
+thread run ...
+thread run ...
+thread run ...
+thread run ...
+thread run ...</code></pre></div>
+<p>call_once不需要可变引用，直接就可以在Arc内使用。</p>
+<h1 id="Condvar"><a href="#Condvar" class="headerlink" title="Condvar"></a>Condvar</h1><p>也是继承自libc的<code>pthread_condvar_t</code> ，常用于控制线程间访问顺序。</p>
+<p>比如下面这段代码控制10个线程顺序打印0..9</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">use</span> std::&#123;
+    sync::&#123;
+        mpsc::&#123;<span class="hljs-keyword">self</span>, channel, sync_channel&#125;,
+        Arc, Condvar,
+    &#125;,
+    thread::&#123;<span class="hljs-keyword">self</span>, sleep&#125;,
+    time::Duration,
+&#125;;
+
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">m</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(std::sync::Mutex::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-number">0usize</span>));
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">cond</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(Condvar::<span class="hljs-title function_ invoke__">new</span>());
+    thread::<span class="hljs-title function_ invoke__">scope</span>(|s| &#123;
+        <span class="hljs-keyword">for</span> <span class="hljs-variable">i</span> <span class="hljs-keyword">in</span> <span class="hljs-number">0</span>..<span class="hljs-number">10</span> &#123;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">m</span> = m.<span class="hljs-title function_ invoke__">clone</span>();
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">cond</span> = cond.<span class="hljs-title function_ invoke__">clone</span>();
+            s.<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">move</span> || &#123;
+                <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">g</span> = *m.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+                <span class="hljs-keyword">while</span> g != i &#123;
+                    cond.<span class="hljs-title function_ invoke__">notify_one</span>();
+                    g = *cond.<span class="hljs-title function_ invoke__">wait</span>(m.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>()).<span class="hljs-title function_ invoke__">unwrap</span>();
+                &#125;
+                <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;no.&#123;&#125; thread print &#123;&#125;&quot;</span>, i, g);
+                *m.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>() += <span class="hljs-number">1</span>;
+                cond.<span class="hljs-title function_ invoke__">notify_one</span>();
+            &#125;);
+        &#125;
+    &#125;);
+&#125;
+</code></pre></div>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E5%B9%B6%E5%8F%91/" class="print-no-link">#并发</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rust并发系列2-Lock</div>
+      <div>https://fenixc9.github.io/rust-concurrent-std-2/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年1月18日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Rust并发系列3-channel</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread">
+                        <span class="hidden-mobile">Rust并发系列1-Thread</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

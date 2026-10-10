@@ -1,0 +1,1173 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/clickhouse-3/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="学习目前olap领域炙手可热的明星项目，clickhouse，本篇讨论集群和副本相关">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Clickhouse学习笔记 三">
+<meta property="og:url" content="https://fenixc9.github.io/clickhouse-3/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习目前olap领域炙手可热的明星项目，clickhouse，本篇讨论集群和副本相关">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/clickhouse-3/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/clickhouse-3/2.webp">
+<meta property="article:published_time" content="2023-11-02T07:00:26.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.632Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Clickhouse">
+<meta property="article:tag" content="Database">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/clickhouse-3/1.png">
+  
+  
+  
+  <title>Clickhouse学习笔记 三 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Clickhouse学习笔记 三</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-11-02 15:00" pubdate>
+          2023年11月2日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          72 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Clickhouse"
+        id="heading-864d69721b72ee49ba90b754be1f9abe" role="tab" data-toggle="collapse" href="#collapse-864d69721b72ee49ba90b754be1f9abe"
+        aria-expanded="true"
+      >
+        Clickhouse
+        <span class="list-group-count">(3)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-864d69721b72ee49ba90b754be1f9abe"
+           role="tabpanel" aria-labelledby="heading-864d69721b72ee49ba90b754be1f9abe">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/click-house-1/" title="Clickhouse学习笔记 一"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Clickhouse学习笔记 一</span>
+        </a>
+      
+    
+      
+      
+        <a href="/clickhouse-2/" title="Clickhouse学习笔记 二"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Clickhouse学习笔记 二</span>
+        </a>
+      
+    
+      
+      
+        <a href="/clickhouse-3/" title="Clickhouse学习笔记 三"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Clickhouse学习笔记 三</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Clickhouse学习笔记 三</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="partition和shard的区别"><a href="#partition和shard的区别" class="headerlink" title="partition和shard的区别"></a>partition和shard的区别</h1><p>partition和shard在不同的中间件中的概念或多或少略有区别，我们这里只关注这两个概念在clickhouse中的语义：</p>
+<h2 id="分区partition"><a href="#分区partition" class="headerlink" title="分区partition"></a>分区partition</h2><p>表中的数据可以按照指定的字段分区存储，每个分区在文件系统中都是都以目录的形式存在。常用时间字段作为分区字段，数据量大的表可以按照小时分区，数据量小的表可以在按照天分区或者月分区，查询时，使用分区字段作为Where条件，可以有效的过滤掉大量非结果集数据。</p>
+<ul>
+<li>创建分区的方法比较简单，只需要在建表时通过partition by语法指定即可；</li>
+<li>不止可以按某个字段做partition by，还可以支持按任意合法的表达式进行分区操作，比如toYYYYMM()按月做分区；</li>
+<li>支持对partition进行TTL管理，淘汰过期的分区数据；</li>
+<li>插入数据到分区表中时，先会将数据写入到分区目录下的segment文件中，后台程序会自动进行合并，当然也可以通过optimize命令手动触发合并。</li>
+</ul>
+<h2 id="分片shard"><a href="#分片shard" class="headerlink" title="分片shard"></a>分片shard</h2><p>分片则只有在分布式下存在， 一个分片则是一个clickhouse实例，将全量数据水平切分到多个clickhouse实例中提高查询性能。</p>
+<h1 id="副本"><a href="#副本" class="headerlink" title="副本"></a>副本</h1><p>clickhouse的副本同步机制是通过Zookeeper来完成的，包括主副本选举、副本状态感知、操作日志分发、任务队列和BlockID去重判断等。在执行INSERT数据写入、MERGE分区和MUTATION操作的时候，都会涉及与ZooKeeper的通信。但是在通信的过程中，并不会涉及任何表数据的传输，在查询数据的时候也不会访问ZooKeeper，所以不必过于担心ZooKeeper的承载压力。所以我们想使用副本功能必须部署Zookeeper，目前最新的版本clickhouse已经实现了自己的协调器（clickhouse keeper），zk的替代品，我们后面再讨论。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p><img src="/clickhouse-3/1.png" srcset="/img/loading.gif" lazyload alt="1"><br>大致的原理就是多个节点会在zk中为同一个表配置同一个path，或者说zk的语境中是同一个节点。当某个节点写入操作日志后，另一个节点watch到zk这个事件后，立即去zk拉取操作日志，然后根据操作日志到对应节点拉取数据。</p>
+<h2 id="实践"><a href="#实践" class="headerlink" title="实践"></a>实践</h2><p>我这里就单机docker 3节点配置了。</p>
+<p>首先创建独立的docker network，因为clickhouse默认会使用其主机名注册到zk中，对应docker的主机名如果不在同一个docker network中，是无法通过容器主机名互访的。</p>
+<div class="code-wrapper"><pre><code class="hljs ebnf"><span class="hljs-attribute">docker network create clickhouse</span></code></pre></div>
+
+<p>docker启动Zookeeper</p>
+<div class="code-wrapper"><pre><code class="hljs shell">docker run -d --net clickhouse -p 2181:2181 rishabh208/zookeeper:latest</code></pre></div>
+
+<p>注意，官方镜像较新，不适合clickhouse，这里使用这个3.4的镜像。</p>
+<p>docker启动三个节点的clickhouse</p>
+<p>startup.sh</p>
+<div class="code-wrapper"><pre><code class="hljs shell">
+datadir=data1
+logdir=log1
+configdir=config1
+<span class="hljs-meta prompt_"># </span><span class="language-bash">8124 8125 8126</span>
+port_http=8124
+<span class="hljs-meta prompt_"># </span><span class="language-bash">9001 9002 9003</span>
+port_tcp=9001
+
+docker -H 127.0.0.1:2375 run \
+        --net clickhouse \
+        -d \
+        -v /etc/hosts:/etc/hosts:ro  \
+        -v /etc/localtime:/etc/localtime:ro \
+        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \
+        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \
+        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \
+        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \
+        --name &quot;ck-$&#123;datadir&#125;&quot; \
+        --ulimit nofile=262144:262144 clickhouse/clickhouse-server
+
+echo &#x27;节点1启动完毕&#x27;
+
+datadir=data2
+logdir=log2
+configdir=config2
+<span class="hljs-meta prompt_"># </span><span class="language-bash">8124 8125 8126</span>
+port_http=8125
+<span class="hljs-meta prompt_"># </span><span class="language-bash">9001 9002 9003</span>
+port_tcp=9002
+
+docker -H 127.0.0.1:2375 run \
+        --net clickhouse \
+        -d \
+        -v /etc/hosts:/etc/hosts:ro  \
+        -v /etc/localtime:/etc/localtime:ro \
+        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \
+        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \
+        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \
+        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \
+        --name &quot;ck-$&#123;datadir&#125;&quot; \
+        --ulimit nofile=262144:262144 clickhouse/clickhouse-server
+
+echo &#x27;节点2 启动完毕&#x27;
+datadir=data3
+logdir=log3
+configdir=config3
+<span class="hljs-meta prompt_"># </span><span class="language-bash">8124 8125 8126</span>
+port_http=8126
+<span class="hljs-meta prompt_"># </span><span class="language-bash">9001 9002 9003</span>
+port_tcp=9003
+
+docker -H 127.0.0.1:2375 run \
+        --net clickhouse \
+        -d \
+        -v /etc/hosts:/etc/hosts:ro  \
+        -v /etc/localtime:/etc/localtime:ro \
+        -v $(realpath ./$&#123;configdir&#125;)/clickhouse-server:/etc/clickhouse-server \
+        -v $(realpath ./$&#123;datadir&#125;):/var/lib/clickhouse/ \
+        -v $(realpath ./$&#123;logdir&#125;):/var/log/clickhouse-server/ \
+        -p$&#123;port_http&#125;:8123 -p$&#123;port_tcp&#125;:9000 \
+        --name &quot;ck-$&#123;datadir&#125;&quot; \
+        --ulimit nofile=262144:262144 clickhouse/clickhouse-server
+
+echo &#x27;节点3启动完毕&#x27;</code></pre></div>
+<p>这里启动了三个节点，分别将容器8123映射到主机的8124，8125，8126，将容器9000映射到主机。</p>
+<p>其中 config1 config2 config3 中把clickhouse默认的几个配置放进去</p>
+<div class="code-wrapper"><pre><code class="hljs crmsh">(base) fenix@fenixs:~/clickhouse$ ls config1/clickhouse-server/
+config.d  config.<span class="hljs-keyword">xml</span>  <span class="hljs-title">metrika</span>.<span class="hljs-keyword">xml</span>  <span class="hljs-title">users</span>.d  users.xml</code></pre></div>
+
+<p>其中config.xml 下添加如下配置</p>
+<div class="code-wrapper"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">zookeeper</span> <span class="hljs-attr">incl</span>=<span class="hljs-string">&quot;zookeeper-servers&quot;</span> <span class="hljs-attr">optional</span>=<span class="hljs-string">&quot;true&quot;</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">include_from</span>&gt;</span>/etc/clickhouse-server/metrika.xml<span class="hljs-tag">&lt;/<span class="hljs-name">include_from</span>&gt;</span></code></pre></div>
+<p>listen_host改为：</p>
+<div class="code-wrapper"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">listen_host</span>&gt;</span>0.0.0.0<span class="hljs-tag">&lt;/<span class="hljs-name">listen_host</span>&gt;</span></code></pre></div>
+
+<p>metrica.xml中添加</p>
+<div class="code-wrapper"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">yandex</span>&gt;</span>
+    <span class="hljs-comment">&lt;!-- Replicated*MergeTree会用到zk --&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">zookeeper-servers</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">node</span> <span class="hljs-attr">index</span>=<span class="hljs-string">&quot;1&quot;</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">host</span>&gt;</span>zookeeper<span class="hljs-tag">&lt;/<span class="hljs-name">host</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">port</span>&gt;</span>2181<span class="hljs-tag">&lt;/<span class="hljs-name">port</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">node</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">zookeeper-servers</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">yandex</span>&gt;</span></code></pre></div>
+
+<p>然后执行<code>sh startup.sh</code> </p>
+<p>在上面的脚本启动的3个节点中，并没有配置任何集群相关的信息，换句话说三个节点除了连接了同一个zk外，是毫无关系的三个独立clickhouse实例。</p>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><p>在使用副本时，不需要依赖任何集群配置。ReplicatedMergeTree结合ZooKeeper就能完成全部工作。</p>
+<p>其语法为：</p>
+<div class="code-wrapper"><pre><code class="hljs ini"><span class="hljs-attr">ENGINE</span> = ReplicatedMergeTree(<span class="hljs-string">&#x27;zk_path&#x27;</span>, <span class="hljs-string">&#x27;replica_name&#x27;</span>)</code></pre></div>
+<p>其中zk_path 指定zk中表的路径，replica_name 表明副本的名称。</p>
+<p>zkpath并没有固定规则，<strong>只要能唯一定位一个分片即可</strong>，不过有一些约定俗成的模板。</p>
+<p><code>/clickhouse/tables/{shard}/table_name</code></p>
+<p>这里面指定shard分片，table_name表名。replica_name 中指定副本的名称。</p>
+<div class="code-wrapper"><pre><code class="hljs apache"><span class="hljs-attribute">ReplicatedMergeTree</span>(&#x27;/clickhouse/tables/<span class="hljs-number">01</span>/test_1, &#x27;<span class="hljs-number">01</span>&#x27;)</code></pre></div>
+
+
+<h3 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h3><p>在节点A上创建表</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE TABLE</span> replicated_sales_1 (
+    id String,
+    price Float64,
+    create_time DateTime
+) ENGINE <span class="hljs-operator">=</span> ReplicatedMergeTree(<span class="hljs-string">&#x27;/clickhouse/tables/01/replicated_sales_1&#x27;</span>,<span class="hljs-string">&#x27;c1&#x27;</span>)
+<span class="hljs-keyword">partition</span> <span class="hljs-keyword">by</span> toYYYYMM(create_time)
+<span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> id ;</code></pre></div>
+
+<p>在节点B上创建表</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE TABLE</span> replicated_sales_1 (
+    id String,
+    price Float64,
+    create_time DateTime
+) ENGINE <span class="hljs-operator">=</span> ReplicatedMergeTree(<span class="hljs-string">&#x27;/clickhouse/tables/01/replicated_sales_1&#x27;</span>,<span class="hljs-string">&#x27;c2&#x27;</span>)
+<span class="hljs-keyword">partition</span> <span class="hljs-keyword">by</span> toYYYYMM(create_time)
+<span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> id ;</code></pre></div>
+
+
+<p>在节点A上写入表</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">insert into</span> replicated_sales_1 <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;A222&#x27;</span>,<span class="hljs-number">123123</span>,now());</code></pre></div>
+
+<p>在B节点可以正常看到数据</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> replicated_sales_1;
+
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span>
+<span class="hljs-keyword">FROM</span> replicated_sales_1
+
+Query id: c88dfc44<span class="hljs-operator">-</span>ec15<span class="hljs-number">-4850</span><span class="hljs-operator">-</span>bfbb<span class="hljs-number">-541</span>d36a9cd88
+
+┌─id───┬──price─┬─────────create_time─┐
+│ A222 │ <span class="hljs-number">123123</span> │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">03</span>:<span class="hljs-number">25</span>:<span class="hljs-number">48</span> │
+└──────┴────────┴─────────────────────┘</code></pre></div>
+
+
+<h1 id="集群"><a href="#集群" class="headerlink" title="集群"></a>集群</h1><p>clickhouse的集群并不是某种类似其他中间件的节点级别的全局的，固定的集群关系。clickhouse能够根据可用性，数据分片，性能的需求，自由组合现有节点成为一个集群，这种集群关系可以是局部的。</p>
+<p>比如我们的业务中某些表需要更好的读性能，高可用可以选择其中一部分节点创建多副本集群；另一部分业务表数据量巨大，需要水平切片的，则可以选择一部分节点创建分片集群；也可以创建既分片又副本的集群，总之我们可以任意定义一个集群。这些定义的集群之间的节点可以重叠可以不重叠，只需要保证集群内的节点不重叠即可。</p>
+<p>比如我们配置2节点2副本的集群：</p>
+<div class="code-wrapper"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">ck_2s_2r</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">shard</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">replica</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">host</span>&gt;</span>ch1<span class="hljs-tag">&lt;/<span class="hljs-name">host</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">port</span>&gt;</span>9000<span class="hljs-tag">&lt;/<span class="hljs-name">port</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">replica</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">replica</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">host</span>&gt;</span>ch2<span class="hljs-tag">&lt;/<span class="hljs-name">host</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">port</span>&gt;</span>9000<span class="hljs-tag">&lt;/<span class="hljs-name">port</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">replica</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">shard</span>&gt;</span>
+    <span class="hljs-tag">&lt;<span class="hljs-name">shard</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">replica</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">host</span>&gt;</span>ch3<span class="hljs-tag">&lt;/<span class="hljs-name">host</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">port</span>&gt;</span>9000<span class="hljs-tag">&lt;/<span class="hljs-name">port</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">replica</span>&gt;</span>
+        <span class="hljs-tag">&lt;<span class="hljs-name">replica</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">host</span>&gt;</span>ch4<span class="hljs-tag">&lt;/<span class="hljs-name">host</span>&gt;</span>
+            <span class="hljs-tag">&lt;<span class="hljs-name">port</span>&gt;</span>9000<span class="hljs-tag">&lt;/<span class="hljs-name">port</span>&gt;</span>
+        <span class="hljs-tag">&lt;/<span class="hljs-name">replica</span>&gt;</span>
+    <span class="hljs-tag">&lt;/<span class="hljs-name">shard</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">ck_2s_2r</span>&gt;</span></code></pre></div>
+<p>共4个节点，查看我们创建的集群：</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">select</span> <span class="hljs-operator">*</span> <span class="hljs-keyword">from</span> system.clusters;
+
+<span class="hljs-keyword">SELECT</span>
+    cluster,
+    shard_num,
+    shard_weight,
+    replica_num,
+    host_name
+<span class="hljs-keyword">FROM</span> system.clusters
+
+Query id: <span class="hljs-number">4624</span>d392<span class="hljs-number">-58</span>bc<span class="hljs-number">-40</span>ba<span class="hljs-operator">-</span>b3a1<span class="hljs-number">-8</span>b16354d772b
+
+┌─cluster──────┬─shard_num─┬─shard_weight─┬─replica_num─┬─host_name────────────────────┐
+│ ck_2s_2r     │         <span class="hljs-number">1</span> │            <span class="hljs-number">1</span> │           <span class="hljs-number">1</span> │ <span class="hljs-keyword">some</span><span class="hljs-operator">-</span>clickhouse<span class="hljs-operator">-</span>server<span class="hljs-operator">-</span>data1 │
+│ ck_2s_2r     │         <span class="hljs-number">1</span> │            <span class="hljs-number">1</span> │           <span class="hljs-number">2</span> │ <span class="hljs-keyword">some</span><span class="hljs-operator">-</span>clickhouse<span class="hljs-operator">-</span>server<span class="hljs-operator">-</span>data2 │
+│ ck_2s_2r     │         <span class="hljs-number">2</span> │            <span class="hljs-number">1</span> │           <span class="hljs-number">1</span> │ <span class="hljs-keyword">some</span><span class="hljs-operator">-</span>clickhouse<span class="hljs-operator">-</span>server<span class="hljs-operator">-</span>data3 │
+│ ck_2s_2r     │         <span class="hljs-number">2</span> │            <span class="hljs-number">1</span> │           <span class="hljs-number">2</span> │ <span class="hljs-keyword">some</span><span class="hljs-operator">-</span>clickhouse<span class="hljs-operator">-</span>server<span class="hljs-operator">-</span>data4 │
+└──────────────┴───────────┴──────────────┴─────────────┴──────────────────────────────┘</code></pre></div>
+
+<h2 id="ON-CLUSTER语法"><a href="#ON-CLUSTER语法" class="headerlink" title="ON CLUSTER语法"></a>ON CLUSTER语法</h2><div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE</span><span class="hljs-operator">/</span><span class="hljs-keyword">DROP</span><span class="hljs-operator">/</span>RENAME<span class="hljs-operator">/</span><span class="hljs-keyword">ALTER TABLE</span> <span class="hljs-keyword">ON</span> CLUSTER cluster_name</code></pre></div>
+<p>可以在集群上所有的节点建表</p>
+<p>比如我们可以在每个节点上创建一个MergeTree</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">create table</span> test_001 <span class="hljs-keyword">on</span> cluster ck_2s_2r (id String,<span class="hljs-type">date</span> DateTime) engine MergeTree <span class="hljs-keyword">order</span> <span class="hljs-keyword">by</span> id;</code></pre></div>
+
+<p>然后就在集群上每个节点创建一个MergeTree，本质上跟你手动在每个节点上执行create table 创建MergeTree是同样的效果。</p>
+<p>同样我们可以在集群中创建</p>
+<div class="code-wrapper"><pre><code class="hljs n1ql"><span class="hljs-keyword">CREATE</span> TABLE test_003 <span class="hljs-keyword">ON</span> <span class="hljs-keyword">CLUSTER</span> ck_2s_2r
+(
+    <span class="hljs-symbol">`id`</span> <span class="hljs-keyword">String</span>,
+    <span class="hljs-symbol">`date`</span> DateTime
+)
+ENGINE = ReplicatedMergeTree(<span class="hljs-string">&#x27;/clickhouse/tables/&#123;shard&#125;/test_003&#x27;</span>, <span class="hljs-string">&#x27;&#123;replica&#125;&#x27;</span>)
+<span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> id</code></pre></div>
+
+<p>注意这里需要我们在每个节点的metrica.xml 中配置宏</p>
+<div class="code-wrapper"><pre><code class="hljs xml"><span class="hljs-tag">&lt;<span class="hljs-name">macros</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">layer</span>&gt;</span>ck_2s_2r<span class="hljs-tag">&lt;/<span class="hljs-name">layer</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">shard</span>&gt;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">shard</span>&gt;</span>
+  <span class="hljs-tag">&lt;<span class="hljs-name">replica</span>&gt;</span>1<span class="hljs-tag">&lt;/<span class="hljs-name">replica</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">macros</span>&gt;</span>
+</code></pre></div>
+
+<p>使用宏来指定zkpath是和我们前面集群定义的分片没有关系的，如果想用上我们前面配置的集群分片和副本。可以这样：</p>
+<p>把database创建到对应集群上</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">create</span> database ck_2s_2r <span class="hljs-keyword">on</span> cluster ck_2s_2r;</code></pre></div>
+<p>然后就可以直接免配置zkpath创建ReplicatedMergeTree了</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">CREATE TABLE</span> ck_2s_2r.test_001 <span class="hljs-keyword">ON</span> CLUSTER ck_2s_2r
+(
+    `id` String,
+    `<span class="hljs-type">date</span>` DateTime
+)
+ENGINE <span class="hljs-operator">=</span> ReplicatedMergeTree
+<span class="hljs-keyword">ORDER</span> <span class="hljs-keyword">BY</span> id</code></pre></div>
+
+<p>此时我们ck1 和 ck2 互为副本，ck3 和 ck4互为副本，我们给1插数据2会同步，给3插数据4会同步。</p>
+<h2 id="分布式表"><a href="#分布式表" class="headerlink" title="分布式表"></a>分布式表</h2><p>到目前为止，我们的2s2r分片副本表还是本地表，链接1节点无法看到3节点的数据。这里我们可以创建分布式表，为我们的分片副本表创建一个视图。</p>
+<p>规则如下</p>
+<div class="code-wrapper"><pre><code class="hljs sql">ENGINE <span class="hljs-operator">=</span> Distributed(cluster, database, <span class="hljs-keyword">table</span> [,sharding_key])</code></pre></div>
+
+<p>这里table是对应要代理的本地表</p>
+<p>我们创建:</p>
+<div class="code-wrapper"><pre><code class="hljs sql"><span class="hljs-keyword">create table</span> ck_2s_2r.test_001_all <span class="hljs-keyword">on</span> cluster ck_2s_2r (id String,<span class="hljs-type">date</span> DateTime) engine Distributed (<span class="hljs-string">&#x27;ck_2s_2r&#x27;</span>,<span class="hljs-string">&#x27;ck_2s_2r&#x27;</span>,<span class="hljs-string">&#x27;test_001&#x27;</span>,rand());
+</code></pre></div>
+<p>到on cluster上，意味着集群所有节点都能访问到分布式表。<br>分布式表支持insert select</p>
+<div class="code-wrapper"><pre><code class="hljs sql">aad19fa35aa0 :) <span class="hljs-keyword">insert into</span> ck_2s_2r.test_001_all <span class="hljs-keyword">values</span> (<span class="hljs-string">&#x27;3A&#x27;</span>,now()),(<span class="hljs-string">&#x27;4B&#x27;</span>,now()),(<span class="hljs-string">&#x27;5C&#x27;</span>,now());</code></pre></div>
+
+<div class="code-wrapper"><pre><code class="hljs sql">aad19fa35aa0 :) <span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span>
+<span class="hljs-keyword">FROM</span> ck_2s_2r.test_001_all
+
+<span class="hljs-keyword">SELECT</span> <span class="hljs-operator">*</span>
+<span class="hljs-keyword">FROM</span> ck_2s_2r.test_001_all
+
+Query id: <span class="hljs-number">59</span>f73ffa<span class="hljs-operator">-</span>f221<span class="hljs-number">-480</span>c<span class="hljs-operator">-</span>af8c<span class="hljs-operator">-</span>ce7c9a4765e5
+
+┌─id─┬────────────────<span class="hljs-type">date</span>─┐
+│ <span class="hljs-number">3</span>A │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">33</span>:<span class="hljs-number">41</span> │
+│ <span class="hljs-number">4</span>B │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">33</span>:<span class="hljs-number">41</span> │
+│ <span class="hljs-number">5</span>C │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">33</span>:<span class="hljs-number">41</span> │
+└────┴─────────────────────┘
+┌─id───┬────────────────<span class="hljs-type">date</span>─┐
+│ <span class="hljs-number">123</span>A │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">30</span>:<span class="hljs-number">10</span> │
+│ <span class="hljs-number">234</span>B │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">30</span>:<span class="hljs-number">10</span> │
+│ a1   │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">30</span>:<span class="hljs-number">10</span> │
+└──────┴─────────────────────┘
+┌─id─┬────────────────<span class="hljs-type">date</span>─┐
+│ <span class="hljs-number">3</span>A │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">46</span>:<span class="hljs-number">25</span> │
+│ <span class="hljs-number">4</span>B │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">46</span>:<span class="hljs-number">25</span> │
+│ <span class="hljs-number">5</span>C │ <span class="hljs-number">2023</span><span class="hljs-number">-11</span><span class="hljs-number">-05</span> <span class="hljs-number">16</span>:<span class="hljs-number">46</span>:<span class="hljs-number">25</span> │
+└────┴─────────────────────┘
+</code></pre></div>
+
+<h3 id="分布式表的原理"><a href="#分布式表的原理" class="headerlink" title="分布式表的原理"></a>分布式表的原理</h3><p>查询节点接受到Distributed表的select查询后，会将其转换为对每个子节点的查询，然后向每个子节点发起查询，然后汇总结果。</p>
+<h2 id="环形复制"><a href="#环形复制" class="headerlink" title="环形复制"></a>环形复制</h2><p>clickhouse原生并不支持环型复制（Circular Replication），所谓环形复制就是：比如在3个节点上实现3分片2副本<br><img src="/clickhouse-3/2.webp" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p>这种拓扑结构每个节点保存2个shard————即2&#x2F;3的数据，并且能容忍1个节点离线。</p>
+<p>对于原生clickhouse 集群如果想实现3分片2副本则至少需要6个节点，但是有一些hack方式可以解决这个问题。</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/ClickHouse/ClickHouse/issues/7611">https://github.com/ClickHouse/ClickHouse/issues/7611</a></p>
+<p>这里可以看到den-crane并不推荐环形复制，“Personally I don’t recommend this schema because second replicas kill performance (they use cache &#x2F; I&#x2F;O&#x2F; CPU).” 这种方式会对性能造成影响，clickhouse并未对这种拓扑做优化，某些情况下会导致查询本应分摊到多个节点的计算落到同一节点。</p>
+<p>知乎这里有个博主写的使用default_database的方案实现环形复制。</p>
+<p><a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/461792873">https://zhuanlan.zhihu.com/p/461792873</a></p>
+<p>他的这个方案中的模式使用default_database来区分同一个节点上的两个分片，但是这种方式需要手动指定zk_path 而不能更为智能的使用on cluster语法。</p>
+<p>对于生产环境部署，使用每节点一分片，节点数等于分片数乘副本数更为可靠。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Clickhouse/" class="category-chain-item">Clickhouse</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Clickhouse/" class="print-no-link">#Clickhouse</a>
+      
+        <a href="/tags/Database/" class="print-no-link">#Database</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Clickhouse学习笔记 三</div>
+      <div>https://fenixc9.github.io/clickhouse-3/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年11月2日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/neo4j-01/" title="Neo4j学习笔记 一">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Neo4j学习笔记 一</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/clickhouse-2/" title="Clickhouse学习笔记 二">
+                        <span class="hidden-mobile">Clickhouse学习笔记 二</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

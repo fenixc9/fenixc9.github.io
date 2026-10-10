@@ -1,0 +1,1382 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/rust-pin/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="一个让众多Rust初学者摸不着头脑的概念，今天我们来把它搞清楚。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust的Pin是咋回事?">
+<meta property="og:url" content="https://fenixc9.github.io/rust-pin/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="一个让众多Rust初学者摸不着头脑的概念，今天我们来把它搞清楚。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/rust-pin/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/rust-pin/2.png">
+<meta property="article:published_time" content="2022-12-29T16:45:52.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.692Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="异步">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/rust-pin/1.png">
+  
+  
+  
+  <title>Rust的Pin是咋回事? · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Rust的Pin是咋回事?</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2022-12-30 00:45" pubdate>
+          2022年12月30日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          68 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(22)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Rust的Pin是咋回事?</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="自引用结构体"><a href="#自引用结构体" class="headerlink" title="自引用结构体"></a>自引用结构体</h1><p>Pin和自引用结构体息息相关，要想引入Pin，必须先了解自引用结构体。</p>
+<h2 id="什么是自引用结构体？"><a href="#什么是自引用结构体？" class="headerlink" title="什么是自引用结构体？"></a>什么是自引用结构体？</h2><p>结构体中一个字段被结构体中另一个字段引用。下面的A就是自引用结构体。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">A</span>&lt;<span class="hljs-symbol">&#x27;a</span>&gt; &#123;
+    b: B,
+    refb: &amp;<span class="hljs-symbol">&#x27;a</span> B,
+&#125;
+
+<span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">B</span>;</code></pre></div>
+<p>但是这样的结构体似乎无法构造？</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">r1</span>()&#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">b1</span> = B;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">a1</span> = A&#123; b: b1, refb: &amp;b1 &#125;;
+&#125;
+
+error[E0382]: borrow of moved value: `b1`
+  -<span class="hljs-punctuation">-&gt;</span> src\self_ref.rs:<span class="hljs-number">13</span>:<span class="hljs-number">30</span>
+   |
+<span class="hljs-number">12</span> |     <span class="hljs-keyword">let</span> <span class="hljs-variable">b1</span> = B;
+   |         -- <span class="hljs-keyword">move</span> occurs because `b1` has <span class="hljs-keyword">type</span> `B`, which does not implement the `<span class="hljs-built_in">Copy</span>` <span class="hljs-keyword">trait</span>
+<span class="hljs-number">13</span> |     <span class="hljs-keyword">let</span> <span class="hljs-variable">et</span> = A&#123; b: b1, refb: &amp;b1 &#125;;
+   |                    --        ^^^ value borrowed here after <span class="hljs-keyword">move</span>
+   |                    |
+   |                    value moved here
+</code></pre></div>
+<p>因为我们无法在move的同时引用它。如果我们用Option包装对B的引用呢？</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">A</span>&lt;<span class="hljs-symbol">&#x27;a</span>&gt; &#123;
+    refb: <span class="hljs-type">Option</span>&lt;&amp;<span class="hljs-symbol">&#x27;a</span> B&gt;,
+    b: B,
+&#125;
+
+<span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">B</span>;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">r1</span>()&#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">b1</span> = B;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">a1</span> = A&#123; b: b1, refb: <span class="hljs-literal">None</span> &#125;;
+    a1.refb = <span class="hljs-title function_ invoke__">Some</span>(&amp;a1.b);
+&#125;</code></pre></div>
+<p>这样在某个函数中执行似乎也没有什么问题，然而这样的结构体无法在函数中返回。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">A</span>&lt;<span class="hljs-symbol">&#x27;a</span>&gt; &#123;
+    refb: <span class="hljs-type">Option</span>&lt;&amp;<span class="hljs-symbol">&#x27;a</span> B&gt;,
+    b: B,
+&#125;
+
+<span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">B</span>;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">r1</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">b1</span> = B;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">a1</span> = A &#123; b: b1, refb: <span class="hljs-literal">None</span> &#125;;
+    a1.refb = <span class="hljs-title function_ invoke__">Some</span>(&amp;a1.b);
+&#125;
+
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">create_b</span>&lt;<span class="hljs-symbol">&#x27;a</span>&gt;() <span class="hljs-punctuation">-&gt;</span> A&lt;<span class="hljs-symbol">&#x27;a</span>&gt; &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">b1</span> = B;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">a1</span> = A &#123; b: b1, refb: <span class="hljs-literal">None</span> &#125;;
+    a1.refb = <span class="hljs-title function_ invoke__">Some</span>(&amp;a1.b);
+    a1
+&#125;
+-----------------
+   |
+<span class="hljs-number">68</span> | <span class="hljs-keyword">fn</span> <span class="hljs-title function_">create_b</span>&lt;<span class="hljs-symbol">&#x27;a</span>&gt;() <span class="hljs-punctuation">-&gt;</span> A&lt;<span class="hljs-symbol">&#x27;a</span>&gt; &#123;
+   |             -- lifetime `<span class="hljs-symbol">&#x27;a</span>` defined here
+...
+<span class="hljs-number">71</span> |     a1.refb = <span class="hljs-title function_ invoke__">Some</span>(&amp;a1.b);
+   |                    ----- borrow of `a1.b` occurs here
+<span class="hljs-number">72</span> |     a1
+   |     ^^
+   |     |
+   |     <span class="hljs-keyword">move</span> out of `a1` occurs here
+   |     returning this value requires that `a1.b` is borrowed <span class="hljs-keyword">for</span> `<span class="hljs-symbol">&#x27;a</span>`</code></pre></div>
+<p>这样做有什么问题呢？这是因为每次函数return都会发生内存的move，如果我们移动普通结构体（或者说非自引用结构体）是没问题的；但假如我们移动自引用结构体：</p>
+<p><img src="/rust-pin/1.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>看起来指针指向了原地址，而原地址已经无效了。</p>
+<h2 id="另一个swap的例子"><a href="#另一个swap的例子" class="headerlink" title="另一个swap的例子"></a>另一个swap的例子</h2><p>这里用裸指针代替Option，我们分别给两个struct 分配Test1，Test2<br>，然后swap他们。我们期望看到的是，原Test1的a，b字段都变成Test2，Test2的a，b变成Test1。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[derive(Debug)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">Test</span> &#123;
+    a: <span class="hljs-type">String</span>,
+    b: *<span class="hljs-keyword">const</span> <span class="hljs-type">String</span>,
+&#125;
+
+<span class="hljs-meta">#[allow(dead_code)]</span>
+<span class="hljs-keyword">impl</span> <span class="hljs-title class_">Test</span> &#123;
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">new</span>(txt: &amp;<span class="hljs-type">str</span>) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span> &#123;
+        Test &#123;
+            a: <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(txt),
+            b: std::ptr::<span class="hljs-title function_ invoke__">null</span>(),
+        &#125;
+    &#125;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">init</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">self_ref</span>: *<span class="hljs-keyword">const</span> <span class="hljs-type">String</span> = &amp;<span class="hljs-keyword">self</span>.a;
+        <span class="hljs-keyword">self</span>.b = self_ref;
+    &#125;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">a</span>(&amp;<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> &amp;<span class="hljs-type">str</span> &#123;
+        &amp;<span class="hljs-keyword">self</span>.a
+    &#125;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">b</span>(&amp;<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> &amp;<span class="hljs-type">String</span> &#123;
+        <span class="hljs-built_in">assert!</span>(
+            !<span class="hljs-keyword">self</span>.b.<span class="hljs-title function_ invoke__">is_null</span>(),
+            <span class="hljs-string">&quot;Test::b called without Test::init being called first&quot;</span>
+        );
+        <span class="hljs-keyword">unsafe</span> &#123; &amp;*(<span class="hljs-keyword">self</span>.b) &#125;
+    &#125;
+&#125;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">t1</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">t1</span> = Test::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-string">&quot;t1&quot;</span>);
+    t1.<span class="hljs-title function_ invoke__">init</span>();
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">t2</span> = Test::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-string">&quot;t2&quot;</span>);
+    t2.<span class="hljs-title function_ invoke__">init</span>();
+
+
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;:?&#125; &#123;&#125; &#123;&#125;&quot;</span>, &amp;t1, t1.<span class="hljs-title function_ invoke__">a</span>(),t1.<span class="hljs-title function_ invoke__">b</span>());
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;:?&#125; &#123;&#125; &#123;&#125;&quot;</span>, &amp;t2, t2.<span class="hljs-title function_ invoke__">a</span>(),t2.<span class="hljs-title function_ invoke__">b</span>());
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;---------------&quot;</span>);
+    std::mem::<span class="hljs-title function_ invoke__">swap</span>(&amp;<span class="hljs-keyword">mut</span> t1,&amp;<span class="hljs-keyword">mut</span> t2);
+
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;:?&#125; &#123;&#125; &#123;&#125;&quot;</span>, &amp;t1, t1.<span class="hljs-title function_ invoke__">a</span>(),t1.<span class="hljs-title function_ invoke__">b</span>());
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;:?&#125; &#123;&#125; &#123;&#125;&quot;</span>, &amp;t2, t2.<span class="hljs-title function_ invoke__">a</span>(),t2.<span class="hljs-title function_ invoke__">b</span>());
+&#125;
+---------------
+output:
+Test &#123; a: <span class="hljs-string">&quot;t1&quot;</span>, b: <span class="hljs-number">0x16d27e620</span> &#125; t1 t1
+Test &#123; a: <span class="hljs-string">&quot;t2&quot;</span>, b: <span class="hljs-number">0x16d27e640</span> &#125; t2 t2
+---------------
+Test &#123; a: <span class="hljs-string">&quot;t2&quot;</span>, b: <span class="hljs-number">0x16d27e640</span> &#125; t2 t1
+Test &#123; a: <span class="hljs-string">&quot;t1&quot;</span>, b: <span class="hljs-number">0x16d27e620</span> &#125; t1 t2</code></pre></div>
+<p>我们期望看到<br>原因和前面的例子相同<br><img src="/rust-pin/2.png" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p><strong>自引用结构体</strong>在发生move后会带来问题。</p>
+<h2 id="什么时候会move"><a href="#什么时候会move" class="headerlink" title="什么时候会move"></a>什么时候会move</h2><h3 id="弹栈"><a href="#弹栈" class="headerlink" title="弹栈"></a>弹栈</h3><ol>
+<li>栈弹出时将返回值move到栈顶，如果这个结构体不包含任何引用，这个过程没有任何问题。</li>
+<li>如果返回是一个指针，或者引用指向了一个栈上分配的对象，那这个指针将随着栈帧弹出变成野指针。rust编译将报错，这时需要由用户将此对象先封装到堆上再返回。</li>
+<li>总之，一个新分配的引用要么指向同栈帧的地址，要么指向堆。</li>
+</ol>
+<h3 id="swap-replace"><a href="#swap-replace" class="headerlink" title="swap&#x2F;replace"></a>swap&#x2F;replace</h3><p>当用户持有可变引用就可以调用<code>std::mem::swap</code> move其中的元素。</p>
+<h1 id="Pin"><a href="#Pin" class="headerlink" title="Pin"></a>Pin</h1><p>终于该说到Pin了，Pin能解决什么问题？文档中这样描述</p>
+<div class="code-wrapper"><pre><code class="hljs applescript">Types <span class="hljs-keyword">that</span> pin data <span class="hljs-keyword">to</span> <span class="hljs-keyword">its</span> location <span class="hljs-keyword">in</span> memory.</code></pre></div>
+<p>能让内存不移动。</p>
+<p>Rust是怎么做到的？实现原理也非常简单：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">Similarly, Pin&lt;&amp;<span class="hljs-keyword">mut</span> T&gt; is a lot like &amp;<span class="hljs-keyword">mut</span> T. 
+However, Pin&lt;P&gt; does not <span class="hljs-keyword">let</span> <span class="hljs-variable">clients</span> actually obtain a <span class="hljs-type">Box</span>&lt;T&gt; or &amp;<span class="hljs-keyword">mut</span> T to pinned data, 
+which implies that you cannot <span class="hljs-keyword">use</span> operations such <span class="hljs-keyword">as</span> mem::swap</code></pre></div>
+<p>Pin Drop后其保存的东西一并释放，并且，不让外界获取其元素的可变引用。简而言之，你把东西交给Pin后，<strong>直到Pin被销毁（其中保存的东西一并销毁），都无法取出</strong>（safe的方式），甚至都不能获取可变引用，就是不给你swap的机会。没有任何黑科技，单纯从可变性和API设计上就杜绝了我们移动自引用结构体的可能。<br>用pin保存某个东西后，pin指针本身则是可以移动的。</p>
+<h2 id="那么Pin怎么用？"><a href="#那么Pin怎么用？" class="headerlink" title="那么Pin怎么用？"></a>那么Pin怎么用？</h2><p>需要注意的是，Pin只能对指针使用。<br>首先认识下<code>Unpin</code> 这个trait。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> auto <span class="hljs-keyword">trait</span> <span class="hljs-title class_">Unpin</span> &#123;&#125;</code></pre></div>
+<p>这是一个auto trait，即：<strong>自动为所有类型实现了此trait，除非</strong>：</p>
+<ol>
+<li>此struct 实现了 <code>!Unpin</code> </li>
+<li>此struct 包含PhantomPinned 类型的字段。</li>
+</ol>
+<p>其他绝大部分类型为<code>Unpin</code>，用人话说就是我们前面提到的可以任意move的类型。换句话说，如果我们要用Pin就必须主动为我们的struct标记为<code>!Unpin</code> ，否则他就是默认Unpin。对于<code>Unpin</code>的struct，Pin会走一套独立的impl，由于这种struct可以随便move，Pin的约束对它也不需要生效。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">impl</span>&lt;P: Deref&lt;Target: Unpin&gt;&gt; Pin&lt;P&gt; &#123;
+    <span class="hljs-comment">/// Construct a new `Pin&lt;P&gt;` around a pointer to some data of a type that</span>
+    <span class="hljs-comment">/// implements [`Unpin`].</span>
+    <span class="hljs-comment">///</span>
+    <span class="hljs-comment">/// Unlike `Pin::new_unchecked`, this method is safe because the pointer</span>
+    <span class="hljs-comment">/// `P` dereferences to an [`Unpin`] type, which cancels the pinning guarantees.</span>
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">new</span>(pointer: P) <span class="hljs-punctuation">-&gt;</span> Pin&lt;P&gt; &#123;
+        <span class="hljs-comment">// SAFETY: the value pointed to is `Unpin`, and so has no requirements</span>
+        <span class="hljs-comment">// around pinning.</span>
+        <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(pointer) &#125;
+    &#125;
+
+    <span class="hljs-comment">/// Unwraps this `Pin&lt;P&gt;` returning the underlying pointer.</span>
+    <span class="hljs-comment">///</span>
+    <span class="hljs-comment">/// This requires that the data inside this `Pin` is [`Unpin`] so that we</span>
+    <span class="hljs-comment">/// can ignore the pinning invariants when unwrapping it.</span>
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">into_inner</span>(pin: Pin&lt;P&gt;) <span class="hljs-punctuation">-&gt;</span> P &#123;
+        pin.pointer
+    &#125;
+&#125;</code></pre></div>
+<p>看起来只是对unsafe操作的封装，因为<code>Unpin</code> 可以任意move，所可以这里允许用户safe地从pin中再取出。</p>
+<p>而对于!Unpin的struct。我们则必须用unsafe code才能构建和访问这其中的字段了</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-comment">// 不可变解引用</span>
+<span class="hljs-keyword">impl</span>&lt;P: Deref&gt; Pin&lt;P&gt; &#123;
+   <span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">unsafe</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">new_unchecked</span>(pointer: P) <span class="hljs-punctuation">-&gt;</span> Pin&lt;P&gt; &#123;
+        Pin &#123; pointer &#125;
+    &#125;
+
+   
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">as_ref</span>(&amp;<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> Pin&lt;&amp;P::Target&gt; &#123;
+        <span class="hljs-comment">// SAFETY: see documentation on this function</span>
+        <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(&amp;*<span class="hljs-keyword">self</span>.pointer) &#125;
+    &#125;
+
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">unsafe</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">into_inner_unchecked</span>(pin: Pin&lt;P&gt;) <span class="hljs-punctuation">-&gt;</span> P &#123;
+        pin.pointer
+    &#125;
+&#125;
+
+<span class="hljs-comment">// 可变解引用</span>
+<span class="hljs-keyword">impl</span>&lt;P: DerefMut&gt; Pin&lt;P&gt; &#123;
+
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">as_mut</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> Pin&lt;&amp;<span class="hljs-keyword">mut</span> P::Target&gt; &#123;
+        <span class="hljs-comment">// SAFETY: see documentation on this function</span>
+        <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(&amp;<span class="hljs-keyword">mut</span> *<span class="hljs-keyword">self</span>.pointer) &#125;
+    &#125;
+
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">set</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, value: P::Target)
+    <span class="hljs-keyword">where</span>
+        P::Target: <span class="hljs-built_in">Sized</span>,
+    &#123;
+        *(<span class="hljs-keyword">self</span>.pointer) = value;
+    &#125;
+&#125;
+
+...</code></pre></div>
+<p>未标记Unpin的实现都如果想<code>get_mut</code>几乎都是unsafe。</p>
+<p>实际上操作起来是这个样子：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">SS</span> &#123;
+    s: <span class="hljs-type">String</span>,
+    _a: PhantomPinned,
+&#125;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">t1</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">s</span> = SS &#123;
+        _a: PhantomPinned,
+        s: <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;123&quot;</span>),
+    &#125;;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">p</span> = <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(&amp;<span class="hljs-keyword">mut</span> s) &#125;;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">j</span> = <span class="hljs-keyword">unsafe</span> &#123; p.<span class="hljs-title function_ invoke__">get_unchecked_mut</span>() &#125;;
+    dbg!(&amp;j.s);
+&#125;
+</code></pre></div>
+
+<p>有一个crate可以帮我们处理这些unsafe :<code>pin_project</code></p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[pin_project::pin_project]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">SS</span> &#123;
+    s: <span class="hljs-type">String</span>,
+    _a: PhantomPinned,
+&#125;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">t1</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">s</span> = SS &#123;
+        _a: PhantomPinned,
+        s: <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;123&quot;</span>),
+    &#125;;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">p</span> = <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(&amp;<span class="hljs-keyword">mut</span> s) &#125;;
+
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">this</span> = p.<span class="hljs-title function_ invoke__">project</span>();
+    this.s.<span class="hljs-title function_ invoke__">push_str</span>(<span class="hljs-string">&quot;456&quot;</span>);
+&#125;
+</code></pre></div>
+<p>这里用过程宏为我们生成的project方法可以获取其中的字段。</p>
+<p>这类库还有个轻量版：<br><code>pin-project-lite = &quot;0.2.8&quot;</code><br>功能类似</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">use</span> pin_project_lite::*;
+pin_project! &#123;
+    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">SS</span> &#123;
+        <span class="hljs-meta">#[pin]</span>
+        s: <span class="hljs-type">String</span>,
+        _a: PhantomPinned,
+    &#125;
+&#125;
+
+<span class="hljs-meta">#[test]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">t1</span>() &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">s</span> = SS &#123;
+        _a: PhantomPinned,
+        s: <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;123&quot;</span>),
+    &#125;;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">p</span> = <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">new_unchecked</span>(&amp;<span class="hljs-keyword">mut</span> s) &#125;;
+
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">pp</span> = p.<span class="hljs-title function_ invoke__">project</span>();
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">s</span> = pp.s;
+&#125;</code></pre></div>
+<p>只不过这个换成声明宏，都是调用project，搞嵌套pin也非常方便。<br>添加给对应的字段添加<code>#[pin]</code>即可。</p>
+<h1 id="Future又和Pin有什么关系？"><a href="#Future又和Pin有什么关系？" class="headerlink" title="Future又和Pin有什么关系？"></a>Future又和Pin有什么关系？</h1><p>说了半天Pin，那和Future有什么关系呢？为什么Future必须要用到pin？</p>
+<p>实际上，Rust团队引入Pin就是用来解决Future的问题。这是由于async&#x2F;await是Generator实现的，每个await将被编译为一个<code>匿名结构体</code> 如果在其中有跨await的引用，就会导致生成的<code>匿名结构体</code> 为<code>自引用结构体</code>。比如下面这段代码:</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">fut</span> = <span class="hljs-keyword">async</span> &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">to_borrow</span> = <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;Hello&quot;</span>);
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">borrowed</span> = &amp;to_borrow;
+    SomeResource::<span class="hljs-title function_ invoke__">some_task</span>().<span class="hljs-keyword">await</span>;
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;&#125; world!&quot;</span>, borrowed);
+&#125;;</code></pre></div>
+
+<p>由于Pin只对!Unpin 生效，生成的匿名结构体也会是!Unpin，下面是生成Generator的源码</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">from_generator</span>&lt;T&gt;(gen: T) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">impl</span> <span class="hljs-title class_">Future</span>&lt;Output = T::Return&gt;
+<span class="hljs-keyword">where</span>
+    T: Generator&lt;ResumeTy, Yield = ()&gt;,
+&#123;
+    <span class="hljs-meta">#[rustc_diagnostic_item = <span class="hljs-string">&quot;gen_future&quot;</span>]</span>
+    <span class="hljs-keyword">struct</span> <span class="hljs-title class_">GenFuture</span>&lt;T: Generator&lt;ResumeTy, Yield = ()&gt;&gt;(T);
+
+    <span class="hljs-comment">// We rely on the fact that async/await futures are immovable in order to create</span>
+    <span class="hljs-comment">// self-referential borrows in the underlying generator.</span>
+    <span class="hljs-keyword">impl</span>&lt;T: Generator&lt;ResumeTy, Yield = ()&gt;&gt; !Unpin <span class="hljs-keyword">for</span> <span class="hljs-title class_">GenFuture</span>&lt;T&gt; &#123;&#125;
+
+    <span class="hljs-keyword">impl</span>&lt;T: Generator&lt;ResumeTy, Yield = ()&gt;&gt; Future <span class="hljs-keyword">for</span> <span class="hljs-title class_">GenFuture</span>&lt;T&gt; &#123;
+        <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = T::Return;
+        <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll</span>(<span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+            <span class="hljs-comment">// SAFETY: Safe because we&#x27;re !Unpin + !Drop, and this is just a field projection.</span>
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">gen</span> = <span class="hljs-keyword">unsafe</span> &#123; Pin::<span class="hljs-title function_ invoke__">map_unchecked_mut</span>(<span class="hljs-keyword">self</span>, |s| &amp;<span class="hljs-keyword">mut</span> s.<span class="hljs-number">0</span>) &#125;;
+
+            <span class="hljs-comment">// Resume the generator, turning the `&amp;mut Context` into a `NonNull` raw pointer. The</span>
+            <span class="hljs-comment">// `.await` lowering will safely cast that back to a `&amp;mut Context`.</span>
+            <span class="hljs-keyword">match</span> gen.<span class="hljs-title function_ invoke__">resume</span>(<span class="hljs-title function_ invoke__">ResumeTy</span>(NonNull::<span class="hljs-title function_ invoke__">from</span>(cx).cast::&lt;Context&lt;<span class="hljs-symbol">&#x27;static</span>&gt;&gt;())) &#123;
+                GeneratorState::<span class="hljs-title function_ invoke__">Yielded</span>(()) =&gt; Poll::Pending,
+                GeneratorState::<span class="hljs-title function_ invoke__">Complete</span>(x) =&gt; Poll::<span class="hljs-title function_ invoke__">Ready</span>(x),
+            &#125;
+        &#125;
+    &#125;
+
+    <span class="hljs-title function_ invoke__">GenFuture</span>(gen)
+&#125;</code></pre></div>
+
+<h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>Pin是Rust引入用于解决可能存在的move导致的不安全问题的概念。后面的文章我们会继续探讨Rust异步的机制。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E5%BC%82%E6%AD%A5/" class="print-no-link">#异步</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rust的Pin是咋回事?</div>
+      <div>https://fenixc9.github.io/rust-pin/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2022年12月30日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/rust-future/" title="Rust异步系列1 认识Future">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Rust异步系列1 认识Future</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/smart-pointer/" title="Rust智能指针">
+                        <span class="hidden-mobile">Rust智能指针</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

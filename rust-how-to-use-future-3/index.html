@@ -1,0 +1,1293 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/rust-how-to-use-future-3/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="本篇继续讨论Futures的细节。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust异步系列3 IO trait">
+<meta property="og:url" content="https://fenixc9.github.io/rust-how-to-use-future-3/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="本篇继续讨论Futures的细节。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-05-26T16:13:01.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.689Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="异步">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Rust异步系列3 IO trait · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Rust异步系列3 IO trait</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-05-27 00:13" pubdate>
+          2023年5月27日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          56 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(22)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Rust异步系列3 IO trait</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>我们继续讨论之前的几个trait。</p>
+<ul>
+<li>Read      ｜  AsyncRead      ｜  AsyncReadExt</li>
+<li>Write     ｜  AsyncWrite     ｜  AsyncWriteExt</li>
+<li>Seek      ｜  AsyncSeek      ｜  AsyncSeekExt</li>
+<li>BufRead   ｜  AsyncBufRead   ｜  AsyncBufReadExt</li>
+</ul>
+<p>Read，Write，Seek这几个trait部分借用了Posix语义。首先我们从linux man文档里摘出一部分对read的描述：</p>
+<div class="code-wrapper"><pre><code class="hljs applescript">SYNOPSIS
+       <span class="hljs-comment">#include &lt;unistd.h&gt;</span>
+
+       ssize_t <span class="hljs-built_in">read</span>(int fd, void *buf, size_t <span class="hljs-built_in">count</span>);
+
+DESCRIPTION
+       <span class="hljs-built_in">read</span>()  attempts <span class="hljs-keyword">to</span> <span class="hljs-built_in">read</span> up <span class="hljs-keyword">to</span> <span class="hljs-built_in">count</span> bytes <span class="hljs-keyword">from</span> <span class="hljs-built_in">file</span> descriptor fd <span class="hljs-keyword">into</span>
+       <span class="hljs-keyword">the</span> buffer starting <span class="hljs-keyword">at</span> buf.
+
+       On files <span class="hljs-keyword">that</span> support seeking, <span class="hljs-keyword">the</span> <span class="hljs-built_in">read</span> operation commences <span class="hljs-keyword">at</span> <span class="hljs-keyword">the</span> <span class="hljs-built_in">file</span>
+       <span class="hljs-built_in">offset</span>, <span class="hljs-keyword">and</span> <span class="hljs-keyword">the</span> <span class="hljs-built_in">file</span> <span class="hljs-built_in">offset</span> <span class="hljs-keyword">is</span> incremented <span class="hljs-keyword">by</span> <span class="hljs-keyword">the</span> <span class="hljs-built_in">number</span> <span class="hljs-keyword">of</span> bytes <span class="hljs-built_in">read</span>.
+       If <span class="hljs-keyword">the</span> <span class="hljs-built_in">file</span> <span class="hljs-built_in">offset</span> <span class="hljs-keyword">is</span> <span class="hljs-keyword">at</span> <span class="hljs-keyword">or</span> past <span class="hljs-keyword">the</span> <span class="hljs-keyword">end</span> <span class="hljs-keyword">of</span> <span class="hljs-built_in">file</span>, no  bytes  are  <span class="hljs-built_in">read</span>,
+       <span class="hljs-keyword">and</span> <span class="hljs-built_in">read</span>() returns zero.
+
+       If <span class="hljs-built_in">count</span> <span class="hljs-keyword">is</span> zero, <span class="hljs-built_in">read</span>() may detect <span class="hljs-keyword">the</span> errors described <span class="hljs-keyword">below</span>.  In <span class="hljs-keyword">the</span>
+       absence <span class="hljs-keyword">of</span> any errors, <span class="hljs-keyword">or</span> <span class="hljs-keyword">if</span> <span class="hljs-built_in">read</span>() <span class="hljs-keyword">does</span> <span class="hljs-keyword">not</span> check <span class="hljs-keyword">for</span> errors, a <span class="hljs-built_in">read</span>()
+       <span class="hljs-keyword">with</span> a <span class="hljs-built_in">count</span> <span class="hljs-keyword">of</span> <span class="hljs-number">0</span> returns zero <span class="hljs-keyword">and</span> has no other effects.
+
+       According <span class="hljs-keyword">to</span> POSIX<span class="hljs-number">.1</span>, <span class="hljs-keyword">if</span> <span class="hljs-built_in">count</span> <span class="hljs-keyword">is</span> <span class="hljs-keyword">greater than</span> SSIZE_MAX, <span class="hljs-keyword">the</span> <span class="hljs-literal">result</span> <span class="hljs-keyword">is</span>
+       implementation-defined; see NOTES <span class="hljs-keyword">for</span> <span class="hljs-keyword">the</span> upper limit <span class="hljs-keyword">on</span> Linux.
+</code></pre></div>
+<p>read函数尝试从fd读取count个字节到从指针buf开始的缓冲区。如果文件支持定位，则每次read从偏移量开始读，每次read会增加其读出字节数的偏移量。对于返回值：</p>
+<ol>
+<li>如果读取成功，则返回实际读到的字节数。这里又有两种情况：一是如果在读完count要求字节之前已经到达文件的末尾，那么实际返回的字节数将 小于count值，但是仍然大于0；二是在读完count要求字节之前，仍然没有到达文件的末尾，这是实际返回的字节数等于要求的count值。</li>
+<li>如果读取时已经到达文件的末尾，则返回0。</li>
+<li>如果出错，则返回－1。</li>
+</ol>
+<h2 id="Read-Trait"><a href="#Read-Trait" class="headerlink" title="Read Trait"></a>Read Trait</h2><p>Read Trait核心函数read：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">fn</span> <span class="hljs-title function_">read</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, buf: &amp;<span class="hljs-keyword">mut</span> [<span class="hljs-type">u8</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;<span class="hljs-type">usize</span>&gt;;</code></pre></div>
+<p>其他函数都包含默认实现，并且其都是对read的封装，所以我们这里都不再讨论。<br>而Read trait的read的描述是</p>
+<div class="code-wrapper"><pre><code class="hljs livecodeserver">Pull some <span class="hljs-keyword">bytes</span> <span class="hljs-built_in">from</span> this source <span class="hljs-keyword">into</span> <span class="hljs-keyword">the</span> specified buffer, returning
+how many <span class="hljs-keyword">bytes</span> were <span class="hljs-built_in">read</span>.
+
+This <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">does</span> <span class="hljs-title">not</span> <span class="hljs-title">provide</span> <span class="hljs-title">any</span> <span class="hljs-title">guarantees</span> <span class="hljs-title">about</span> <span class="hljs-title">whether</span> <span class="hljs-title">it</span> <span class="hljs-title">blocks</span></span>
+waiting <span class="hljs-keyword">for</span> data, but <span class="hljs-keyword">if</span> <span class="hljs-keyword">an</span> object needs <span class="hljs-built_in">to</span> block <span class="hljs-keyword">for</span> <span class="hljs-keyword">a</span> <span class="hljs-built_in">read</span> <span class="hljs-keyword">and</span> cannot,
+<span class="hljs-keyword">it</span> will typically signal this via <span class="hljs-keyword">an</span> [`Err`] <span class="hljs-literal">return</span> <span class="hljs-built_in">value</span>.</code></pre></div>
+<p>将一些字节写到特定的缓冲区，返回其字节数。read不保证会阻塞等待数据，但是一旦不能阻塞会抛出Err错误。对于Tcp链接的场景，调用read将从内核缓冲区复制数据到我们给出的缓冲区。如果读完所有数据read将会<strong>阻塞</strong>直到内核缓冲区收到新的数据。</p>
+<p>但是这个Read并不会返回-1，read trait这里是一个usize，从trait定义的层面要求实现者必须使用Result的方式返回错误，并不需要用户通过-1来甄别是否读取成功，这里是跟POSIX语义的一个区别。</p>
+<h2 id="Write-trait"><a href="#Write-trait" class="headerlink" title="Write trait"></a>Write trait</h2><div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">fn</span> <span class="hljs-title function_">write</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, buf: &amp;[<span class="hljs-type">u8</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;<span class="hljs-type">usize</span>&gt;;</code></pre></div>
+<p>这里是write的描述</p>
+<div class="code-wrapper"><pre><code class="hljs livecodeserver">Write <span class="hljs-keyword">a</span> buffer <span class="hljs-keyword">into</span> this writer, returning how many <span class="hljs-keyword">bytes</span> were written.
+
+This <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">will</span> <span class="hljs-title">attempt</span> <span class="hljs-title">to</span> <span class="hljs-title">write</span> <span class="hljs-title">the</span> <span class="hljs-title">entire</span> <span class="hljs-title">contents</span> <span class="hljs-title">of</span> `<span class="hljs-title">buf</span>`, <span class="hljs-title">but</span></span>
+<span class="hljs-keyword">the</span> entire <span class="hljs-built_in">write</span> might <span class="hljs-keyword">not</span> succeed, <span class="hljs-keyword">or</span> <span class="hljs-keyword">the</span> <span class="hljs-built_in">write</span> may also generate <span class="hljs-keyword">an</span>
+error. A call <span class="hljs-built_in">to</span> `<span class="hljs-built_in">write</span>` represents *<span class="hljs-keyword">at</span> most <span class="hljs-literal">one</span>* attempt <span class="hljs-built_in">to</span> <span class="hljs-built_in">write</span> <span class="hljs-built_in">to</span>
+<span class="hljs-keyword">any</span> wrapped object.
+
+Calls <span class="hljs-built_in">to</span> `<span class="hljs-built_in">write</span>` are <span class="hljs-keyword">not</span> guaranteed <span class="hljs-built_in">to</span> block waiting <span class="hljs-keyword">for</span> data <span class="hljs-built_in">to</span> be
+written, <span class="hljs-keyword">and</span> <span class="hljs-keyword">a</span> <span class="hljs-built_in">write</span> which would otherwise block can be indicated through
+<span class="hljs-keyword">an</span> [`Err`] variant.</code></pre></div>
+
+<p>跟read类似，如果write阻塞失败将会返回Err，除此之外的情况，对于Tcp链接，只要内核缓冲区满了，write就会阻塞直到有充分空间能让我们复制新的数据。</p>
+<h2 id="BufRead"><a href="#BufRead" class="headerlink" title="BufRead"></a>BufRead</h2><p>来自标准库<br>这个trait继承了Read：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">BufRead</span>: Read &#123;&#125;</code></pre></div>
+<p>但是大多数情况下我们不会直接使用这个trait，而是使用BufReader</p>
+<div class="code-wrapper"><pre><code class="hljs autohotkey">A `BufRead` is a type of `Read`er which has an internal buffer, allowing it
+to perform extra ways of reading.
+
+For example, reading line-by-line is inefficient without using a buffer, so
+if you want to read by line, you&#x27;ll need `BufRead`, which includes a
+[`read_line`] method as well as a [`lines`] iterator.
+
+
+
+If you have something that implements [`Read`], you can use the [`BufReader`
+type][`BufReader`] to turn it into a `BufRead`.
+
+For example, [`File`] implements [`Read`], but <span class="hljs-literal">not</span> `BufRead`.
+[`BufReader`] to the rescue!
+
+<span class="hljs-title">[`File`]: crate::fs::</span>File
+<span class="hljs-title">[`read_line`]: BufRead::</span>read_line
+<span class="hljs-title">[`lines`]: BufRead::</span>lines</code></pre></div>
+
+<p>BufRead trait的实现通常会在内部包含一个Buffer，这样处理分行的场景会非常方便。我们使用API时只需将支持Read的obj传入BufReader即可：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">use</span> std::io::&#123;<span class="hljs-keyword">self</span>, BufReader&#125;;
+<span class="hljs-keyword">use</span> std::io::prelude::*;
+<span class="hljs-keyword">use</span> std::fs::File;
+
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() <span class="hljs-punctuation">-&gt;</span> io::<span class="hljs-type">Result</span>&lt;()&gt; &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">f</span> = File::<span class="hljs-title function_ invoke__">open</span>(<span class="hljs-string">&quot;foo.txt&quot;</span>)?;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">f</span> = BufReader::<span class="hljs-title function_ invoke__">new</span>(f);
+
+    <span class="hljs-keyword">for</span> <span class="hljs-variable">line</span> <span class="hljs-keyword">in</span> f.<span class="hljs-title function_ invoke__">lines</span>() &#123;
+        <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;&#125;&quot;</span>, line.<span class="hljs-title function_ invoke__">unwrap</span>());
+    &#125;
+
+    <span class="hljs-title function_ invoke__">Ok</span>(())
+&#125;</code></pre></div>
+<p>总的来说，BufRead只是Read的一个封装，用于简化我们行的读取，实际处理读操作的还是Read的实现。</p>
+<h2 id="AsyncRead"><a href="#AsyncRead" class="headerlink" title="AsyncRead"></a>AsyncRead</h2><p>前面的几个trait都是标准库中所支持的，但是异步类的读写trait，Rust标准库并没有定义，标准库只定义了Future API。对Future的封装由上层完成，上层库会将普通的read封装为异步read。如果将这类封装抽象为一种trait，就是这里的AsyncRead了。</p>
+<p>futures库的封装为：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">AsyncRead</span> &#123;
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll_read</span>(
+        <span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;,
+        cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;,
+        buf: &amp;<span class="hljs-keyword">mut</span> [<span class="hljs-type">u8</span>],
+    ) <span class="hljs-punctuation">-&gt;</span> Poll&lt;<span class="hljs-type">Result</span>&lt;<span class="hljs-type">usize</span>&gt;&gt;;
+&#125;</code></pre></div>
+
+<p>tokio中的封装为:</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">AsyncRead</span> &#123;
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll_read</span>(
+        <span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;,
+        cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;,
+        buf: &amp;<span class="hljs-keyword">mut</span> ReadBuf&lt;<span class="hljs-symbol">&#x27;_</span>&gt;,
+    ) <span class="hljs-punctuation">-&gt;</span> Poll&lt;io::<span class="hljs-type">Result</span>&lt;()&gt;&gt;;
+&#125;</code></pre></div>
+<p>由于futures<br>tokio中是怎么用AsyncRead呢？</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-title function_ invoke__">pub</span>(<span class="hljs-keyword">crate</span>) <span class="hljs-keyword">fn</span> <span class="hljs-title function_">read</span>&lt;<span class="hljs-symbol">&#x27;a</span>, R&gt;(reader: &amp;<span class="hljs-symbol">&#x27;a</span> <span class="hljs-keyword">mut</span> R, buf: &amp;<span class="hljs-symbol">&#x27;a</span> <span class="hljs-keyword">mut</span> [<span class="hljs-type">u8</span>]) <span class="hljs-punctuation">-&gt;</span> Read&lt;<span class="hljs-symbol">&#x27;a</span>, R&gt;
+<span class="hljs-keyword">where</span>
+    R: AsyncRead + Unpin + ?<span class="hljs-built_in">Sized</span>,
+&#123;
+    Read &#123;
+        reader,
+        buf,
+        _pin: PhantomPinned,
+    &#125;
+&#125;
+
+pin_project! &#123;
+    <span class="hljs-comment">/// A future which can be used to easily read available number of bytes to fill</span>
+    <span class="hljs-comment">/// a buffer.</span>
+    <span class="hljs-comment">///</span>
+    <span class="hljs-comment">/// Created by the [`read`] function.</span>
+    <span class="hljs-meta">#[derive(Debug)]</span>
+    <span class="hljs-meta">#[must_use = <span class="hljs-string">&quot;futures do nothing unless you `.await` or poll them&quot;</span>]</span>
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Read</span>&lt;<span class="hljs-symbol">&#x27;a</span>, R: ?<span class="hljs-built_in">Sized</span>&gt; &#123;
+        reader: &amp;<span class="hljs-symbol">&#x27;a</span> <span class="hljs-keyword">mut</span> R,
+        buf: &amp;<span class="hljs-symbol">&#x27;a</span> <span class="hljs-keyword">mut</span> [<span class="hljs-type">u8</span>],
+        <span class="hljs-comment">// Make this future `!Unpin` for compatibility with async trait methods.</span>
+        <span class="hljs-meta">#[pin]</span>
+        _pin: PhantomPinned,
+    &#125;
+&#125;
+
+<span class="hljs-keyword">impl</span>&lt;R&gt; Future <span class="hljs-keyword">for</span> <span class="hljs-title class_">Read</span>&lt;<span class="hljs-symbol">&#x27;_</span>, R&gt;
+<span class="hljs-keyword">where</span>
+    R: AsyncRead + Unpin + ?<span class="hljs-built_in">Sized</span>,
+&#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = io::<span class="hljs-type">Result</span>&lt;<span class="hljs-type">usize</span>&gt;;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll</span>(<span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;io::<span class="hljs-type">Result</span>&lt;<span class="hljs-type">usize</span>&gt;&gt; &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">me</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">project</span>();
+        <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">buf</span> = ReadBuf::<span class="hljs-title function_ invoke__">new</span>(me.buf);
+        ready!(Pin::<span class="hljs-title function_ invoke__">new</span>(me.reader).<span class="hljs-title function_ invoke__">poll_read</span>(cx, &amp;<span class="hljs-keyword">mut</span> buf))?;
+        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(buf.<span class="hljs-title function_ invoke__">filled</span>().<span class="hljs-title function_ invoke__">len</span>()))
+    &#125;
+&#125;
+
+</code></pre></div>
+<p>简单来说tokio::fs::File实现了Read，因此我们调用tokio::fs::File::open() 会返回file对象，此时使用file对象调用read就会走到AsyncRead中，进入一段冗长的状态机处理中。</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-keyword">impl</span> <span class="hljs-title class_">AsyncRead</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">File</span> &#123;
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll_read</span>(
+        <span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;,
+        cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;,
+        dst: &amp;<span class="hljs-keyword">mut</span> ReadBuf&lt;<span class="hljs-symbol">&#x27;_</span>&gt;,
+    ) <span class="hljs-punctuation">-&gt;</span> Poll&lt;io::<span class="hljs-type">Result</span>&lt;()&gt;&gt; &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">me</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">get_mut</span>();
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">inner</span> = me.inner.<span class="hljs-title function_ invoke__">get_mut</span>();
+
+        <span class="hljs-keyword">loop</span> &#123;
+            <span class="hljs-keyword">match</span> inner.state &#123;
+                <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-keyword">ref</span> <span class="hljs-keyword">mut</span> buf_cell) =&gt; &#123;
+                    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">buf</span> = buf_cell.<span class="hljs-title function_ invoke__">take</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+
+                    <span class="hljs-keyword">if</span> !buf.<span class="hljs-title function_ invoke__">is_empty</span>() &#123;
+                        buf.<span class="hljs-title function_ invoke__">copy_to</span>(dst);
+                        *buf_cell = <span class="hljs-title function_ invoke__">Some</span>(buf);
+                        <span class="hljs-keyword">return</span> <span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()));
+                    &#125;
+
+                    buf.<span class="hljs-title function_ invoke__">ensure_capacity_for</span>(dst);
+                    <span class="hljs-keyword">let</span> <span class="hljs-variable">std</span> = me.std.<span class="hljs-title function_ invoke__">clone</span>();
+
+                    inner.state = <span class="hljs-title function_ invoke__">Busy</span>(<span class="hljs-title function_ invoke__">spawn_blocking</span>(<span class="hljs-keyword">move</span> || &#123;
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">res</span> = buf.<span class="hljs-title function_ invoke__">read_from</span>(&amp;<span class="hljs-keyword">mut</span> &amp;*std);
+                        (Operation::<span class="hljs-title function_ invoke__">Read</span>(res), buf)
+                    &#125;));
+                &#125;
+                <span class="hljs-title function_ invoke__">Busy</span>(<span class="hljs-keyword">ref</span> <span class="hljs-keyword">mut</span> rx) =&gt; &#123;
+                    <span class="hljs-keyword">let</span> (op, <span class="hljs-keyword">mut</span> buf) = ready!(Pin::<span class="hljs-title function_ invoke__">new</span>(rx).<span class="hljs-title function_ invoke__">poll</span>(cx))?;
+
+                    <span class="hljs-keyword">match</span> op &#123;
+                        Operation::<span class="hljs-title function_ invoke__">Read</span>(<span class="hljs-title function_ invoke__">Ok</span>(_)) =&gt; &#123;
+                            buf.<span class="hljs-title function_ invoke__">copy_to</span>(dst);
+                            inner.state = <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-title function_ invoke__">Some</span>(buf));
+                            <span class="hljs-keyword">return</span> <span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()));
+                        &#125;
+                        Operation::<span class="hljs-title function_ invoke__">Read</span>(<span class="hljs-title function_ invoke__">Err</span>(e)) =&gt; &#123;
+                            <span class="hljs-built_in">assert!</span>(buf.<span class="hljs-title function_ invoke__">is_empty</span>());
+
+                            inner.state = <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-title function_ invoke__">Some</span>(buf));
+                            <span class="hljs-keyword">return</span> <span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Err</span>(e));
+                        &#125;
+                        Operation::<span class="hljs-title function_ invoke__">Write</span>(<span class="hljs-title function_ invoke__">Ok</span>(_)) =&gt; &#123;
+                            <span class="hljs-built_in">assert!</span>(buf.<span class="hljs-title function_ invoke__">is_empty</span>());
+                            inner.state = <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-title function_ invoke__">Some</span>(buf));
+                            <span class="hljs-keyword">continue</span>;
+                        &#125;
+                        Operation::<span class="hljs-title function_ invoke__">Write</span>(<span class="hljs-title function_ invoke__">Err</span>(e)) =&gt; &#123;
+                            <span class="hljs-built_in">assert!</span>(inner.last_write_err.<span class="hljs-title function_ invoke__">is_none</span>());
+                            inner.last_write_err = <span class="hljs-title function_ invoke__">Some</span>(e.<span class="hljs-title function_ invoke__">kind</span>());
+                            inner.state = <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-title function_ invoke__">Some</span>(buf));
+                        &#125;
+                        Operation::<span class="hljs-title function_ invoke__">Seek</span>(result) =&gt; &#123;
+                            <span class="hljs-built_in">assert!</span>(buf.<span class="hljs-title function_ invoke__">is_empty</span>());
+                            inner.state = <span class="hljs-title function_ invoke__">Idle</span>(<span class="hljs-title function_ invoke__">Some</span>(buf));
+                            <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Ok</span>(pos) = result &#123;
+                                inner.pos = pos;
+                            &#125;
+                            <span class="hljs-keyword">continue</span>;
+                        &#125;
+                    &#125;
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>总结下，其中Read struct实现了Future API，因此，在异步运行时poll时会调用到AsyncRead中的pollread函数，AsyncRead的实现就随之一起转起来了。</p>
+<p>此外，Read和AsyncRead的一个重要区别是，Read trait中包含很多default function，这些都是对read的封装，在AsyncRead中，他们被抽取到AsyncReadExt中作为工具集。必须use AsyncReadExt才能使用read_to_end之类的api。同理还有AsyncWrite和AsyncWriteExt，AsyncBufRead和AsyncBufReadExt。</p>
+<h2 id="AsyncBufRead"><a href="#AsyncBufRead" class="headerlink" title="AsyncBufRead"></a>AsyncBufRead</h2><p>这个trait则是BufRead的异步版，用于支持行读取，当然需要这个功能也要导入 extension trait。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">AsyncBufReadExt</span>: AsyncBufRead &#123;
+&#125;</code></pre></div>
+
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E5%BC%82%E6%AD%A5/" class="print-no-link">#异步</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rust异步系列3 IO trait</div>
+      <div>https://fenixc9.github.io/rust-how-to-use-future-3/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年5月27日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/mysql-binlog/" title="mysql的binlog机制">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">mysql的binlog机制</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/py-sci-05/" title="学习python数据分析 五 pandas (2)">
+                        <span class="hidden-mobile">学习python数据分析 五 pandas (2)</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

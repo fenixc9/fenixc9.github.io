@@ -1,0 +1,1185 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/rust-simd/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="SIMD，即Single Instruction, Multiple Data 单指令流多数据流。可用一组指令对多组数据通进行并行操作。SIMD指令可以在一个控制器上控制同时多个平行的处理微元，一次指令运算执行多个数据流，这样在很多时候可以提高程序的运算速度。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Rust与simd">
+<meta property="og:url" content="https://fenixc9.github.io/rust-simd/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="SIMD，即Single Instruction, Multiple Data 单指令流多数据流。可用一组指令对多组数据通进行并行操作。SIMD指令可以在一个控制器上控制同时多个平行的处理微元，一次指令运算执行多个数据流，这样在很多时候可以提高程序的运算速度。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/rust-simd/1.png">
+<meta property="article:published_time" content="2023-10-14T14:37:39.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.694Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="Simd">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/rust-simd/1.png">
+  
+  
+  
+  <title>Rust与simd · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Rust与simd</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-10-14 22:37" pubdate>
+          2023年10月14日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          42 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(22)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Rust与simd</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="什么是SIMD？"><a href="#什么是SIMD？" class="headerlink" title="什么是SIMD？"></a>什么是SIMD？</h1><p>SIMD（Single Instruction Multiple Data）指令集，指单指令多数据流技术，可用一组指令对多组数据通进行并行操作。SIMD指令可以在一个控制器上控制同时多个平行的处理微元，一次指令运算执行多个数据流，这样在很多时候可以提高程序的运算速度。SIMD指令在本质上非常类似一个向量处理器，可对控制器上的一组数据（又称“数据向量”） 同时分别执行相同的操作从而实现空间上的并行。</p>
+<h1 id="什么处理器支持SIMD指令？"><a href="#什么处理器支持SIMD指令？" class="headerlink" title="什么处理器支持SIMD指令？"></a>什么处理器支持SIMD指令？</h1><p>simd并不是某一个具体的指令，而是类似一个统称，只要满足单指令处理多组数据就可以成为simd指令。</p>
+<h2 id="MMX"><a href="#MMX" class="headerlink" title="MMX"></a>MMX</h2><p>MMX是由英特尔开发的一种SIMD多媒体指令集，共有57条指令。它于1996年集成在英特尔奔腾（Pentium）MMX处理器上，以提高其多媒体数据的处理能力。<strong>MMX指令集的向量寄存器是64bit</strong>。</p>
+<h2 id="SSE"><a href="#SSE" class="headerlink" title="SSE"></a>SSE</h2><p>SSE（英语：Streaming SIMD Extensions）是英特尔在AMD的3D Now!发布一年之后，在其计算机芯片Pentium III中引入的指令集，是继MMX的扩展指令集。SSE指令集提供了70条新指令。AMD后来在Athlon XP中加入了对这个新指令集的支持。<br>由于SSE加入了浮点支持，SSE就比MMX更加常用。而SSE2加入了整数运算支持之后让SSE更加的有弹性，当MMX变成是多余的指令集，SSE指令集甚至可以与MMX并发运作，在某些时候可以提供额外的性能增进。<strong>所有的SSE系列指令的向量寄存器都是128bit</strong>。</p>
+<h2 id="AVX"><a href="#AVX" class="headerlink" title="AVX"></a>AVX</h2><p>AVX指令集是Sandy Bridge和Larrabee架构下的新指令集，AVX是在之前的SSE128位扩展到和256位的单指令多数据流。</p>
+<p>AVX出现在2008年，由128bit拓展到256bit，增强了数据重排和灵活的不对齐地址访问；<br>AVX2出现在2011年，增加了256bit的整数向量操作，融合乘加，跨通道数据重排等等；<br>AVX-512出现在2014年，由256bit拓展到512bit；</p>
+<p>所谓SIMD，本质上就是把f32，i32，f64，i64，互相转换来转换去，算来算去的过程改为了向量化用于加速。此外MIPS，ARM都有自己的SIMD指令集，因此SIMD指令不能跨平台。</p>
+<h2 id="如何查看当前cpu支持的指令集"><a href="#如何查看当前cpu支持的指令集" class="headerlink" title="如何查看当前cpu支持的指令集"></a>如何查看当前cpu支持的指令集</h2><h3 id="win"><a href="#win" class="headerlink" title="win"></a>win</h3><p>使用cpu-z<br><img src="/rust-simd/1.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<h3 id="linux"><a href="#linux" class="headerlink" title="linux"></a>linux</h3><p>执行 <code>cat /proc/cpuinfo</code></p>
+<div class="code-wrapper"><pre><code class="hljs yaml"><span class="hljs-attr">processor       :</span> <span class="hljs-number">15</span>
+<span class="hljs-attr">vendor_id       :</span> <span class="hljs-string">AuthenticAMD</span>
+<span class="hljs-attr">cpu family      :</span> <span class="hljs-number">25</span>
+<span class="hljs-attr">model           :</span> <span class="hljs-number">80</span>
+<span class="hljs-attr">model name      :</span> <span class="hljs-string">AMD</span> <span class="hljs-string">Ryzen</span> <span class="hljs-number">7</span> <span class="hljs-string">5825U</span> <span class="hljs-string">with</span> <span class="hljs-string">Radeon</span> <span class="hljs-string">Graphics</span>
+<span class="hljs-attr">stepping        :</span> <span class="hljs-number">0</span>
+<span class="hljs-attr">microcode       :</span> <span class="hljs-number">0xa50000c</span>
+<span class="hljs-attr">cpu MHz         :</span> <span class="hljs-number">1600.000</span>
+<span class="hljs-attr">cache size      :</span> <span class="hljs-number">512</span> <span class="hljs-string">KB</span>
+<span class="hljs-attr">physical id     :</span> <span class="hljs-number">0</span>
+<span class="hljs-attr">siblings        :</span> <span class="hljs-number">16</span>
+<span class="hljs-attr">core id         :</span> <span class="hljs-number">7</span>
+<span class="hljs-attr">cpu cores       :</span> <span class="hljs-number">8</span>
+<span class="hljs-attr">apicid          :</span> <span class="hljs-number">15</span>
+<span class="hljs-attr">initial apicid  :</span> <span class="hljs-number">15</span>
+<span class="hljs-attr">fpu             :</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">fpu_exception   :</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">cpuid level     :</span> <span class="hljs-number">16</span>
+<span class="hljs-attr">wp              :</span> <span class="hljs-literal">yes</span>
+<span class="hljs-attr">flags           :</span> <span class="hljs-string">fpu</span> <span class="hljs-string">vme</span> <span class="hljs-string">de</span> <span class="hljs-string">pse</span> <span class="hljs-string">tsc</span> <span class="hljs-string">msr</span> <span class="hljs-string">pae</span> <span class="hljs-string">mce</span> <span class="hljs-string">cx8</span> <span class="hljs-string">apic</span> <span class="hljs-string">sep</span> <span class="hljs-string">mtrr</span> <span class="hljs-string">pge</span> <span class="hljs-string">mca</span> <span class="hljs-string">cmov</span> <span class="hljs-string">pat</span> <span class="hljs-string">pse36</span> <span class="hljs-string">clflush</span> <span class="hljs-string">mmx</span> <span class="hljs-string">fxsr</span> <span class="hljs-string">sse</span> <span class="hljs-string">sse2</span> <span class="hljs-string">ht</span> <span class="hljs-string">syscall</span> <span class="hljs-string">nx</span> <span class="hljs-string">mmxext</span> <span class="hljs-string">fxsr_opt</span> <span class="hljs-string">pdpe1gb</span> <span class="hljs-string">rdtscp</span> <span class="hljs-string">lm</span> <span class="hljs-string">constant_tsc</span> <span class="hljs-string">rep_good</span> <span class="hljs-string">nopl</span> <span class="hljs-string">nonstop_tsc</span> <span class="hljs-string">cpuid</span> <span class="hljs-string">extd_apicid</span> <span class="hljs-string">aperfmperf</span> <span class="hljs-string">rapl</span> <span class="hljs-string">pni</span> <span class="hljs-string">pclmulqdq</span> <span class="hljs-string">monitor</span> <span class="hljs-string">ssse3</span> <span class="hljs-string">fma</span> <span class="hljs-string">cx16</span> <span class="hljs-string">sse4_1</span> <span class="hljs-string">sse4_2</span> <span class="hljs-string">movbe</span> <span class="hljs-string">popcnt</span> <span class="hljs-string">aes</span> <span class="hljs-string">xsave</span> <span class="hljs-string">avx</span> <span class="hljs-string">f16c</span> <span class="hljs-string">rdrand</span> <span class="hljs-string">lahf_lm</span> <span class="hljs-string">cmp_legacy</span> <span class="hljs-string">svm</span> <span class="hljs-string">extapic</span> <span class="hljs-string">cr8_legacy</span> <span class="hljs-string">abm</span> <span class="hljs-string">sse4a</span> <span class="hljs-string">misalignsse</span> <span class="hljs-string">3dnowprefetch</span> <span class="hljs-string">osvw</span> <span class="hljs-string">ibs</span> <span class="hljs-string">skinit</span> <span class="hljs-string">wdt</span> <span class="hljs-string">tce</span> <span class="hljs-string">topoext</span> <span class="hljs-string">perfctr_core</span> <span class="hljs-string">perfctr_nb</span> <span class="hljs-string">bpext</span> <span class="hljs-string">perfctr_llc</span> <span class="hljs-string">mwaitx</span> <span class="hljs-string">cpb</span> <span class="hljs-string">cat_l3</span> <span class="hljs-string">cdp_l3</span> <span class="hljs-string">hw_pstate</span> <span class="hljs-string">ssbd</span> <span class="hljs-string">mba</span> <span class="hljs-string">ibrs</span> <span class="hljs-string">ibpb</span> <span class="hljs-string">stibp</span> <span class="hljs-string">vmmcall</span> <span class="hljs-string">fsgsbase</span> <span class="hljs-string">bmi1</span> <span class="hljs-string">avx2</span> <span class="hljs-string">smep</span> <span class="hljs-string">bmi2</span> <span class="hljs-string">erms</span> <span class="hljs-string">invpcid</span> <span class="hljs-string">cqm</span> <span class="hljs-string">rdt_a</span> <span class="hljs-string">rdseed</span> <span class="hljs-string">adx</span> <span class="hljs-string">smap</span> <span class="hljs-string">clflushopt</span> <span class="hljs-string">clwb</span> <span class="hljs-string">sha_ni</span> <span class="hljs-string">xsaveopt</span> <span class="hljs-string">xsavec</span> <span class="hljs-string">xgetbv1</span> <span class="hljs-string">xsaves</span> <span class="hljs-string">cqm_llc</span> <span class="hljs-string">cqm_occup_llc</span> <span class="hljs-string">cqm_mbm_total</span> <span class="hljs-string">cqm_mbm_local</span> <span class="hljs-string">clzero</span> <span class="hljs-string">irperf</span> <span class="hljs-string">xsaveerptr</span> <span class="hljs-string">rdpru</span> <span class="hljs-string">wbnoinvd</span> <span class="hljs-string">cppc</span> <span class="hljs-string">arat</span> <span class="hljs-string">npt</span> <span class="hljs-string">lbrv</span> <span class="hljs-string">svm_lock</span> <span class="hljs-string">nrip_save</span> <span class="hljs-string">tsc_scale</span> <span class="hljs-string">vmcb_clean</span> <span class="hljs-string">flushbyasid</span> <span class="hljs-string">decodeassists</span> <span class="hljs-string">pausefilter</span> <span class="hljs-string">pfthreshold</span> <span class="hljs-string">avic</span> <span class="hljs-string">v_vmsave_vmload</span> <span class="hljs-string">vgif</span> <span class="hljs-string">v_spec_ctrl</span> <span class="hljs-string">umip</span> <span class="hljs-string">pku</span> <span class="hljs-string">ospke</span> <span class="hljs-string">vaes</span> <span class="hljs-string">vpclmulqdq</span> <span class="hljs-string">rdpid</span> <span class="hljs-string">overflow_recov</span> <span class="hljs-string">succor</span> <span class="hljs-string">smca</span> <span class="hljs-string">fsrm</span>
+<span class="hljs-attr">bugs            :</span> <span class="hljs-string">sysret_ss_attrs</span> <span class="hljs-string">spectre_v1</span> <span class="hljs-string">spectre_v2</span> <span class="hljs-string">spec_store_bypass</span>
+<span class="hljs-attr">bogomips        :</span> <span class="hljs-number">3992.46</span>
+<span class="hljs-attr">TLB size        :</span> <span class="hljs-number">2560 </span><span class="hljs-string">4K</span> <span class="hljs-string">pages</span>
+<span class="hljs-attr">clflush size    :</span> <span class="hljs-number">64</span>
+<span class="hljs-attr">cache_alignment :</span> <span class="hljs-number">64</span>
+<span class="hljs-attr">address sizes   :</span> <span class="hljs-number">48</span> <span class="hljs-string">bits</span> <span class="hljs-string">physical,</span> <span class="hljs-number">48</span> <span class="hljs-string">bits</span> <span class="hljs-string">virtual</span>
+<span class="hljs-attr">power management:</span> <span class="hljs-string">ts</span> <span class="hljs-string">ttp</span> <span class="hljs-string">tm</span> <span class="hljs-string">hwpstate</span> <span class="hljs-string">cpb</span> <span class="hljs-string">eff_freq_ro</span> [<span class="hljs-number">13</span>] [<span class="hljs-number">14</span>]</code></pre></div>
+
+<h1 id="用Rust该怎么玩Simd呢？"><a href="#用Rust该怎么玩Simd呢？" class="headerlink" title="用Rust该怎么玩Simd呢？"></a>用Rust该怎么玩Simd呢？</h1><p>在标准库下的core_simd中的examples中有这样的演示代码。</p>
+<p>比如我们现在想实现两个Slice<f32> 相乘并加和，最开始我们可能会这么实现：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_scalar_0</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+
+    a.<span class="hljs-title function_ invoke__">iter</span>().<span class="hljs-title function_ invoke__">zip</span>(b.<span class="hljs-title function_ invoke__">iter</span>()).<span class="hljs-title function_ invoke__">map</span>(|(a, b)| a * b).<span class="hljs-title function_ invoke__">sum</span>()
+&#125;</code></pre></div>
+
+<p>先zip合并两个Slice，再将元组的Slice转为相乘结果，再加和</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_scalar_1</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+    a.<span class="hljs-title function_ invoke__">iter</span>()
+        .<span class="hljs-title function_ invoke__">zip</span>(b.<span class="hljs-title function_ invoke__">iter</span>())
+        .<span class="hljs-title function_ invoke__">fold</span>(<span class="hljs-number">0.0</span>, |a, zipped| a + zipped.<span class="hljs-number">0</span> * zipped.<span class="hljs-number">1</span>)
+&#125;</code></pre></div>
+<p>使用fold再迭代时跌加，可以避免产生相乘结果的中间态，直接迭代两个Slice<f32>相乘结果。</p>
+<p>我们再来看下怎么利用Simd加速这个功能（要执行这段代码需添加 <code>#![feature(portable_simd)]</code> ）：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_simd_0</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+    a.array_chunks::&lt;<span class="hljs-number">4</span>&gt;()
+        .<span class="hljs-title function_ invoke__">map</span>(|&amp;a| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(a))
+        .<span class="hljs-title function_ invoke__">zip</span>(b.array_chunks::&lt;<span class="hljs-number">4</span>&gt;().<span class="hljs-title function_ invoke__">map</span>(|&amp;b| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(b)))
+        .<span class="hljs-title function_ invoke__">map</span>(|(a, b)| (a * b).<span class="hljs-title function_ invoke__">reduce_sum</span>())
+        .<span class="hljs-title function_ invoke__">sum</span>()
+&#125;</code></pre></div>
+<p>上面的代码将两个Slice切分为4个一组的数组，然后调用 f32x4::from_array 转为向量。然后还是zip合并两组向量，两边每组向量相乘<br>时将调用simd指令。然后将结果（结果还是个向量）调用reduce_sum 加和，最后再将整个Slice加和。</p>
+<p>还能进一步优化：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_simd_1</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+    <span class="hljs-comment">// TODO handle remainder when a.len() % 4 != 0</span>
+    a.array_chunks::&lt;<span class="hljs-number">4</span>&gt;()
+        .<span class="hljs-title function_ invoke__">map</span>(|&amp;a| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(a))
+        .<span class="hljs-title function_ invoke__">zip</span>(b.array_chunks::&lt;<span class="hljs-number">4</span>&gt;().<span class="hljs-title function_ invoke__">map</span>(|&amp;b| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(b)))
+        .<span class="hljs-title function_ invoke__">fold</span>(f32x4::<span class="hljs-title function_ invoke__">splat</span>(<span class="hljs-number">0.0</span>), |acc, zipped| acc + zipped.<span class="hljs-number">0</span> * zipped.<span class="hljs-number">1</span>)
+        .<span class="hljs-title function_ invoke__">reduce_sum</span>()
+&#125;
+</code></pre></div>
+<p>和前面的思路类似，省去了逐对reduce_sum 再 一起sum的过程，fold过程中计算，将两边的相乘并加到全0的simd中。最后只剩下fold结果，一个simd，执行一次reduce_sum就好。</p>
+<p>还能优化吗？可以的：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-keyword">use</span> std_float::StdFloat;
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_simd_2</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+    <span class="hljs-comment">// TODO handle remainder when a.len() % 4 != 0</span>
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">res</span> = f32x4::<span class="hljs-title function_ invoke__">splat</span>(<span class="hljs-number">0.0</span>);
+    a.array_chunks::&lt;<span class="hljs-number">4</span>&gt;()
+        .<span class="hljs-title function_ invoke__">map</span>(|&amp;a| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(a))
+        .<span class="hljs-title function_ invoke__">zip</span>(b.array_chunks::&lt;<span class="hljs-number">4</span>&gt;().<span class="hljs-title function_ invoke__">map</span>(|&amp;b| f32x4::<span class="hljs-title function_ invoke__">from_array</span>(b)))
+        .<span class="hljs-title function_ invoke__">for_each</span>(|(a, b)| &#123;
+            res = a.<span class="hljs-title function_ invoke__">mul_add</span>(b, res);
+        &#125;);
+    res.<span class="hljs-title function_ invoke__">reduce_sum</span>()
+&#125;</code></pre></div>
+<p>这里引入一个新api mul_add 先将a,b 相乘，再和res叠加，将前面的fold函数在指令层面完成。</p>
+<p>这里需要注意的是，上面的array_chucks操作遇到长度不能被4整除的Slice，剩下的尾巴不会被放到simd指令执行，比如我们尝试使用(0..13.0) 和 (0..12) 调用 dot_prod_simd_1 会得到相同的结果。</p>
+<div class="code-wrapper"><pre><code class="hljs dns">#[test]
+fn t1<span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span> &#123;
+    let <span class="hljs-keyword">a</span> = &amp;<span class="hljs-punctuation">(</span><span class="hljs-number">0</span>..<span class="hljs-number">12</span><span class="hljs-punctuation">)</span>.map<span class="hljs-punctuation">(</span>|e|e as f32<span class="hljs-punctuation">)</span>.collect<span class="hljs-number">::</span>&lt;Vec&lt;f32&gt;&gt;<span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span><span class="hljs-comment">;</span>
+    let b = &amp;<span class="hljs-punctuation">(</span><span class="hljs-number">0</span>..<span class="hljs-number">13</span><span class="hljs-punctuation">)</span>.map<span class="hljs-punctuation">(</span>|e|e as f32<span class="hljs-punctuation">)</span>.collect<span class="hljs-number">::</span>&lt;Vec&lt;f32&gt;&gt;<span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span><span class="hljs-comment">;</span>
+    assert_eq!<span class="hljs-punctuation">(</span>&amp;dot_prod_simd_2<span class="hljs-punctuation">(</span>&amp;<span class="hljs-keyword">a</span>, &amp;<span class="hljs-keyword">a</span><span class="hljs-punctuation">)</span>,&amp;dot_prod_simd_2<span class="hljs-punctuation">(</span>&amp;b, &amp;b<span class="hljs-punctuation">)</span><span class="hljs-punctuation">)</span><span class="hljs-comment">;</span>
+&#125;</code></pre></div>
+
+<p>这里我们处理下被忽略的尾巴：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">const</span> LANES: <span class="hljs-type">usize</span> = <span class="hljs-number">4</span>;
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">dot_prod_simd_3</span>(a: &amp;[<span class="hljs-type">f32</span>], b: &amp;[<span class="hljs-type">f32</span>]) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">f32</span> &#123;
+    <span class="hljs-built_in">assert_eq!</span>(a.<span class="hljs-title function_ invoke__">len</span>(), b.<span class="hljs-title function_ invoke__">len</span>());
+
+    <span class="hljs-keyword">let</span> (a_extra, a_chunks) = a.<span class="hljs-title function_ invoke__">as_rchunks</span>();
+    <span class="hljs-keyword">let</span> (b_extra, b_chunks) = b.<span class="hljs-title function_ invoke__">as_rchunks</span>();
+
+    <span class="hljs-comment">// These are always true, but for emphasis:</span>
+    <span class="hljs-built_in">assert_eq!</span>(a_chunks.<span class="hljs-title function_ invoke__">len</span>(), b_chunks.<span class="hljs-title function_ invoke__">len</span>());
+    <span class="hljs-built_in">assert_eq!</span>(a_extra.<span class="hljs-title function_ invoke__">len</span>(), b_extra.<span class="hljs-title function_ invoke__">len</span>());
+
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">sums</span> = [<span class="hljs-number">0.0</span>; LANES];
+    <span class="hljs-keyword">for</span> ((x, y), d) <span class="hljs-keyword">in</span> std::iter::<span class="hljs-title function_ invoke__">zip</span>(a_extra, b_extra).<span class="hljs-title function_ invoke__">zip</span>(&amp;<span class="hljs-keyword">mut</span> sums) &#123;
+        *d = x * y;
+    &#125;
+
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">sums</span> = f32x4::<span class="hljs-title function_ invoke__">from_array</span>(sums);
+    std::iter::<span class="hljs-title function_ invoke__">zip</span>(a_chunks, b_chunks).<span class="hljs-title function_ invoke__">for_each</span>(|(x, y)| &#123;
+        sums += f32x4::<span class="hljs-title function_ invoke__">from_array</span>(*x) * f32x4::<span class="hljs-title function_ invoke__">from_array</span>(*y);
+    &#125;);
+
+    sums.<span class="hljs-title function_ invoke__">reduce_sum</span>()
+&#125;</code></pre></div>
+
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/Simd/" class="print-no-link">#Simd</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Rust与simd</div>
+      <div>https://fenixc9.github.io/rust-simd/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年10月14日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/click-house-1/" title="Clickhouse学习笔记 一">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Clickhouse学习笔记 一</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/window-port-nat-fail/" title="Windows下端口绑定失败的问题">
+                        <span class="hidden-mobile">Windows下端口绑定失败的问题</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

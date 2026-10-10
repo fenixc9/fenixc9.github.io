@@ -1,0 +1,1015 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/string-in-java/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="java.lang.String，字符串，我们最常用到的类之一。由于它实在过于常用，你的代码，你依赖的库的代码，jdk的代码，甚至jvm自身都和String息息相关。String的实现的优劣，对JVM的稳定，对Java的性能，以及程序员的使用体验影响很深。本文将探讨Java string的一些细节及我们开发中可能会踩到的坑。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解Java的字符串">
+<meta property="og:url" content="https://fenixc9.github.io/string-in-java/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="java.lang.String，字符串，我们最常用到的类之一。由于它实在过于常用，你的代码，你依赖的库的代码，jdk的代码，甚至jvm自身都和String息息相关。String的实现的优劣，对JVM的稳定，对Java的性能，以及程序员的使用体验影响很深。本文将探讨Java string的一些细节及我们开发中可能会踩到的坑。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/1.webp">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/2.webp">
+<meta property="og:image" content="https://fenixc9.github.io/string-in-java/3.webp">
+<meta property="article:published_time" content="2023-02-21T17:37:47.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.695Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="数据结构">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/string-in-java/1.webp">
+  
+  
+  
+  <title>深入理解Java的字符串 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">深入理解Java的字符串</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-02-22 01:37" pubdate>
+          2023年2月22日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.7k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          40 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Java"
+        id="heading-d52387880e1ea22817a72d3759213819" role="tab" data-toggle="collapse" href="#collapse-d52387880e1ea22817a72d3759213819"
+        aria-expanded="true"
+      >
+        Java
+        <span class="list-group-count">(2)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-d52387880e1ea22817a72d3759213819"
+           role="tabpanel" aria-labelledby="heading-d52387880e1ea22817a72d3759213819">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/string-in-java/" title="深入理解Java的字符串"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">深入理解Java的字符串</span>
+        </a>
+      
+    
+      
+      
+        <a href="/jgrapht/" title="Java图论库 Jgrapht"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Java图论库 Jgrapht</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">深入理解Java的字符串</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="编码"><a href="#编码" class="headerlink" title="编码"></a>编码</h1><p>Java8及之前的String保存的方法是这样的:</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">String</span>
+    <span class="hljs-keyword">implements</span> <span class="hljs-title class_">java</span>.io.Serializable, Comparable&lt;String&gt;, CharSequence &#123;
+    <span class="hljs-comment">/** The value is used for character storage. */</span>
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-type">char</span> value[];
+&#125;</code></pre></div>
+
+<p>注释中这样描述：</p>
+<p>A String represents a string in the UTF-16 format in which supplementary characters are represented by surrogate pairs (see the section Unicode Character Representations in the Character class for more information). Index values refer to char code units, so a supplementary character uses two positions in a String。</p>
+<p>即Java使用UTF16编码构建String，对于扩展字符，String将使用2个char这非常好验证:</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> <span class="hljs-type">void</span> <span class="hljs-title function_">main</span><span class="hljs-params">(String[] args)</span> &#123;
+        <span class="hljs-type">String</span> <span class="hljs-variable">a</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;🐎&quot;</span>;
+        System.out.println(a.length());
+        System.out.println(a.codePoints().count());
+    &#125;
+输出
+<span class="hljs-number">2</span>
+<span class="hljs-number">1</span></code></pre></div>
+
+<p>上例可知，对于想要获取字符串长度的场景，如果存在扩展字符的情况下我们使用length()，将得到错误的结果。想要得到正确的结果应使用codePoint().count(),这个方法将是o(n)复杂度了。对于需要估算String占用空间的场合来说，length似乎没什么问题，但是对于需要真正计算字符个数的情况，比如造个富文本框的轮子时，length将导致问题。</p>
+<p>同理还有charAt也不能得到正确的结果 :</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-type">String</span> <span class="hljs-variable">b</span> <span class="hljs-operator">=</span> <span class="hljs-string">&quot;🐎q🐎&quot;</span>;
+System.out.println(b.charAt(<span class="hljs-number">1</span>));
+输出 ?</code></pre></div>
+<p>那codePointAt可以随机访问吗，从注释来看这里返回的是unicode单元？</p>
+<div class="code-wrapper"><pre><code class="hljs java">System.out.println((<span class="hljs-type">char</span>) b.codePointAt(<span class="hljs-number">1</span>));
+System.out.println((<span class="hljs-type">char</span>) b.codePointAt(<span class="hljs-number">2</span>));
+
+输出
+?
+q</code></pre></div>
+
+<p>从字符来看q是第二个字符，但是用1访问是？，我们访问第三个字符，用2访问才是q。总之在存在扩展字符的情况下，我们无法在不遍历的前提下定位到自己需要的字符，无法在 o(1) 复杂度下随机访问字符。</p>
+<p>当然，新型的语言大多用utf8存储字符串了（Go，Rust），Java，C#，python（3.3之前）的做法固然有一些历史局限性和妥协，尤其是在ascii为主的字符串场景下，utf16存储效率还是太低了。很多较老的实现倾向于以牺牲空间和一定程度上扩展字符的兼容性来换取高速随机访问字符。不过在以ascii为主的web大行其道的当下,以及越来越多的语言字符,以及emoji加入双字节Unicode越来越难以满足兼容性需求,人们才会倾向于选择utf8为默认字符串实现</p>
+<p>所以,java9String改为这样：</p>
+<div class="code-wrapper"><pre><code class="hljs java">
+<span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">String</span>
+    <span class="hljs-keyword">implements</span> <span class="hljs-title class_">java</span>.io.Serializable, Comparable&lt;String&gt;, CharSequence,
+               Constable, ConstantDesc &#123;
+
+    <span class="hljs-comment">/**</span>
+<span class="hljs-comment">     * The value is used for character storage.</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * <span class="hljs-doctag">@implNote</span> This field is trusted by the VM, and is a subject to</span>
+<span class="hljs-comment">     * constant folding if String instance is constant. Overwriting this</span>
+<span class="hljs-comment">     * field after construction will cause problems.</span>
+<span class="hljs-comment">     *</span>
+<span class="hljs-comment">     * Additionally, it is marked with &#123;<span class="hljs-doctag">@link</span> Stable&#125; to trust the contents</span>
+<span class="hljs-comment">     * of the array. No other facility in JDK provides this functionality (yet).</span>
+<span class="hljs-comment">     * &#123;<span class="hljs-doctag">@link</span> Stable&#125; is safe here, because value is never null.</span>
+<span class="hljs-comment">     */</span>
+    
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-type">byte</span>[] value;
+               &#125;</code></pre></div>
+
+<p>java9确实改用byte数组保存字符串了。</p>
+<p>代码中这个地方将标记此字符串的编码方式</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> <span class="hljs-type">byte</span> coder; 
+</code></pre></div>
+
+<p>coder可以取值为LATIN1（0）和UTF16（1），Latin1每个字符占用一个字节，debug可以看到 :<br><img src="/string-in-java/1.webp" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>非ascii字符仍将使用UTF16编码</p>
+<p><img src="/string-in-java/2.webp" srcset="/img/loading.gif" lazyload alt="2"><br>那么调用toChar这个api时如果是latin1编码就需要将其膨胀为2字节。如果是UTF16则需要将相邻byte高低位合并为char。</p>
+<p>对于ascii字符为主的应用，加入字符串压缩确实可以节约不少内存，但是也会引入一定的cpu损耗，用户这里可以权衡一下。</p>
+<p>创建String时会根据配置 -XX:-CompactStrings 决定是否开启字符串压缩。</p>
+<p>String的编码更多的是考虑内存占用，访问效率等因素下做出的权衡。在传输，持久化的场景下就是另一回事了，事实上在这些场景上，大多数开发者会选择UTF-8，这些场景下随机访问不再是用户考虑的因素，占用空间，兼容性将是考虑的重点。关于UTF8和UTF16的争论，这里有个关于utf8的有趣的宣言   <a target="_blank" rel="noopener" href="http://utf8everywhere.org/zh-cn">http://utf8everywhere.org/zh-cn</a></p>
+<h1 id="内存"><a href="#内存" class="headerlink" title="内存"></a>内存</h1><p>那么String保存在哪里呢？</p>
+<div class="code-wrapper"><pre><code class="hljs java">System.out.println(System.identityHashCode(<span class="hljs-string">&quot;aa&quot;</span>));
+System.out.println(System.identityHashCode(<span class="hljs-string">&quot;aa&quot;</span>));
+System.out.println(<span class="hljs-string">&quot;============&quot;</span>);
+System.out.println(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>).equals(<span class="hljs-string">&quot;aa&quot;</span>));
+System.out.println(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>)==<span class="hljs-string">&quot;aa&quot;</span>);
+System.out.println(<span class="hljs-string">&quot;============&quot;</span>);
+System.out.println(System.identityHashCode(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>)));
+System.out.println(System.identityHashCode(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>).intern()));
+System.out.println(System.identityHashCode(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>))));
+System.out.println(System.identityHashCode(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">String</span>(<span class="hljs-string">&quot;aa&quot;</span>)).intern()));
+
+
+
+
+输出
+<span class="hljs-number">1551870003</span>
+<span class="hljs-number">1551870003</span>
+============
+<span class="hljs-literal">true</span>
+<span class="hljs-literal">false</span>
+============
+<span class="hljs-number">967765295</span>
+<span class="hljs-number">1551870003</span>
+<span class="hljs-number">1917513796</span>
+<span class="hljs-number">1551870003</span></code></pre></div>
+
+<p>嗯，我们初步观察上面的实验结果：</p>
+<p>“aa” 这个字符串不管在代码中声明多少次都指向了同一字符串对象。</p>
+<p>new String(“aa”) 可以生成一个新的String对象，但是这个对象继承原String所有的参数，所有新老String的hashCode相同，equals方法也会返回true，但是如果用&#x3D;&#x3D;比较的话，实际比较的是两个对象的oop指针，所以&#x3D;&#x3D;是返回false的。</p>
+<p>但是intern方法会穿透你套的这层对象，取出底层的字符串对象，而且套多少层都能正确取出。</p>
+<p>实际上JVM内部会维护常量池，大概是这样的关系</p>
+<p><img src="/string-in-java/3.webp" srcset="/img/loading.gif" lazyload alt="3"><br>intern 则是直接从常量池取String对象 Java8 HostSpot中流程如下</p>
+<div class="code-wrapper"><pre><code class="hljs java">oop StringTable::intern(Handle string_or_null, jchar* name,
+                        <span class="hljs-type">int</span> len, TRAPS) &#123;
+  unsigned <span class="hljs-type">int</span> <span class="hljs-variable">hashValue</span> <span class="hljs-operator">=</span> hash_string(name, len);
+  <span class="hljs-type">int</span> <span class="hljs-variable">index</span> <span class="hljs-operator">=</span> the_table()-&gt;hash_to_index(hashValue);
+  <span class="hljs-type">oop</span> <span class="hljs-variable">found_string</span> <span class="hljs-operator">=</span> the_table()-&gt;lookup(index, name, len, hashValue);
+
+  <span class="hljs-comment">// Found</span>
+  <span class="hljs-keyword">if</span> (found_string != NULL) <span class="hljs-keyword">return</span> found_string;
+
+  debug_only(<span class="hljs-type">StableMemoryChecker</span> <span class="hljs-title function_">smc</span><span class="hljs-params">(name, len * sizeof(name[<span class="hljs-number">0</span>])</span>));
+  <span class="hljs-keyword">assert</span>(!Universe::heap()-&gt;is_in_reserved(name),
+         <span class="hljs-string">&quot;proposed name of symbol must be stable&quot;</span>);
+
+  Handle string;
+  <span class="hljs-comment">// try to reuse the string if possible</span>
+  <span class="hljs-keyword">if</span> (!string_or_null.is_null()) &#123;
+    string = string_or_null;
+  &#125; <span class="hljs-keyword">else</span> &#123;
+    string = java_lang_String::create_from_unicode(name, len, CHECK_NULL);
+  &#125;
+
+  <span class="hljs-comment">// Grab the StringTable_lock before getting the_table() because it could</span>
+  <span class="hljs-comment">// change at safepoint.</span>
+  <span class="hljs-type">MutexLocker</span> <span class="hljs-title function_">ml</span><span class="hljs-params">(StringTable_lock, THREAD)</span>;
+
+  <span class="hljs-comment">// Otherwise, add to symbol to table</span>
+  <span class="hljs-keyword">return</span> the_table()-&gt;basic_add(index, string, name, len,
+                                hashValue, CHECK_NULL);
+&#125;</code></pre></div>
+
+<p>String常量池是Hash表加链表。在代码中通过ldc这个指令生成的字符串会尝试写入常量池，所以在代码中反复用ldc指令声明同一个字符串会指向同一个对象，这样能最大程度的节约内存空间。而对于运行时生成的字符串，用户使用byte数组和相应编码生成的对象则完全在堆里，将随着gc被释放。</p>
+<p>那啥时应该用intern呢？当你非常明确某段高频执行的代码会反复产生String对象却指向相同的常量池对象时：比如某些序列化，日志框架的实现。</p>
+<h1 id="“-”-应该怎么用？"><a href="#“-”-应该怎么用？" class="headerlink" title="“+” 应该怎么用？"></a>“+” 应该怎么用？</h1><p>Java程序员经常被告知的一条优化就是，不要在密集循环中使用+号拼接字符串。实际上 + 拼接是Javac会进行脱糖，每次使用+号会产生一个全新的StringBuilder对象，编译器无法替用户将StringBuilder提到循环外，用户手动创建StringBuilder在循环中append效率会高很多。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Java/" class="category-chain-item">Java</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84/" class="print-no-link">#数据结构</a>
+      
+        <a href="/tags/Java/" class="print-no-link">#Java</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>深入理解Java的字符串</div>
+      <div>https://fenixc9.github.io/string-in-java/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年2月22日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/ebpf-in-rust-1/" title="用Rust玩eBPF —— RedBpf">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">用Rust玩eBPF —— RedBpf</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树">
+                        <span class="hidden-mobile">Rust实现的文件目录树</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

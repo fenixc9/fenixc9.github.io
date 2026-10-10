@@ -1,0 +1,1086 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/cni-calico/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="这个系列将介绍CNI及一些CNI的实现，本篇介绍calico">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CNI学习系列3 calico">
+<meta property="og:url" content="https://fenixc9.github.io/cni-calico/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="这个系列将介绍CNI及一些CNI的实现，本篇介绍calico">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/cni-calico/6.png">
+<meta property="article:published_time" content="2023-04-08T07:49:26.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.633Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="CNI">
+<meta property="article:tag" content="Kubernetes">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/cni-calico/1.png">
+  
+  
+  
+  <title>CNI学习系列3 calico · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">CNI学习系列3 calico</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-04-08 15:49" pubdate>
+          2023年4月8日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          59 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Kubernetes"
+        id="heading-30136395f01879792198317c11831ea4" role="tab" data-toggle="collapse" href="#collapse-30136395f01879792198317c11831ea4"
+        aria-expanded="true"
+      >
+        Kubernetes
+        <span class="list-group-count">(4)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-30136395f01879792198317c11831ea4"
+           role="tabpanel" aria-labelledby="heading-30136395f01879792198317c11831ea4">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/cni-and-flannel/" title="CNI学习系列1 认识CNI"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">CNI学习系列1 认识CNI</span>
+        </a>
+      
+    
+      
+      
+        <a href="/cni-flannel/" title="CNI学习系列2 Flannel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">CNI学习系列2 Flannel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/try-apisix/" title="云原生网关apisix"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">云原生网关apisix</span>
+        </a>
+      
+    
+      
+      
+        <a href="/cni-calico/" title="CNI学习系列3 calico"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">CNI学习系列3 calico</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">CNI学习系列3 calico</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>calico也是一种非常流行的CNI实现。<br>项目地址：<br><a target="_blank" rel="noopener" href="https://github.com/projectcalico/calico">https://github.com/projectcalico/calico</a><br>calico并没有类似flannel构建了虚拟交换机，而是使用纯路由的方式。</p>
+<h2 id="架构图"><a href="#架构图" class="headerlink" title="架构图"></a>架构图</h2><p><img src="/cni-calico/1.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<h4 id="存储后端"><a href="#存储后端" class="headerlink" title="存储后端"></a>存储后端</h4><p>这个图比较老，目前新版的架构中，calico在存储方面还支持一个中间层Typha。存储后端上支持三种：</p>
+<ol>
+<li>etcd</li>
+<li>CRD</li>
+<li>Typha</li>
+</ol>
+<p>对于小规模集群，使用1，2方式就可以了，对于大规模集群使用前两种方案会对etcd带来较大压力。官方推荐使用Typha。<br><img src="/cni-calico/3.png" srcset="/img/loading.gif" lazyload alt="3"></p>
+<p>Typha自身维护一个对存储的链接就可以了，避免大量节点的felix对k8s Apiserver，etcd造成巨大压力。</p>
+<h4 id="路由后端"><a href="#路由后端" class="headerlink" title="路由后端"></a>路由后端</h4><p><code>calico_backend</code> bird&#x2F;vxlan </p>
+<ol>
+<li>bird 即BGP</li>
+<li>vxlan calico也支持这种方式在一些不支持ipip的常见下部署overlay网络。<br>通常在DaemonSet中</li>
+</ol>
+<h4 id="BGP下的传输后端"><a href="#BGP下的传输后端" class="headerlink" title="BGP下的传输后端"></a>BGP下的传输后端</h4><ol>
+<li>ipip模式 即ip in ip模式，有封装和解封装的损耗，可以跨子网。</li>
+<li>BGP模式 没有封装的损耗，配合BGP反射，可以支撑超大规模的集群。</li>
+</ol>
+<h4 id="节点"><a href="#节点" class="headerlink" title="节点"></a>节点</h4><p>每个节点将会安装calico-node，其中包含两个进程：</p>
+<ul>
+<li>Felix：calico的核心组件，运行在每个节点上。主要的功能有接口管理、路由规则、ACL规则和状态报告<ol>
+<li>接口管理：Felix为内核编写一些接口信息，以便让内核能正确的处理主机endpoint的流量。特别是主机之间的ARP请求和处理ip转发。</li>
+<li>路由规则：Felix负责主机之间路由信息写到linux内核的FIB（Forwarding Information Base）转发信息库，保证数据包可以在主机之间相互转发。</li>
+<li>ACL规则：Felix负责将ACL策略写入到linux内核中，保证主机endpoint的为有效流量不能绕过calico的安全措施。</li>
+<li>状态报告：Felix负责提供关于网络健康状况的数据。特别是，它报告配置主机时出现的错误和问题。这些数据被写入etcd，使其对网络的其他组件和操作人员可见。</li>
+</ol>
+</li>
+<li>BIRD ：BGP客户端，Calico在每个节点上的都会部署一个BGP客户端，它的作用是将Felix的路由信息读入内核，并通过BGP协议在集群中分发。<br>当Felix将路由插入到Linux内核FIB中时，BGP客户端将获取这些路由并将它们分发到部署中的其他节点。这可以确保在部署时有效地路由流量。</li>
+</ul>
+<h4 id="Calico-Controller"><a href="#Calico-Controller" class="headerlink" title="Calico-Controller"></a>Calico-Controller</h4><p>Calico-Controller的主要作用为，负责识别Kubernetes对象中影响路由的变化。比如新建Pod和新增节点都需要Calico参与相关网络配置。这里需要Controller watch到对应的event后将变更保存到calico自己IDE存储中。并通知到对应的组件。</p>
+<h2 id="部署"><a href="#部署" class="headerlink" title="部署"></a>部署</h2><p>对于测试学习场景，我们直接部署默认配置就可以了。<br>如果之前有安装过别的插件需先删除&#x2F;etc&#x2F;cni&#x2F;net.d下相关配置，并删除相关设备。</p>
+<div class="code-wrapper"><pre><code class="hljs awk">kubectl apply -f https:<span class="hljs-regexp">//</span>docs.projectcalico.org<span class="hljs-regexp">/manifests/</span>calico.yaml</code></pre></div>
+<p>默认情况下，calico使用的是ipip隧道模式</p>
+<div class="code-wrapper"><pre><code class="hljs dart"><span class="hljs-number">2021</span>-<span class="hljs-number">10</span>-<span class="hljs-number">02</span> <span class="hljs-number">05</span>:<span class="hljs-number">04</span>:<span class="hljs-number">26.657</span> [INFO][<span class="hljs-number">9</span>] startup/startup.go <span class="hljs-number">651</span>: CALICO_IPV4POOL_NAT_OUTGOING <span class="hljs-keyword">is</span> <span class="hljs-keyword">true</span> (defaulted) through environment variable
+<span class="hljs-number">2021</span>-<span class="hljs-number">10</span>-<span class="hljs-number">02</span> <span class="hljs-number">05</span>:<span class="hljs-number">04</span>:<span class="hljs-number">26.657</span> [INFO][<span class="hljs-number">9</span>] startup/startup.go <span class="hljs-number">992</span>: <span class="hljs-title class_">Ensure</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">IPv4</span> pool <span class="hljs-keyword">is</span> created. IPIP mode: <span class="hljs-title class_">Always</span>, VXLAN mode: <span class="hljs-title class_">Never</span>
+<span class="hljs-number">2021</span>-<span class="hljs-number">10</span>-<span class="hljs-number">02</span> <span class="hljs-number">05</span>:<span class="hljs-number">04</span>:<span class="hljs-number">26.718</span> [INFO][<span class="hljs-number">9</span>] startup/startup.go <span class="hljs-number">1002</span>: <span class="hljs-title class_">Created</span> <span class="hljs-keyword">default</span> <span class="hljs-title class_">IPv4</span> pool (<span class="hljs-number">10.244</span>.<span class="hljs-number">0.0</span>/<span class="hljs-number">16</span>) <span class="hljs-keyword">with</span> NAT outgoing <span class="hljs-keyword">true</span>. IPIP mode: <span class="hljs-title class_">Always</span>, VXLAN mode: <span class="hljs-title class_">Never</span></code></pre></div>
+<h4 id="生产部署"><a href="#生产部署" class="headerlink" title="生产部署"></a>生产部署</h4><p>对于生产部署官方的建议是：</p>
+<ol>
+<li>安装 Typha 以确保数据存储可扩展性。</li>
+<li>对单个子网集群不使用封装。</li>
+<li>对于多子网集群，在 CrossSubnet 模式下使用 IP-in-IP。</li>
+<li>根据网络 MTU 和选择的路由模式配置 Calico MTU。</li>
+<li>为能够增长到 50 个以上节点的集群添加全局路由反射器。</li>
+</ol>
+<h2 id="ipip模式"><a href="#ipip模式" class="headerlink" title="ipip模式"></a>ipip模式</h2><p><img src="/cni-calico/4.png" srcset="/img/loading.gif" lazyload alt="4"><br>需要注意的是ipip模式也需要bird的存在，来告知每个节点的ip段。<br>容器内部可以看到的设备</p>
+<p>节点上看到的路由信息</p>
+<div class="code-wrapper"><pre><code class="hljs accesslog"><span class="hljs-string">[root@node3 ~]</span># route -n
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+<span class="hljs-number">0.0.0.0</span>         <span class="hljs-number">192</span>.<span class="hljs-number">168</span>.<span class="hljs-number">31</span>.<span class="hljs-number">1</span>    <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         UG    <span class="hljs-number">100</span>    <span class="hljs-number">0</span>        <span class="hljs-number">0</span> enp0s3
+<span class="hljs-number">10.233.90.0</span>     <span class="hljs-number">192</span>.<span class="hljs-number">168</span>.<span class="hljs-number">31</span>.<span class="hljs-number">170</span>  <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">0</span>   UG    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> tunl0
+<span class="hljs-number">10.233.92.0</span>     <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">0</span>   U     <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> *
+<span class="hljs-number">10.233.92.3</span>     <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span> UH    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> calib8bf7d77053
+<span class="hljs-number">10.233.92.4</span>     <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span> UH    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> cali57c3e1bd0c7
+<span class="hljs-number">10.233.92.5</span>     <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span> UH    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> cali48737a02ab9
+<span class="hljs-number">10.233.96.0</span>     <span class="hljs-number">192</span>.<span class="hljs-number">168</span>.<span class="hljs-number">31</span>.<span class="hljs-number">171</span>  <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">0</span>   UG    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> tunl0
+<span class="hljs-number">172.17.0.0</span>      <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>     U     <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> docker0
+<span class="hljs-number">192.168.31.0</span>    <span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">255</span>.<span class="hljs-number">0</span>   U     <span class="hljs-number">100</span>    <span class="hljs-number">0</span>        <span class="hljs-number">0</span> enp0s3
+</code></pre></div>
+<p>node3的节点ip为192.168.31.172，cni网段为10.233.92.0&#x2F;24。<br>节点192.168.31.171 被分配了10.233.96.0&#x2F;24 网段，192.168.31.170 被分配了 10.233.90.0&#x2F;24网段。<br>podip根据网段，下一条选择对应节点IP，和tunl0这个设备。如果是本节点网段则会直接路由到对应设备，他们都是calixxxx开头的。这个设备直接映射到容器内的veth 名字是eth0。</p>
+<div class="code-wrapper"><pre><code class="hljs apache"><span class="hljs-attribute">1</span>: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span class="hljs-number">65536</span> qdisc noqueue qlen <span class="hljs-number">1000</span>
+    <span class="hljs-attribute">link</span>/loopback <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> brd <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>
+    <span class="hljs-attribute">inet</span> <span class="hljs-number">127.0.0.1</span>/<span class="hljs-number">8</span> scope host lo
+       <span class="hljs-attribute">valid_lft</span> forever preferred_lft forever
+<span class="hljs-attribute">3</span>: eth0@if8: &lt;BROADCAST,MULTICAST,UP,LOWER_UP,M-DOWN&gt; mtu <span class="hljs-number">1480</span> qdisc noqueue 
+    <span class="hljs-attribute">link</span>/ether <span class="hljs-number">1</span>a:<span class="hljs-number">99</span>:<span class="hljs-number">14</span>:<span class="hljs-number">82</span>:<span class="hljs-number">20</span>:<span class="hljs-number">14</span> brd ff:ff:ff:ff:ff:ff
+    <span class="hljs-attribute">inet</span> <span class="hljs-number">10.233.92.4</span>/<span class="hljs-number">32</span> scope global eth0
+       <span class="hljs-attribute">valid_lft</span> forever preferred_lft forever
+<span class="hljs-attribute">4</span>: tunl0@NONE: &lt;NOARP&gt; mtu <span class="hljs-number">1480</span> qdisc noop qlen <span class="hljs-number">1000</span>
+    <span class="hljs-attribute">link</span>/ipip <span class="hljs-number">0.0.0.0</span> brd <span class="hljs-number">0.0.0.0</span></code></pre></div>
+<p>路由全部走eth0</p>
+<div class="code-wrapper"><pre><code class="hljs apache"><span class="hljs-comment"># route -n</span>
+<span class="hljs-attribute">Kernel</span> IP routing table
+<span class="hljs-attribute">Destination</span>     Gateway         Genmask         Flags Metric Ref    Use Iface
+<span class="hljs-attribute">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>         <span class="hljs-number">169.254.1.1</span>     <span class="hljs-number">0.0.0.0</span>         UG    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> eth0
+<span class="hljs-attribute">169</span>.<span class="hljs-number">254</span>.<span class="hljs-number">1</span>.<span class="hljs-number">1</span>     <span class="hljs-number">0.0.0.0</span>         <span class="hljs-number">255.255.255.255</span> UH    <span class="hljs-number">0</span>      <span class="hljs-number">0</span>        <span class="hljs-number">0</span> eth0</code></pre></div>
+
+<p>如果是10.233.92.0&#x2F;24中其他ip不在本地的，则会走到blackhole 10.233.92.0&#x2F;24 proto bird 这条黑洞规则。<br>所以即使一个节点访问另一个节点并没有分配的ip，也会走tunl0到对应节点才会走到黑洞中。</p>
+<h4 id="同节点访问"><a href="#同节点访问" class="headerlink" title="同节点访问"></a>同节点访问</h4><p>从前面的路由表看，同节点访问会直接路由到对应的calixxxx设备。</p>
+<h4 id="跨节点访问流程"><a href="#跨节点访问流程" class="headerlink" title="跨节点访问流程"></a>跨节点访问流程</h4><ol>
+<li>容器中的网卡用的是veth的pair虚拟网卡，一端连接到容器，另一端连着宿主机。</li>
+<li>容器中的报文通过calixxx到达宿主机。然后根据宿主机的路由，报文发往tunl0设备。</li>
+<li>报文到达tunl0时，会再次封装一层ip报文头，把目标node的ip作为目的ip，然后通过宿主网卡机将报文发出。</li>
+<li>对端node收到报文后，解开外层ip报文头，发现是ipip报文，会转交给tunl0</li>
+<li>tunl0查找路由，就发送给calixxxxxx，对端容器就收到了报文。</li>
+</ol>
+<h2 id="BGP模式"><a href="#BGP模式" class="headerlink" title="BGP模式"></a>BGP模式</h2><p>bgp工作模式和flannel的host-gw模式非常类似；<br>限制：和flannel的host-gw限制一样，要求物理机在二层是连能的，不能跨网段；<br>配置方式：</p>
+<div class="code-wrapper"><pre><code class="hljs nix">- <span class="hljs-params">name:</span> CALICO_IPV4POOL_IPIP
+  <span class="hljs-params">value:</span> <span class="hljs-string">&quot;Never&quot;</span>    
+<span class="hljs-operator">-</span> <span class="hljs-params">name:</span> CALICO_IPV4POOL_VXLAN
+  <span class="hljs-params">value:</span> <span class="hljs-string">&quot;Never&quot;</span></code></pre></div>
+<p><img src="/cni-calico/5.png" srcset="/img/loading.gif" lazyload alt="5"><br>BGP网络相比较IPIP网络，最大的不同之处就是没有了隧道设备 tunl0。 前面介绍过IPIP网络pod之间的流量发送到 tunl0，然后tunl0发送对端设备。BGP网络中，pod之间的流量直接从网卡发送目的地，减少了tunl0这个环节。这种模式下每个节点都相当于一个能通过BGP协议交换路由信息的虚拟路由。</p>
+<h4 id="arp代理"><a href="#arp代理" class="headerlink" title="arp代理"></a>arp代理</h4><p>Calico在BGP模式下使用了 ARP代理（ARP proxy）的方式解决了 ARP广播域的问题，实现了跨节点的通信。在ARP代理模式下，每个节点上都有一个 ARP代理，节点之间不再进行 ARP广播，而是由 ARP代理响应 ARP请求。</p>
+<p>在 ARP代理模式下，节点A发送ARP请求时，ARP请求会被拦截并转发到目标节点所在的节点B，节点B的 ARP代理会响应 ARP请求，将自己的 MAC地址返回给节点A。节点A收到节点B的 MAC地址后，就可以向节点B发送数据了。</p>
+<p>需要注意的是，ARP代理模式只适用于同一个网络内的节点通信，如果两个节点在不同的网络内，则需要使用其他方式，如路由器进行通信。</p>
+<div class="code-wrapper"><pre><code class="hljs bash">[13:39:56 root@node-3 ~]#<span class="hljs-built_in">cat</span> /proc/sys/net/ipv4/conf/cali385152345a1/proxy_arp
+1   <span class="hljs-comment">#proxy_arp代理是启用状态</span>
+<span class="hljs-comment">#容器在没有任何网络请求时查看arp</span></code></pre></div>
+
+<h4 id="BGP原理"><a href="#BGP原理" class="headerlink" title="BGP原理"></a>BGP原理</h4><ul>
+<li>路由反射器RR（Route Reflector）：允许把从IBGP对等体学到的路由反射到其他IBGP对等体的BGP设备，类似OSPF网络中的DR。</li>
+<li>客户机（Client）：与RR形成反射邻居关系的IBGP设备。在AS内部客户机只需要与RR直连。</li>
+<li>非客户机（Non-Client）：既不是RR也不是客户机的IBGP设备。在AS内部非客户机与RR之间，以及所有的非客户机之间仍然必须建立全连接关系。</li>
+<li>始发者（Originator）：在AS内部始发路由的设备。Originator_ID属性用于防止集群内产生路由环路。</li>
+<li>集群（Cluster）：路由反射器及其客户机的集合。Cluster_List属性用于防止集群间产生路由环路。</li>
+</ul>
+<h4 id="calico的BGP"><a href="#calico的BGP" class="headerlink" title="calico的BGP"></a>calico的BGP</h4><p>calico的IPIP与不使用封装会使用到BGP进行组网，保证不同node节点的Pod互相通信，默认情况下calico所有的node节点都是以对等方式进行BGP的互相连接，如果集群node节点数量大于50以上这种方式会造成每个节点的BGP连接指数级增多，所以需要引入<em>BGP RR</em>即路由反射器。即一部分node与RR进行对等连接之后RR之间在进行对等连接，以减少默认模式下的node全对等连接。如果集群规模超过200个节点需要配置实际的底层网络集成BGP进行相关配置。</p>
+<h4 id="配置BGP-Peer"><a href="#配置BGP-Peer" class="headerlink" title="配置BGP Peer"></a>配置BGP Peer</h4><p><img src="/cni-calico/6.png" srcset="/img/loading.gif" lazyload alt="6"></p>
+<div class="code-wrapper"><pre><code class="hljs crmsh">[<span class="hljs-number">17</span>:<span class="hljs-number">06</span>:<span class="hljs-number">18</span> root@<span class="hljs-keyword">node</span><span class="hljs-title">-1</span> ~]<span class="hljs-comment">#cat BGPPeer-rr.yml</span>
+apiVersion: projectcalico.org/v3
+kind: BGPPeer
+metadata:
+  name: rr-to-<span class="hljs-keyword">node</span>
+spec:<span class="hljs-title"></span>
+<span class="hljs-title">  # 规则1</span>：普通 bgp <span class="hljs-keyword">node</span> <span class="hljs-title">与 rr</span> 建立连接
+  nodeSelector: <span class="hljs-string">&quot;!has(calico-rr)&quot;</span> 
+  peerSelector: has(calico-rr)
+</code></pre></div>
+
+
+<div class="code-wrapper"><pre><code class="hljs yaml"><span class="hljs-meta">---</span>
+<span class="hljs-attr">apiVersion:</span> <span class="hljs-string">projectcalico.org/v3</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">BGPPeer</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">rr-to-rr</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-comment"># 规则2：route reflectors 之间也建立连接</span>
+  <span class="hljs-attr">nodeSelector:</span> <span class="hljs-string">has(calico-rr)</span>
+  <span class="hljs-attr">peerSelector:</span> <span class="hljs-string">has(calico-rr)</span></code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs gherkin"><span class="hljs-comment">#应用</span>
+[17:15:41 root@node-1 ~]#calicoctl apply -f BGPPeer-rr.yml
+
+<span class="hljs-comment">#之后需要导出node1与node4的配置，进行修改</span>
+[17:17:09 root@node-1 ~]#calicoctl get node 192.168.10.11 -oyaml --export &gt;11.yml
+spec:
+  bgp:
+    ipv4Address: 192.168.10.11/24
+    ipv4IPIPTunnelAddr: 172.20.36.128
+    routeReflectorClusterID: 224.0.0.1    #要充当路由反射器的每个节点都必须有一个集群ID，通常是一个未使用的IPv4地址，如果多个路由反射器是高可用的他们的集群id应该一致，用于冗余和防环
+  orchRefs:
+  - nodeName: 192.168.10.11
+    orchestrator: k8s 
+status:
+  podCIDRs:
+  - &quot;&quot;
+  - 172.20.4.0/24
+
+<span class="hljs-comment">#给node1与node4节点打标签</span>
+[17:22:59 root@node-1 ~]#kubectl label nodes 192.168.10.11 calico-rr=true
+[17:22:59 root@node-1 ~]#kubectl label nodes 192.168.10.14 calico-rr=true
+
+<span class="hljs-comment">#之后在node2查看node对等状态</span>
+[17:14:51 root@node-2 ~]#calicoctl node status
+Calico process is running.
+
+IPv4 BGP status
++---------------+---------------+-------+----------+-------------+
+|<span class="hljs-string"> PEER ADDRESS  </span>|<span class="hljs-string">   PEER TYPE   </span>|<span class="hljs-string"> STATE </span>|<span class="hljs-string">  SINCE   </span>|<span class="hljs-string">    INFO     </span>|
++---------------+---------------+-------+----------+-------------+
+|<span class="hljs-string"> 192.168.10.11 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:14:47 </span>|<span class="hljs-string"> Established </span>|<span class="hljs-string">   #这里可以看到node2与node1和node4为对等状态</span>
+|<span class="hljs-string"> 192.168.10.14 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:23:12 </span>|<span class="hljs-string"> Established </span>|
++---------------+---------------+-------+----------+-------------+
+
+IPv6 BGP status
+No IPv6 peers found.
+
+<span class="hljs-comment">#在node1或node4查看</span>
+[17:23:11 root@node-1 ~]#calicoctl node status
+Calico process is running.
+
+IPv4 BGP status
++---------------+---------------+-------+----------+-------------+
+|<span class="hljs-string"> PEER ADDRESS  </span>|<span class="hljs-string">   PEER TYPE   </span>|<span class="hljs-string"> STATE </span>|<span class="hljs-string">  SINCE   </span>|<span class="hljs-string">    INFO     </span>|
++---------------+---------------+-------+----------+-------------+
+|<span class="hljs-string"> 192.168.10.12 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:14:48 </span>|<span class="hljs-string"> Established </span>|<span class="hljs-string">   #node1和node4与没有calico-rr=true的节点都建立了对等连接</span>
+|<span class="hljs-string"> 192.168.10.13 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:14:48 </span>|<span class="hljs-string"> Established </span>|
+|<span class="hljs-string"> 192.168.10.15 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:14:50 </span>|<span class="hljs-string"> Established </span>|
+|<span class="hljs-string"> 192.168.10.16 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:14:48 </span>|<span class="hljs-string"> Established </span>|
+|<span class="hljs-string"> 192.168.10.14 </span>|<span class="hljs-string"> node specific </span>|<span class="hljs-string"> up    </span>|<span class="hljs-string"> 09:23:02 </span>|<span class="hljs-string"> Established </span>|
++---------------+---------------+-------+----------+-------------+
+
+IPv6 BGP status
+No IPv6 peers found.</code></pre></div>
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Kubernetes/" class="category-chain-item">Kubernetes</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Kubernetes/" class="print-no-link">#Kubernetes</a>
+      
+        <a href="/tags/CNI/" class="print-no-link">#CNI</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>CNI学习系列3 calico</div>
+      <div>https://fenixc9.github.io/cni-calico/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年4月8日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/rust-existential-type/" title="如何理解existential types">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">如何理解existential types</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/try-apisix/" title="云原生网关apisix">
+                        <span class="hidden-mobile">云原生网关apisix</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

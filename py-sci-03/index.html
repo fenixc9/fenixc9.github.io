@@ -1,0 +1,999 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/py-sci-03/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="学习python数据分析系列，本篇学习对于python计算，分析一个非常重要的库numpy">
+<meta property="og:type" content="article">
+<meta property="og:title" content="学习python数据分析 三 numpy（2）">
+<meta property="og:url" content="https://fenixc9.github.io/py-sci-03/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="学习python数据分析系列，本篇学习对于python计算，分析一个非常重要的库numpy">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/4.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/5.png">
+<meta property="og:image" content="https://fenixc9.github.io/py-sci-03/6.png">
+<meta property="article:published_time" content="2023-05-02T10:00:03.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.676Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="numpy">
+<meta property="article:tag" content="python">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/py-sci-03/1.png">
+  
+  
+  
+  <title>学习python数据分析 三 numpy（2） · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">学习python数据分析 三 numpy（2）</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-05-02 18:00" pubdate>
+          2023年5月2日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          18 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="python"
+        id="heading-23eeeb4347bdd26bfc6b7ee9a3b755dd" role="tab" data-toggle="collapse" href="#collapse-23eeeb4347bdd26bfc6b7ee9a3b755dd"
+        aria-expanded="true"
+      >
+        python
+        <span class="list-group-count">(5)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-23eeeb4347bdd26bfc6b7ee9a3b755dd"
+           role="tabpanel" aria-labelledby="heading-23eeeb4347bdd26bfc6b7ee9a3b755dd">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/py-sci-01/" title="学习python数据分析 一 Jupyterlab"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">学习python数据分析 一 Jupyterlab</span>
+        </a>
+      
+    
+      
+      
+        <a href="/py-sci-02/" title="学习python数据分析 二 numpy（1）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">学习python数据分析 二 numpy（1）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/py-sci-03/" title="学习python数据分析 三 numpy（2）"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">学习python数据分析 三 numpy（2）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/py-sci-04/" title="学习python数据分析 四 pandas (1)"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">学习python数据分析 四 pandas (1)</span>
+        </a>
+      
+    
+      
+      
+        <a href="/py-sci-05/" title="学习python数据分析 五 pandas (2)"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">学习python数据分析 五 pandas (2)</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">学习python数据分析 三 numpy（2）</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="相关性"><a href="#相关性" class="headerlink" title="相关性"></a>相关性</h1><h3 id="多项式"><a href="#多项式" class="headerlink" title="多项式"></a>多项式</h3><p>poly1d是NumPy中的一个类，用于表示一元多次多项式，即一个多项式只有一个自变量。poly1d的主要作用是方便用户对多项式进行各种运算，如加、减、乘、除、取幂、求导数和积分等。<br>在使用poly1d时，用户可以将一组多项式系数作为参数传入，例如：</p>
+<div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-keyword">import</span> numpy <span class="hljs-keyword">as</span> np
+
+<span class="hljs-comment"># 创建一个一元二次多项式 p(x) = 2x^2 + 3x + 4</span>
+p = np.poly1d([<span class="hljs-number">2</span>, <span class="hljs-number">3</span>, <span class="hljs-number">4</span>])</code></pre></div>
+
+<p>创建完多项式后，用户可以对多项式进行各种运算。例如：</p>
+<div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># 求多项式的值</span>
+<span class="hljs-built_in">print</span>(p(<span class="hljs-number">1</span>))  <span class="hljs-comment"># 输出：9</span>
+
+<span class="hljs-comment"># 求多项式的导数</span>
+p_deriv = p.deriv()
+<span class="hljs-built_in">print</span>(p_deriv)  <span class="hljs-comment"># 输出：Poly1d([4, 3], dtype=int32)</span></code></pre></div>
+<p>除了使用系数来创建多项式之外，还可以使用多项式的根来创建多项式。例如：</p>
+<div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># 创建一个一元三次多项式 p(x) = (x-1)(x-2)(x-3) = x^3 - 6x^2 + 11x - 6</span>
+p = np.poly1d([<span class="hljs-number">1</span>, -<span class="hljs-number">6</span>, <span class="hljs-number">11</span>, -<span class="hljs-number">6</span>])</code></pre></div>
+
+<p>这里的多项式系数是通过多项式的根来计算得到的。</p>
+<p>求导的一个演示<br>这里我们将poly1d转为了五元四次方程（多项式）<br>x ^ 4 + x^3 * 2+ x^2 * 3 + x * 4 + 5</p>
+<p>其中每循环一次就求导并绘制</p>
+<div class="code-wrapper"><pre><code class="hljs python">p = poly1d([<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>,<span class="hljs-number">4</span>,<span class="hljs-number">5</span>])
+
+x = linspace(-<span class="hljs-number">10</span>,<span class="hljs-number">10</span>,<span class="hljs-number">50</span>)
+
+<span class="hljs-keyword">for</span> i <span class="hljs-keyword">in</span> <span class="hljs-built_in">range</span>(<span class="hljs-number">0</span>,<span class="hljs-number">3</span>):
+    y = p(x)
+    plt.plot(x,y)
+    p = p.deriv()</code></pre></div>
+
+<p><img src="/py-sci-03/1.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<h3 id="多项式拟合"><a href="#多项式拟合" class="headerlink" title="多项式拟合"></a>多项式拟合</h3><p>多项式拟合本质上是numpy.polyfit是一个函数，用于拟合一系列数据点的多项式系数。它使用最小二乘法来拟合数据，将数据拟合为给定次数的多项式形式。</p>
+<p>具体来说，numpy.polyfit(x, y, deg, rcond&#x3D;None, full&#x3D;False, cov&#x3D;False)函数接受以下参数：</p>
+<ul>
+<li>x：一维数组，表示数据点的x坐标。</li>
+<li>y：一维数组，表示数据点的y坐标。</li>
+<li>deg：整数，表示拟合多项式的次数。</li>
+<li>rcond：可选参数，浮点数。控制奇异值在拟合过程中的影响。</li>
+<li>full：可选参数，布尔值。如果为True，则返回完整输出，包括残差、排名、奇异值以及拟合系数的协方差矩阵。</li>
+<li>cov：可选参数，布尔值。如果为True，则返回拟合系数的协方差矩阵。<br>该函数返回一个一维数组，表示拟合多项式的系数。可以使用numpy.polyval函数将该系数用于计算多项式的值。</li>
+</ul>
+<div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-keyword">from</span> numpy <span class="hljs-keyword">import</span> *
+<span class="hljs-keyword">import</span> matplotlib.pyplot <span class="hljs-keyword">as</span> plt
+<span class="hljs-keyword">import</span> datetime
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">parse_price</span>(<span class="hljs-params">price</span>):
+    <span class="hljs-keyword">return</span> <span class="hljs-built_in">float</span>(price[<span class="hljs-number">1</span>:])
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">parse_date</span>(<span class="hljs-params">s</span>):
+    <span class="hljs-keyword">return</span> datetime.datetime.strptime(s.decode(<span class="hljs-string">&#x27;ascii&#x27;</span>),<span class="hljs-string">&quot;%m/%d/%Y&quot;</span>).date().weekday()
+<span class="hljs-built_in">all</span> = genfromtxt(<span class="hljs-string">&#x27;jd_all.csv&#x27;</span>,delimiter=<span class="hljs-string">&#x27;,&#x27;</span>,skip_header=<span class="hljs-number">1</span>,names=<span class="hljs-literal">True</span>,converters=&#123;<span class="hljs-number">3</span>:parse_price,<span class="hljs-number">4</span>:parse_price,<span class="hljs-number">5</span>:parse_price,<span class="hljs-number">0</span>:parse_date&#125;,usecols=(<span class="hljs-number">5</span>)).astype(<span class="hljs-string">&#x27;float&#x27;</span>)[<span class="hljs-number">0</span>:<span class="hljs-number">100</span>]
+</code></pre></div>
+
+<p>加载了京东的股价前100个点。</p>
+<div class="code-wrapper"><pre><code class="hljs python">a=linspace(<span class="hljs-number">0</span>,<span class="hljs-number">100</span>,<span class="hljs-number">100</span>)
+<span class="hljs-comment"># 拟合</span>
+fit = polyfit(a,<span class="hljs-built_in">all</span>,<span class="hljs-number">10</span>)
+y2 = poly1d(fit)(a) 
+<span class="hljs-comment"># 画出原股价和拟合曲线</span>
+plt.plot(a,y2)
+plt.plot(a,<span class="hljs-built_in">all</span>)</code></pre></div>
+
+<p><img src="/py-sci-03/2.png" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p>这里的10是拟合次数，拟合次数多了后，蓝色曲线就会过拟合。这里将其调整为50后，甚至会报出警告<br><img src="/py-sci-03/3.png" srcset="/img/loading.gif" lazyload alt="3"></p>
+<h3 id="相关系数"><a href="#相关系数" class="headerlink" title="相关系数"></a>相关系数</h3><p>这里我选了同济科技600846，上海临港600848某段时间内的开票价格。</p>
+<div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-keyword">import</span> matplotlib.pyplot <span class="hljs-keyword">as</span> plt
+<span class="hljs-keyword">import</span> numpy
+
+p1 = numpy.load(<span class="hljs-string">&#x27;600846.npy&#x27;</span>)[<span class="hljs-number">0</span>:<span class="hljs-number">600</span>]
+p2 = numpy.load(<span class="hljs-string">&#x27;600848.npy&#x27;</span>)[<span class="hljs-number">0</span>:<span class="hljs-number">600</span>]
+x=numpy.linspace(<span class="hljs-number">0</span>,<span class="hljs-number">1000</span>,<span class="hljs-number">600</span>)
+plt.plot(x,p1)
+plt.plot(x,p2)</code></pre></div>
+<p><img src="/py-sci-03/4.png" srcset="/img/loading.gif" lazyload alt="4"></p>
+<div class="code-wrapper"><pre><code class="hljs python">numpy.corrcoef(p1,p2)
+
+array([[<span class="hljs-number">1.</span>        , <span class="hljs-number">0.11821975</span>],
+       [<span class="hljs-number">0.11821975</span>, <span class="hljs-number">1.</span>        ]])</code></pre></div>
+<p>0.118</p>
+<p>改为建设银行601939，工商银行601398后<br><img src="/py-sci-03/5.png" srcset="/img/loading.gif" lazyload alt="5"></p>
+<p>相关系数为 0.93021558，非常立竿见影。</p>
+<h3 id="汉宁窗口"><a href="#汉宁窗口" class="headerlink" title="汉宁窗口"></a>汉宁窗口</h3><div class="code-wrapper"><pre><code class="hljs python">w =numpy.hanning(N)
+p4=numpy.convolve(w/w.<span class="hljs-built_in">sum</span>(),p1)[N-<span class="hljs-number">1</span>:-N+<span class="hljs-number">1</span>]
+plt.plot(x[N-<span class="hljs-number">1</span>:],p1[N-<span class="hljs-number">1</span>:])
+plt.plot(x[N-<span class="hljs-number">1</span>:],p4)</code></pre></div>
+
+<p><img src="/py-sci-03/6.png" srcset="/img/loading.gif" lazyload alt="6"></p>
+<p>通常我们应该在使用这种方法降噪后，后再尝试拟合。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/python/" class="category-chain-item">python</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/python/" class="print-no-link">#python</a>
+      
+        <a href="/tags/numpy/" class="print-no-link">#numpy</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>学习python数据分析 三 numpy（2）</div>
+      <div>https://fenixc9.github.io/py-sci-03/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年5月2日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/py-sci-04/" title="学习python数据分析 四 pandas (1)">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">学习python数据分析 四 pandas (1)</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/py-sci-02/" title="学习python数据分析 二 numpy（1）">
+                        <span class="hidden-mobile">学习python数据分析 二 numpy（1）</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

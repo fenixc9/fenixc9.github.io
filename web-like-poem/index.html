@@ -1,0 +1,1783 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/web-like-poem/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="以poem为例，来看看如何设计一个web框架">
+<meta property="og:type" content="article">
+<meta property="og:title" content="读诗一样写web框架">
+<meta property="og:url" content="https://fenixc9.github.io/web-like-poem/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="以poem为例，来看看如何设计一个web框架">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-01-19T16:15:17.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.704Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="web">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>读诗一样写web框架 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">读诗一样写web框架</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-01-20 00:15" pubdate>
+          2024年1月20日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          19k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          157 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(22)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">读诗一样写web框架</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="项目地址"><a href="#项目地址" class="headerlink" title="项目地址"></a>项目地址</h1><p><a target="_blank" rel="noopener" href="https://github.com/poem-web/poem">https://github.com/poem-web/poem</a></p>
+<h1 id="什么是web框架"><a href="#什么是web框架" class="headerlink" title="什么是web框架"></a>什么是web框架</h1><p>web框架是一种用来简化web开发的软件框架，它提供了一系列的功能，比如路由、中间件、模板引擎、数据库连接等等。这些功能可以让开发者更加专注于业务逻辑的实现，而不用花费大量的精力在底层的实现上。</p>
+<p>而web框架之所以成为web框架，其首要且核心功能就是：</p>
+<ol>
+<li>解析http请求</li>
+<li>处理http请求</li>
+<li>构造http响应</li>
+</ol>
+<p>许多语言在抽象这一最基本的行为时，都大同小异</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-type">func</span>  <span class="hljs-title function_">handle</span><span class="hljs-params">(request Request)</span> -&gt; (Response)</code></pre></div>
+<p>但是java 的servlet却是这样的</p>
+<div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">void</span> service​(ServletRequest req, ServletResponse res) <span class="hljs-keyword">throws</span> ServletException, IOException</code></pre></div>
+<p>把请求和响应都放在参数里。我在stackoverflow上看到的一个说法是：<br><a target="_blank" rel="noopener" href="https://stackoverflow.com/questions/5897215/why-does-servlet-service-method-return-void-and-not-an-instance-of-servletresp">https://stackoverflow.com/questions/5897215/why-does-servlet-service-method-return-void-and-not-an-instance-of-servletresp</a></p>
+<h2 id="为什么servlet这么设计"><a href="#为什么servlet这么设计" class="headerlink" title="为什么servlet这么设计"></a>为什么servlet这么设计</h2><p>这种设计是为了方便开发者，因为开发者可以直接使用servlet提供的response对象，而不用自己构造response对象。还有个问题就是如果使用Response放在响应中的方案那么servlet的运行时，即Web服务器本身是能够访问到container内部的buffer的（这种情况下必须由servlet容器创建buffer）。而创建buffer本就是web服务器的工作。这种写法在servlet这种嵌入的模式下将不太解耦。</p>
+<p>现如今新兴的语言，框架不再采用servlet托管的笨重模式，Response则回到了它本来的位置。</p>
+<h2 id="poem的设计"><a href="#poem的设计" class="headerlink" title="poem的设计"></a>poem的设计</h2><p>那么，poem这里是如何定义的呢？</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[async_trait::async_trait]</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">Endpoint</span>: <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span> &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span>: IntoResponse;
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">call</span>(&amp;<span class="hljs-keyword">self</span>, req: Request) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;<span class="hljs-keyword">Self</span>::Output&gt;;
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">get_response</span>(&amp;<span class="hljs-keyword">self</span>, req: Request) <span class="hljs-punctuation">-&gt;</span> Response &#123;
+        <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">call</span>(req)
+            .<span class="hljs-keyword">await</span>
+            .<span class="hljs-title function_ invoke__">map</span>(IntoResponse::into_response)
+            .<span class="hljs-title function_ invoke__">unwrap_or_else</span>(|err| err.<span class="hljs-title function_ invoke__">into_response</span>())
+    &#125;
+&#125;</code></pre></div>
+
+<p>这里基本就是我们前面说的return 模式了，但是为什么有两个函数呢？</p>
+<p>我们先看看poem的例子</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[handler]</span>
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">hello</span>(<span class="hljs-title function_ invoke__">Path</span>(name): Path&lt;<span class="hljs-type">String</span>&gt;) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">String</span> &#123;
+    <span class="hljs-built_in">format!</span>(<span class="hljs-string">&quot;hello: &#123;name&#125;&quot;</span>)
+&#125;</code></pre></div>
+
+<p>这段代码从Http path中解析name参数，返回String。</p>
+<p>现如今大多数web框架都是这样的声明式的，用户只需声明自己需要的参数，框架会自行解析这些参数，然后调用用户的函数，最后把返回值构造成http响应返回给客户端。这里的handler宏就是用来解析用户的函数的。</p>
+<p>我们将handler宏展开：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[allow(non_camel_case_types)]</span>
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">hello</span>;
+<span class="hljs-keyword">impl</span> <span class="hljs-title class_">poem</span>::Endpoint <span class="hljs-keyword">for</span> <span class="hljs-title class_">hello</span> &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = poem::Response;
+    <span class="hljs-meta">#[allow(unused_mut)]</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">call</span>(&amp;<span class="hljs-keyword">self</span>, <span class="hljs-keyword">mut</span> req: poem::Request) <span class="hljs-punctuation">-&gt;</span> poem::<span class="hljs-type">Result</span>&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+        <span class="hljs-keyword">let</span> (req, <span class="hljs-keyword">mut</span> body) = req.<span class="hljs-title function_ invoke__">split</span>();
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">p0</span> = &lt;Path&lt;<span class="hljs-type">String</span>&gt; <span class="hljs-keyword">as</span> poem::FromRequest&gt;::<span class="hljs-title function_ invoke__">from_request</span>(&amp;req, &amp;<span class="hljs-keyword">mut</span> body).<span class="hljs-keyword">await</span>?;
+        <span class="hljs-keyword">fn</span> <span class="hljs-title function_">hello</span>(<span class="hljs-title function_ invoke__">Path</span>(name): Path&lt;<span class="hljs-type">String</span>&gt;) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">String</span> &#123;
+            <span class="hljs-built_in">format!</span>(<span class="hljs-string">&quot;hello: &#123;name&#125;&quot;</span>)
+        &#125;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">res</span> = <span class="hljs-title function_ invoke__">hello</span>(p0);
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">res</span> = poem::error::IntoResult::<span class="hljs-title function_ invoke__">into_result</span>(res);
+        std::result::<span class="hljs-type">Result</span>::<span class="hljs-title function_ invoke__">map</span>(res, poem::IntoResponse::into_response)
+    &#125;
+&#125;</code></pre></div>
+
+<p>我们可以看到，这里hello函数被过程宏转换为<code>struct hello</code> 结构体，然后实现了Endpoint trait，在call函数中，参数是框架从TcpStream中解析好的标准<code>HttpRequest</code>:</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-meta">#[derive(Default)]</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Request</span> &#123;
+    method: Method,
+    uri: Uri,
+    version: Version,
+    headers: HeaderMap,
+    extensions: Extensions,
+    body: Body,
+    state: RequestState,
+&#125;</code></pre></div>
+
+<p>框架把用户声明的参数解析出来后，把用户的函数声明出来，然后把参数塞进去调用。返回IntoResponse，这个trait长这样:</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">IntoResponse</span>: <span class="hljs-built_in">Send</span> &#123;
+    <span class="hljs-comment">/// Consume itself and return [`Response`].</span>
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">into_response</span>(<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> Response;
+&#125;</code></pre></div>
+<p>这个trait负责将用户声明的类型转为poem的标准Response。转换完成后再由框架将Response写回TcpStream。</p>
+<p>poem为我们实现了很多基本类型的IntoResponse，这就是trait比起继承强大的地方了，可以轻松扩展标准库的功能。</p>
+<p>如此这般，我们的handler代码就能正确地处理请求了。</p>
+<h2 id="解析"><a href="#解析" class="headerlink" title="解析"></a>解析</h2><p>那么我们的TcpSteam是如何解析为HttpRequest呢？</p>
+<p>前面我们看了poem的核心，明白框架到底在干嘛，我们再从框架入口的角度看看这一切是怎么发生的。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">app</span> = Route::<span class="hljs-title function_ invoke__">new</span>().<span class="hljs-title function_ invoke__">at</span>(<span class="hljs-string">&quot;/hello/:name&quot;</span>, <span class="hljs-title function_ invoke__">get</span>(hello)).<span class="hljs-title function_ invoke__">with</span>(Tracing);
+Server::<span class="hljs-title function_ invoke__">new</span>(TcpListener::<span class="hljs-title function_ invoke__">bind</span>(<span class="hljs-string">&quot;0.0.0.0:3000&quot;</span>))
+    .<span class="hljs-title function_ invoke__">name</span>(<span class="hljs-string">&quot;hello-world&quot;</span>)
+    .<span class="hljs-title function_ invoke__">run</span>(app)
+    .<span class="hljs-keyword">await</span>
+</code></pre></div>
+
+<p>这是example中的例子之一。对于<code>Server::new</code> 的签名:</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">impl</span>&lt;L: Listener&gt; Server&lt;L, Infallible&gt; &#123;
+    <span class="hljs-comment">/// Use the specified listener to create an HTTP server.</span>
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">new</span>(listener: L) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span> &#123;
+        <span class="hljs-keyword">Self</span> &#123;
+            listener: Either::<span class="hljs-title function_ invoke__">Listener</span>(listener),
+            name: <span class="hljs-literal">None</span>,
+            idle_timeout: <span class="hljs-literal">None</span>,
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+
+<p>这里poem中内置实现了tokio的TcpListenr，因此这里可以直接传入Tokio的TcpListener。在run函数中要求我们:</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">run</span>&lt;E&gt;(<span class="hljs-keyword">self</span>, ep: E) <span class="hljs-punctuation">-&gt;</span> IoResult&lt;()&gt;
+    <span class="hljs-keyword">where</span>
+        E: IntoEndpoint,
+        E::Endpoint: <span class="hljs-symbol">&#x27;static</span>,
+    &#123;
+        <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">run_with_graceful_shutdown</span>(ep, futures_util::future::<span class="hljs-title function_ invoke__">pending</span>(), <span class="hljs-literal">None</span>)
+            .<span class="hljs-keyword">await</span>
+    &#125;
+````
+
+这里则传入我们的Endpoint，Endpoint可以不是某个具体的，处理请求的函数，也可以是一个路由，通常我们在服务器启动是，代码中已经全局静态写好了路由：
+
+```rust
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">app</span> = Route::<span class="hljs-title function_ invoke__">new</span>().<span class="hljs-title function_ invoke__">nest</span>(<span class="hljs-string">&quot;/api&quot;</span>, <span class="hljs-title function_ invoke__">api</span>());
+````
+
+在run_with_graceful_shutdown中:
+```rust
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">run_with_graceful_shutdown</span>&lt;E&gt;(
+        <span class="hljs-keyword">self</span>,
+        ep: E,
+        signal: <span class="hljs-keyword">impl</span> <span class="hljs-title class_">Future</span>&lt;Output = ()&gt;,
+        timeout: <span class="hljs-type">Option</span>&lt;Duration&gt;,
+    ) <span class="hljs-punctuation">-&gt;</span> IoResult&lt;()&gt;
+    <span class="hljs-keyword">where</span>
+        E: IntoEndpoint,
+        E::Endpoint: <span class="hljs-symbol">&#x27;static</span>,
+    &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">ep</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(ep.<span class="hljs-title function_ invoke__">into_endpoint</span>().<span class="hljs-title function_ invoke__">map_to_response</span>());
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">Server</span> &#123;
+            listener,
+            name,
+            idle_timeout,
+        &#125; = <span class="hljs-keyword">self</span>;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">name</span> = name.<span class="hljs-title function_ invoke__">as_deref</span>();
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">alive_connections</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(AtomicUsize::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-number">0</span>));
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">notify</span> = Arc::<span class="hljs-title function_ invoke__">new</span>(Notify::<span class="hljs-title function_ invoke__">new</span>());
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">timeout_token</span> = CancellationToken::<span class="hljs-title function_ invoke__">new</span>();
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">server_graceful_shutdown_token</span> = CancellationToken::<span class="hljs-title function_ invoke__">new</span>();
+
+        <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">acceptor</span> = <span class="hljs-keyword">match</span> listener &#123;
+            Either::<span class="hljs-title function_ invoke__">Listener</span>(listener) =&gt; listener.<span class="hljs-title function_ invoke__">into_acceptor</span>().<span class="hljs-keyword">await</span>?.<span class="hljs-title function_ invoke__">boxed</span>(),
+            Either::<span class="hljs-title function_ invoke__">Acceptor</span>(acceptor) =&gt; acceptor.<span class="hljs-title function_ invoke__">boxed</span>(),
+        &#125;;
+
+        tokio::pin!(signal);
+
+        <span class="hljs-keyword">for</span> <span class="hljs-variable">addr</span> <span class="hljs-keyword">in</span> acceptor.<span class="hljs-title function_ invoke__">local_addr</span>() &#123;
+            tracing::info!(name = name, addr = %addr, <span class="hljs-string">&quot;listening&quot;</span>);
+        &#125;
+        tracing::info!(name = name, <span class="hljs-string">&quot;server started&quot;</span>);
+
+        <span class="hljs-keyword">loop</span> &#123;
+            tokio::<span class="hljs-built_in">select!</span> &#123;
+                _ = &amp;<span class="hljs-keyword">mut</span> signal =&gt; &#123;
+                    server_graceful_shutdown_token.<span class="hljs-title function_ invoke__">cancel</span>();
+                    <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(timeout) = timeout &#123;
+                        tracing::info!(
+                            name = name,
+                            timeout_in_seconds = timeout.<span class="hljs-title function_ invoke__">as_secs_f32</span>(),
+                            <span class="hljs-string">&quot;initiate graceful shutdown&quot;</span>,
+                        );
+
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">timeout_token</span> = timeout_token.<span class="hljs-title function_ invoke__">clone</span>();
+                        tokio::<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">async</span> <span class="hljs-keyword">move</span> &#123;
+                            tokio::time::<span class="hljs-title function_ invoke__">sleep</span>(timeout).<span class="hljs-keyword">await</span>;
+                            timeout_token.<span class="hljs-title function_ invoke__">cancel</span>();
+                        &#125;);
+                    &#125; <span class="hljs-keyword">else</span> &#123;
+                        tracing::info!(name = name, <span class="hljs-string">&quot;initiate graceful shutdown&quot;</span>);
+                    &#125;
+                    <span class="hljs-keyword">break</span>;
+                &#125;,
+                res = acceptor.<span class="hljs-title function_ invoke__">accept</span>() =&gt; &#123;
+                    <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Ok</span>((socket, local_addr, remote_addr, scheme)) = res &#123;
+                        alive_connections.<span class="hljs-title function_ invoke__">fetch_add</span>(<span class="hljs-number">1</span>, Ordering::Release);
+
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">ep</span> = ep.<span class="hljs-title function_ invoke__">clone</span>();
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">alive_connections</span> = alive_connections.<span class="hljs-title function_ invoke__">clone</span>();
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">notify</span> = notify.<span class="hljs-title function_ invoke__">clone</span>();
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">timeout_token</span> = timeout_token.<span class="hljs-title function_ invoke__">clone</span>();
+                        <span class="hljs-keyword">let</span> <span class="hljs-variable">server_graceful_shutdown_token</span> = server_graceful_shutdown_token.<span class="hljs-title function_ invoke__">clone</span>();
+
+                        tokio::<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">async</span> <span class="hljs-keyword">move</span> &#123;
+                            <span class="hljs-keyword">let</span> <span class="hljs-variable">serve_connection</span> = <span class="hljs-title function_ invoke__">serve_connection</span>(socket, local_addr, remote_addr, scheme, ep, server_graceful_shutdown_token, idle_timeout);
+
+                            <span class="hljs-keyword">if</span> timeout.<span class="hljs-title function_ invoke__">is_some</span>() &#123;
+                                tokio::<span class="hljs-built_in">select!</span> &#123;
+                                    _ = serve_connection =&gt; &#123;&#125;
+                                    _ = timeout_token.<span class="hljs-title function_ invoke__">cancelled</span>() =&gt; &#123;&#125;
+                                &#125;
+                            &#125; <span class="hljs-keyword">else</span> &#123;
+                               serve_connection.<span class="hljs-keyword">await</span>;
+                            &#125;
+
+                            <span class="hljs-keyword">if</span> alive_connections.<span class="hljs-title function_ invoke__">fetch_sub</span>(<span class="hljs-number">1</span>, Ordering::Acquire) == <span class="hljs-number">1</span> &#123;
+                                <span class="hljs-comment">// We have to notify only if there is a registered waiter on shutdown</span>
+                                notify.<span class="hljs-title function_ invoke__">notify_waiters</span>();
+                            &#125;
+                        &#125;);
+                    &#125;
+                &#125;
+            &#125;
+        &#125;
+
+        <span class="hljs-title function_ invoke__">drop</span>(acceptor);
+        <span class="hljs-keyword">if</span> alive_connections.<span class="hljs-title function_ invoke__">load</span>(Ordering::Acquire) &gt; <span class="hljs-number">0</span> &#123;
+            tracing::info!(name = name, <span class="hljs-string">&quot;wait for all connections to close.&quot;</span>);
+            notify.<span class="hljs-title function_ invoke__">notified</span>().<span class="hljs-keyword">await</span>;
+        &#125;
+
+        tracing::info!(name = name, <span class="hljs-string">&quot;server stopped&quot;</span>);
+        <span class="hljs-title function_ invoke__">Ok</span>(())
+    &#125;
+</code></pre></div>
+<p>我们在server的状态中会维护连接数<code>active_connections</code>，notify用于做优雅关闭的功能，在accept socket的循环中，第一层嵌套是在<code>accept</code>，和signal之间select，这意味着：</p>
+<ol>
+<li>假如外界添加了ctrl + c的signal，循环将立刻终止，我们的进程将无法接受新的socket。</li>
+<li>如果连接数不为0，则主线程在退出循环后将停在notifyed处，直到所有链接都被处理完毕。</li>
+</ol>
+<p>而在接受到链接后，tokio将开启一个协程，或者说子任务来单独处理来自这个socket的请求。同样的，假如用户配置了超时时间，这里也会用<code>select</code>的方式来处理。</p>
+<p>serve_connection是真正处理请求的函数，处理结束后如果当前只剩一个连接，会告知主线程，可以正常停止服务了。</p>
+<p>serve_connection长这样：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">serve_connection</span>(
+    socket: <span class="hljs-keyword">impl</span> <span class="hljs-title class_">AsyncRead</span> + AsyncWrite + <span class="hljs-built_in">Send</span> + Unpin + <span class="hljs-symbol">&#x27;static</span>,
+    local_addr: LocalAddr,
+    remote_addr: RemoteAddr,
+    scheme: Scheme,
+    ep: Arc&lt;<span class="hljs-keyword">dyn</span> Endpoint&lt;Output = Response&gt;&gt;,
+    server_graceful_shutdown_token: CancellationToken,
+    idle_connection_close_timeout: <span class="hljs-type">Option</span>&lt;Duration&gt;,
+) &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">connection_shutdown_token</span> = CancellationToken::<span class="hljs-title function_ invoke__">new</span>();
+
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">service</span> = hyper::service::<span class="hljs-title function_ invoke__">service_fn</span>(&#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">remote_addr</span> = remote_addr.<span class="hljs-title function_ invoke__">clone</span>();
+
+        <span class="hljs-keyword">move</span> |req: http::Request&lt;Incoming&gt;| &#123;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">ep</span> = ep.<span class="hljs-title function_ invoke__">clone</span>();
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">local_addr</span> = local_addr.<span class="hljs-title function_ invoke__">clone</span>();
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">remote_addr</span> = remote_addr.<span class="hljs-title function_ invoke__">clone</span>();
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">scheme</span> = scheme.<span class="hljs-title function_ invoke__">clone</span>();
+            <span class="hljs-keyword">async</span> <span class="hljs-keyword">move</span> &#123;
+                Ok::&lt;http::Response&lt;_&gt;, Infallible&gt;(
+                    ep.<span class="hljs-title function_ invoke__">get_response</span>((req, local_addr, remote_addr, scheme).<span class="hljs-title function_ invoke__">into</span>())
+                        .<span class="hljs-keyword">await</span>
+                        .<span class="hljs-title function_ invoke__">into</span>(),
+                )
+            &#125;
+        &#125;
+    &#125;);
+
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">socket</span> = <span class="hljs-keyword">match</span> idle_connection_close_timeout &#123;
+        <span class="hljs-title function_ invoke__">Some</span>(timeout) =&gt; &#123;
+            tokio_util::either::Either::<span class="hljs-title function_ invoke__">Left</span>(ClosingInactiveConnection::<span class="hljs-title function_ invoke__">new</span>(socket, timeout, &#123;
+                <span class="hljs-keyword">let</span> <span class="hljs-variable">connection_shutdown_token</span> = connection_shutdown_token.<span class="hljs-title function_ invoke__">clone</span>();
+
+                <span class="hljs-keyword">move</span> || &#123;
+                    <span class="hljs-keyword">let</span> <span class="hljs-variable">connection_shutdown_token</span> = connection_shutdown_token.<span class="hljs-title function_ invoke__">clone</span>();
+                    <span class="hljs-keyword">async</span> <span class="hljs-keyword">move</span> &#123;
+                        connection_shutdown_token.<span class="hljs-title function_ invoke__">cancel</span>();
+                    &#125;
+                &#125;
+            &#125;))
+        &#125;
+        <span class="hljs-literal">None</span> =&gt; tokio_util::either::Either::<span class="hljs-title function_ invoke__">Right</span>(socket),
+    &#125;;
+
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">builder</span> = auto::Builder::<span class="hljs-title function_ invoke__">new</span>(hyper_util::rt::TokioExecutor::<span class="hljs-title function_ invoke__">new</span>());
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">conn</span> =
+        builder.<span class="hljs-title function_ invoke__">serve_connection_with_upgrades</span>(hyper_util::rt::TokioIo::<span class="hljs-title function_ invoke__">new</span>(socket), service);
+    futures_util::pin_mut!(conn);
+
+    tokio::<span class="hljs-built_in">select!</span> &#123;
+        _ = conn =&gt; &#123;
+            <span class="hljs-comment">// Connection completed successfully.</span>
+        &#125;,
+        _ = connection_shutdown_token.<span class="hljs-title function_ invoke__">cancelled</span>() =&gt; &#123;
+            tracing::info!(remote_addr=%remote_addr, <span class="hljs-string">&quot;closing connection due to inactivity&quot;</span>);
+        &#125;
+        _ = server_graceful_shutdown_token.<span class="hljs-title function_ invoke__">cancelled</span>() =&gt; &#123;&#125;
+    &#125;</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">service</span> = hyper::service::<span class="hljs-title function_ invoke__">service_fn</span>(&#123;</code></pre></div>
+<p>这一部分会把一个包含我们的EndPoint的Future封装到hyper的service中，是的，poem是在hyper上的封装。</p>
+<p>hyper中将处理httpRequest的行为抽象为：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">HttpService</span>&lt;ReqBody&gt;: sealed::Sealed&lt;ReqBody&gt; &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">ResBody</span>: Body;
+
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Error</span>: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;;
+
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Future</span>: Future&lt;Output = <span class="hljs-type">Result</span>&lt;Response&lt;<span class="hljs-keyword">Self</span>::ResBody&gt;, <span class="hljs-keyword">Self</span>::Error&gt;&gt;;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">call</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, req: Request&lt;ReqBody&gt;) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span>::Future;
+&#125;
+````
+这里跟poem定义的非常类似。
+
+
+最后异步运行时真正在poll的是这个玩意：
+
+```rust
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">conn</span> =
+        builder.<span class="hljs-title function_ invoke__">serve_connection_with_upgrades</span>(hyper_util::rt::TokioIo::<span class="hljs-title function_ invoke__">new</span>(socket), service);</code></pre></div>
+
+<p>看看里面是啥：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">serve_connection_with_upgrades</span>&lt;I, S, B&gt;(
+        &amp;<span class="hljs-keyword">self</span>,
+        io: I,
+        service: S,
+    ) <span class="hljs-punctuation">-&gt;</span> UpgradeableConnection&lt;<span class="hljs-symbol">&#x27;_</span>, I, S, E&gt;
+    <span class="hljs-keyword">where</span>
+        S: Service&lt;Request&lt;Incoming&gt;, Response = Response&lt;B&gt;&gt;,
+        S::Future: <span class="hljs-symbol">&#x27;static</span>,
+        S::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+        B: Body + <span class="hljs-symbol">&#x27;static</span>,
+        B::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+        I: Read + Write + Unpin + <span class="hljs-built_in">Send</span> + <span class="hljs-symbol">&#x27;static</span>,
+        E: Http2ServerConnExec&lt;S::Future, B&gt;,
+    &#123;
+        UpgradeableConnection &#123;
+            state: UpgradeableConnState::ReadVersion &#123;
+                read_version: <span class="hljs-title function_ invoke__">read_version</span>(io),
+                builder: <span class="hljs-keyword">self</span>,
+                service: <span class="hljs-title function_ invoke__">Some</span>(service),
+            &#125;,
+        &#125;
+    &#125;
+````
+
+代码这里就跳转到hyper中去了，这里就是分具体版本Http协议的解析部分了，我们直接看Future状态机怎么写的：
+```rust
+
+<span class="hljs-keyword">impl</span>&lt;I, S, E, B&gt; Future <span class="hljs-keyword">for</span> <span class="hljs-title class_">UpgradeableConnection</span>&lt;<span class="hljs-symbol">&#x27;_</span>, I, S, E&gt;
+<span class="hljs-keyword">where</span>
+    S: Service&lt;Request&lt;Incoming&gt;, Response = Response&lt;B&gt;&gt;,
+    S::Future: <span class="hljs-symbol">&#x27;static</span>,
+    S::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+    B: Body + <span class="hljs-symbol">&#x27;static</span>,
+    B::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+    I: Read + Write + Unpin + <span class="hljs-built_in">Send</span> + <span class="hljs-symbol">&#x27;static</span>,
+    E: Http2ServerConnExec&lt;S::Future, B&gt;,
+&#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = <span class="hljs-type">Result</span>&lt;()&gt;;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll</span>(<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+        <span class="hljs-keyword">loop</span> &#123;
+            <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">this</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">as_mut</span>().<span class="hljs-title function_ invoke__">project</span>();
+
+            <span class="hljs-keyword">match</span> this.state.<span class="hljs-title function_ invoke__">as_mut</span>().<span class="hljs-title function_ invoke__">project</span>() &#123;
+                UpgradeableConnStateProj::ReadVersion &#123;
+                    read_version,
+                    builder,
+                    service,
+                &#125; =&gt; &#123;
+                    <span class="hljs-keyword">let</span> (version, io) = ready!(read_version.<span class="hljs-title function_ invoke__">poll</span>(cx))?;
+                    <span class="hljs-keyword">let</span> <span class="hljs-variable">service</span> = service.<span class="hljs-title function_ invoke__">take</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+                    <span class="hljs-keyword">match</span> version &#123;
+                        Version::H1 =&gt; &#123;
+                            <span class="hljs-keyword">let</span> <span class="hljs-variable">conn</span> = builder.http1.<span class="hljs-title function_ invoke__">serve_connection</span>(io, service).<span class="hljs-title function_ invoke__">with_upgrades</span>();
+                            this.state.<span class="hljs-title function_ invoke__">set</span>(UpgradeableConnState::H1 &#123; conn &#125;);
+                        &#125;
+                        Version::H2 =&gt; &#123;
+                            <span class="hljs-keyword">let</span> <span class="hljs-variable">conn</span> = builder.http2.<span class="hljs-title function_ invoke__">serve_connection</span>(io, service);
+                            this.state.<span class="hljs-title function_ invoke__">set</span>(UpgradeableConnState::H2 &#123; conn &#125;);
+                        &#125;
+                    &#125;
+                &#125;
+                UpgradeableConnStateProj::H1 &#123; conn &#125; =&gt; &#123;
+                    <span class="hljs-keyword">return</span> conn.<span class="hljs-title function_ invoke__">poll</span>(cx).<span class="hljs-title function_ invoke__">map_err</span>(<span class="hljs-built_in">Into</span>::into);
+                &#125;
+                UpgradeableConnStateProj::H2 &#123; conn &#125; =&gt; &#123;
+                    <span class="hljs-keyword">return</span> conn.<span class="hljs-title function_ invoke__">poll</span>(cx).<span class="hljs-title function_ invoke__">map_err</span>(<span class="hljs-built_in">Into</span>::into);
+                &#125;
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>这个状态机就是首先从header中读出http版本，然后创建对应协议解析的状态机Future ，然后直接poll。</p>
+<p>我们以1.1为例这个状态机长这样：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-title function_ invoke__">pub</span>(<span class="hljs-keyword">crate</span>) <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Conn</span>&lt;I, B, T&gt; &#123;
+    io: Buffered&lt;I, EncodedBuf&lt;B&gt;&gt;,
+    state: State,
+    _marker: PhantomData&lt;<span class="hljs-title function_ invoke__">fn</span>(T)&gt;,
+&#125;</code></pre></div>
+
+<p>这个状态机只负责连接的状态，那么处理服务的连接在后面封装：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">serve_connection</span>&lt;I, S&gt;(&amp;<span class="hljs-keyword">self</span>, io: I, service: S) <span class="hljs-punctuation">-&gt;</span> Connection&lt;I, S&gt;
+    <span class="hljs-keyword">where</span>
+        S: HttpService&lt;IncomingBody&gt;,
+        S::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+        S::ResBody: <span class="hljs-symbol">&#x27;static</span>,
+        &lt;S::ResBody <span class="hljs-keyword">as</span> Body&gt;::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+        I: Read + Write + Unpin,
+    &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">conn</span> = proto::Conn::<span class="hljs-title function_ invoke__">new</span>(io);
+        conn.<span class="hljs-title function_ invoke__">set_timer</span>(<span class="hljs-keyword">self</span>.timer.<span class="hljs-title function_ invoke__">clone</span>());
+        <span class="hljs-keyword">if</span> !<span class="hljs-keyword">self</span>.h1_keep_alive &#123;
+            conn.<span class="hljs-title function_ invoke__">disable_keep_alive</span>();
+        &#125;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.h1_half_close &#123;
+            conn.<span class="hljs-title function_ invoke__">set_allow_half_close</span>();
+        &#125;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.h1_title_case_headers &#123;
+            conn.<span class="hljs-title function_ invoke__">set_title_case_headers</span>();
+        &#125;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.h1_preserve_header_case &#123;
+            conn.<span class="hljs-title function_ invoke__">set_preserve_header_case</span>();
+        &#125;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(dur) = <span class="hljs-keyword">self</span>
+            .timer
+            .<span class="hljs-title function_ invoke__">check</span>(<span class="hljs-keyword">self</span>.h1_header_read_timeout, <span class="hljs-string">&quot;header_read_timeout&quot;</span>)
+        &#123;
+            conn.<span class="hljs-title function_ invoke__">set_http1_header_read_timeout</span>(dur);
+        &#125;;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(writev) = <span class="hljs-keyword">self</span>.h1_writev &#123;
+            <span class="hljs-keyword">if</span> writev &#123;
+                conn.<span class="hljs-title function_ invoke__">set_write_strategy_queue</span>();
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                conn.<span class="hljs-title function_ invoke__">set_write_strategy_flatten</span>();
+            &#125;
+        &#125;
+        conn.<span class="hljs-title function_ invoke__">set_flush_pipeline</span>(<span class="hljs-keyword">self</span>.pipeline_flush);
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(max) = <span class="hljs-keyword">self</span>.max_buf_size &#123;
+            conn.<span class="hljs-title function_ invoke__">set_max_buf_size</span>(max);
+        &#125;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">sd</span> = proto::h1::dispatch::Server::<span class="hljs-title function_ invoke__">new</span>(service);
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">proto</span> = proto::h1::Dispatcher::<span class="hljs-title function_ invoke__">new</span>(sd, conn);
+        Connection &#123; conn: proto &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>在最后这个Connection中hyper把service和状态机封装在一起了。</p>
+<p>我们看看Dispatcher干了啥，到底是怎么poll的。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">impl</span>&lt;D, Bs, I, T&gt; Future <span class="hljs-keyword">for</span> <span class="hljs-title class_">Dispatcher</span>&lt;D, Bs, I, T&gt;
+<span class="hljs-keyword">where</span>
+    D: Dispatch&lt;
+            PollItem = MessageHead&lt;T::Outgoing&gt;,
+            PollBody = Bs,
+            RecvItem = MessageHead&lt;T::Incoming&gt;,
+        &gt; + Unpin,
+    D::PollError: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+    I: Read + Write + Unpin,
+    T: Http1Transaction + Unpin,
+    Bs: Body + <span class="hljs-symbol">&#x27;static</span>,
+    Bs::Error: <span class="hljs-built_in">Into</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> StdError + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span>&gt;&gt;,
+&#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = crate::<span class="hljs-type">Result</span>&lt;Dispatched&gt;;
+
+    <span class="hljs-meta">#[inline]</span>
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll</span>(<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>: Pin&lt;&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">Self</span>&gt;, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+        <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">poll_catch</span>(cx, <span class="hljs-literal">true</span>)
+    &#125;
+&#125;</code></pre></div>
+
+<p>然后就是poll_catch -&gt; poll_inner -&gt; poll_loop :</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">_</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">poll_read</span>(cx)?;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">_</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">poll_write</span>(cx)?;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">_</span> = <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">poll_flush</span>(cx)?;
+````
+
+这里执行到实际的读写
+
+先看读:
+
+```rust
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll_read</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;crate::<span class="hljs-type">Result</span>&lt;()&gt;&gt; &#123;
+        <span class="hljs-keyword">loop</span> &#123;
+            <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.is_closing &#123;
+                <span class="hljs-keyword">return</span> Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()));
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">can_read_head</span>() &#123;
+                ready!(<span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">poll_read_head</span>(cx))?;
+            &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(<span class="hljs-keyword">mut</span> body) = <span class="hljs-keyword">self</span>.body_tx.<span class="hljs-title function_ invoke__">take</span>() &#123;
+                <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">can_read_body</span>() &#123;
+                    <span class="hljs-keyword">match</span> body.<span class="hljs-title function_ invoke__">poll_ready</span>(cx) &#123;
+                        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(())) =&gt; (),
+                        Poll::Pending =&gt; &#123;
+                            <span class="hljs-keyword">self</span>.body_tx = <span class="hljs-title function_ invoke__">Some</span>(body);
+                            <span class="hljs-keyword">return</span> Poll::Pending;
+                        &#125;
+                        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Err</span>(_canceled)) =&gt; &#123;
+                            <span class="hljs-comment">// user doesn&#x27;t care about the body</span>
+                            <span class="hljs-comment">// so we should stop reading</span>
+                            trace!(<span class="hljs-string">&quot;body receiver dropped before eof, draining or closing&quot;</span>);
+                            <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">poll_drain_or_close_read</span>(cx);
+                            <span class="hljs-keyword">continue</span>;
+                        &#125;
+                    &#125;
+                    <span class="hljs-keyword">match</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">poll_read_body</span>(cx) &#123;
+                        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Some</span>(<span class="hljs-title function_ invoke__">Ok</span>(chunk))) =&gt; <span class="hljs-keyword">match</span> body.<span class="hljs-title function_ invoke__">try_send_data</span>(chunk) &#123;
+                            <span class="hljs-title function_ invoke__">Ok</span>(()) =&gt; &#123;
+                                <span class="hljs-keyword">self</span>.body_tx = <span class="hljs-title function_ invoke__">Some</span>(body);
+                            &#125;
+                            <span class="hljs-title function_ invoke__">Err</span>(_canceled) =&gt; &#123;
+                                <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">can_read_body</span>() &#123;
+                                    trace!(<span class="hljs-string">&quot;body receiver dropped before eof, closing&quot;</span>);
+                                    <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">close_read</span>();
+                                &#125;
+                            &#125;
+                        &#125;,
+                        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-literal">None</span>) =&gt; &#123;
+                            <span class="hljs-comment">// just drop, the body will close automatically</span>
+                        &#125;
+                        Poll::Pending =&gt; &#123;
+                            <span class="hljs-keyword">self</span>.body_tx = <span class="hljs-title function_ invoke__">Some</span>(body);
+                            <span class="hljs-keyword">return</span> Poll::Pending;
+                        &#125;
+                        Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Some</span>(<span class="hljs-title function_ invoke__">Err</span>(e))) =&gt; &#123;
+                            body.<span class="hljs-title function_ invoke__">send_error</span>(crate::Error::<span class="hljs-title function_ invoke__">new_body</span>(e));
+                        &#125;
+                    &#125;
+                &#125; <span class="hljs-keyword">else</span> &#123;
+                    <span class="hljs-comment">// just drop, the body will close automatically</span>
+                &#125;
+            &#125; <span class="hljs-keyword">else</span> &#123;
+                <span class="hljs-keyword">return</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">poll_read_keep_alive</span>(cx);
+            &#125;
+        &#125;
+    &#125;</code></pre></div>
+<p>终于看到了真正的解析Http协议的地方了。这里面poll_read_head 用于poll http请求头。</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">poll_read_head</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, cx: &amp;<span class="hljs-keyword">mut</span> Context&lt;<span class="hljs-symbol">&#x27;_</span>&gt;) <span class="hljs-punctuation">-&gt;</span> Poll&lt;crate::<span class="hljs-type">Result</span>&lt;()&gt;&gt; &#123;
+        <span class="hljs-comment">// can dispatch receive, or does it still care about other incoming message?</span>
+        <span class="hljs-keyword">match</span> ready!(<span class="hljs-keyword">self</span>.dispatch.<span class="hljs-title function_ invoke__">poll_ready</span>(cx)) &#123;
+            <span class="hljs-title function_ invoke__">Ok</span>(()) =&gt; (),
+            <span class="hljs-title function_ invoke__">Err</span>(()) =&gt; &#123;
+                trace!(<span class="hljs-string">&quot;dispatch no longer receiving messages&quot;</span>);
+                <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">close</span>();
+                <span class="hljs-keyword">return</span> Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()));
+            &#125;
+        &#125;
+
+        <span class="hljs-comment">// dispatch is ready for a message, try to read one</span>
+        <span class="hljs-keyword">match</span> ready!(<span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">poll_read_head</span>(cx)) &#123;
+            <span class="hljs-title function_ invoke__">Some</span>(<span class="hljs-title function_ invoke__">Ok</span>((<span class="hljs-keyword">mut</span> head, body_len, wants))) =&gt; &#123;
+                <span class="hljs-keyword">let</span> <span class="hljs-variable">body</span> = <span class="hljs-keyword">match</span> body_len &#123;
+                    DecodedLength::ZERO =&gt; IncomingBody::<span class="hljs-title function_ invoke__">empty</span>(),
+                    other =&gt; &#123;
+                        <span class="hljs-keyword">let</span> (tx, rx) =
+                            IncomingBody::<span class="hljs-title function_ invoke__">new_channel</span>(other, wants.<span class="hljs-title function_ invoke__">contains</span>(Wants::EXPECT));
+                        <span class="hljs-keyword">self</span>.body_tx = <span class="hljs-title function_ invoke__">Some</span>(tx);
+                        rx
+                    &#125;
+                &#125;;
+                <span class="hljs-keyword">if</span> wants.<span class="hljs-title function_ invoke__">contains</span>(Wants::UPGRADE) &#123;
+                    <span class="hljs-keyword">let</span> <span class="hljs-variable">upgrade</span> = <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">on_upgrade</span>();
+                    <span class="hljs-built_in">debug_assert!</span>(!upgrade.<span class="hljs-title function_ invoke__">is_none</span>(), <span class="hljs-string">&quot;empty upgrade&quot;</span>);
+                    <span class="hljs-built_in">debug_assert!</span>(
+                        head.extensions.get::&lt;OnUpgrade&gt;().<span class="hljs-title function_ invoke__">is_none</span>(),
+                        <span class="hljs-string">&quot;OnUpgrade already set&quot;</span>
+                    );
+                    head.extensions.<span class="hljs-title function_ invoke__">insert</span>(upgrade);
+                &#125;
+                <span class="hljs-keyword">self</span>.dispatch.<span class="hljs-title function_ invoke__">recv_msg</span>(<span class="hljs-title function_ invoke__">Ok</span>((head, body)))?;
+                Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()))
+            &#125;
+            <span class="hljs-title function_ invoke__">Some</span>(<span class="hljs-title function_ invoke__">Err</span>(err)) =&gt; &#123;
+                debug!(<span class="hljs-string">&quot;read_head error: &#123;&#125;&quot;</span>, err);
+                <span class="hljs-keyword">self</span>.dispatch.<span class="hljs-title function_ invoke__">recv_msg</span>(<span class="hljs-title function_ invoke__">Err</span>(err))?;
+                <span class="hljs-comment">// if here, the dispatcher gave the user the error</span>
+                <span class="hljs-comment">// somewhere else. we still need to shutdown, but</span>
+                <span class="hljs-comment">// not as a second error.</span>
+                <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">close</span>();
+                Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()))
+            &#125;
+            <span class="hljs-literal">None</span> =&gt; &#123;
+                <span class="hljs-comment">// read eof, the write side will have been closed too unless</span>
+                <span class="hljs-comment">// allow_read_close was set to true, in which case just do</span>
+                <span class="hljs-comment">// nothing...</span>
+                <span class="hljs-built_in">debug_assert!</span>(<span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">is_read_closed</span>());
+                <span class="hljs-keyword">if</span> <span class="hljs-keyword">self</span>.conn.<span class="hljs-title function_ invoke__">is_write_closed</span>() &#123;
+                    <span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">close</span>();
+                &#125;
+                Poll::<span class="hljs-title function_ invoke__">Ready</span>(<span class="hljs-title function_ invoke__">Ok</span>(()))
+            &#125;
+        &#125;
+    &#125;
+````
+poll_read_head这里调用conn的poll_read_head后能得到我们需要的header及body长度。
+
+最终在<span class="hljs-keyword">self</span>.dispatch.recv_msg中我们将最终调用用户代码:
+
+```rust
+
+        <span class="hljs-keyword">fn</span> <span class="hljs-title function_">recv_msg</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, msg: crate::<span class="hljs-type">Result</span>&lt;(<span class="hljs-keyword">Self</span>::RecvItem, IncomingBody)&gt;) <span class="hljs-punctuation">-&gt;</span> crate::<span class="hljs-type">Result</span>&lt;()&gt; &#123;
+            <span class="hljs-keyword">let</span> (msg, body) = msg?;
+            <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">req</span> = Request::<span class="hljs-title function_ invoke__">new</span>(body);
+            *req.<span class="hljs-title function_ invoke__">method_mut</span>() = msg.subject.<span class="hljs-number">0</span>;
+            *req.<span class="hljs-title function_ invoke__">uri_mut</span>() = msg.subject.<span class="hljs-number">1</span>;
+            *req.<span class="hljs-title function_ invoke__">headers_mut</span>() = msg.headers;
+            *req.<span class="hljs-title function_ invoke__">version_mut</span>() = msg.version;
+            *req.<span class="hljs-title function_ invoke__">extensions_mut</span>() = msg.extensions;
+            <span class="hljs-keyword">let</span> <span class="hljs-variable">fut</span> = <span class="hljs-keyword">self</span>.service.<span class="hljs-title function_ invoke__">call</span>(req);
+            <span class="hljs-keyword">self</span>.in_flight.<span class="hljs-title function_ invoke__">set</span>(<span class="hljs-title function_ invoke__">Some</span>(fut));
+            <span class="hljs-title function_ invoke__">Ok</span>(())
+        &#125;</code></pre></div>
+
+
+<p>也就是这里的service.call，最终会走到#[handler]宏为我们展开的代码中。应该说我们探讨的有点超出poem的范围了。</p>
+<h3 id="Middleware"><a href="#Middleware" class="headerlink" title="Middleware"></a>Middleware</h3><p>中间件是web框架中的重要概念，poem中的中间件是这样定义的：</p>
+<div class="code-wrapper"><pre><code class="hljs rust">
+<span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">Middleware</span>&lt;E: Endpoint&gt; &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span>: Endpoint;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">transform</span>(&amp;<span class="hljs-keyword">self</span>, ep: E) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span>::Output;
+&#125;</code></pre></div>
+
+<p>这里Middleware接受一个Endpoint，返回一个Endpoint，做一个Endpoint的转换，我们来看poem的example：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">Log</span>;
+
+<span class="hljs-keyword">impl</span>&lt;E: Endpoint&gt; Middleware&lt;E&gt; <span class="hljs-keyword">for</span> <span class="hljs-title class_">Log</span> &#123;
+    <span class="hljs-comment">// 输出是一个endpoint</span>
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = LogImpl&lt;E&gt;;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">transform</span>(&amp;<span class="hljs-keyword">self</span>, ep: E) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span>::Output &#123;
+        <span class="hljs-title function_ invoke__">LogImpl</span>(ep)
+    &#125;
+&#125;
+
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">LogImpl</span>&lt;E&gt;(E);
+
+<span class="hljs-meta">#[async_trait]</span>
+<span class="hljs-keyword">impl</span>&lt;E: Endpoint&gt; Endpoint <span class="hljs-keyword">for</span> <span class="hljs-title class_">LogImpl</span>&lt;E&gt; &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = Response;
+
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">call</span>(&amp;<span class="hljs-keyword">self</span>, req: Request) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+        <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;request: &#123;&#125;&quot;</span>, req.<span class="hljs-title function_ invoke__">uri</span>().<span class="hljs-title function_ invoke__">path</span>());
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">res</span> = <span class="hljs-keyword">self</span>.<span class="hljs-number">0</span>.<span class="hljs-title function_ invoke__">call</span>(req).<span class="hljs-keyword">await</span>;
+
+        <span class="hljs-keyword">match</span> res &#123;
+            <span class="hljs-title function_ invoke__">Ok</span>(resp) =&gt; &#123;
+                <span class="hljs-keyword">let</span> <span class="hljs-variable">resp</span> = resp.<span class="hljs-title function_ invoke__">into_response</span>();
+                <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;response: &#123;&#125;&quot;</span>, resp.<span class="hljs-title function_ invoke__">status</span>());
+                <span class="hljs-title function_ invoke__">Ok</span>(resp)
+            &#125;
+            <span class="hljs-title function_ invoke__">Err</span>(err) =&gt; &#123;
+                <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;error: &#123;err&#125;&quot;</span>);
+                <span class="hljs-title function_ invoke__">Err</span>(err)
+            &#125;
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+<p>这样实现后，我们就可以在任何一个Endpoint上加上Log中间件，这个中间件会打印出请求和响应的信息。想给一个Endpoint添加中间件只需引入:</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">EndpointExt</span>: IntoEndpoint &#123;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">with</span>&lt;T&gt;(<span class="hljs-keyword">self</span>, middleware: T) <span class="hljs-punctuation">-&gt;</span> T::Output
+    <span class="hljs-keyword">where</span>
+        T: Middleware&lt;<span class="hljs-keyword">Self</span>::Endpoint&gt;,
+        <span class="hljs-keyword">Self</span>: <span class="hljs-built_in">Sized</span>,
+    &#123;
+        middleware.<span class="hljs-title function_ invoke__">transform</span>(<span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">into_endpoint</span>())
+    &#125;
+&#125;</code></pre></div>
+
+<p>由于poem为所有实现了Endpoint的类型T都实现了IntoEndpoint，那么相当于所有的类型都实现了EndpointExt，我们可以直接调用with方法。只需要添加EndpointExt即可。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">app</span> = Route::<span class="hljs-title function_ invoke__">new</span>().<span class="hljs-title function_ invoke__">at</span>(<span class="hljs-string">&quot;/hello/:name&quot;</span>, <span class="hljs-title function_ invoke__">get</span>(hello)).<span class="hljs-title function_ invoke__">with</span>(Tracing);</code></pre></div>
+
+<p>IntoEndpoint长这样：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">trait</span> <span class="hljs-title class_">IntoEndpoint</span> &#123;
+    <span class="hljs-comment">/// Represents the endpoint type.</span>
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Endpoint</span>: Endpoint;
+
+    <span class="hljs-comment">/// Converts this object into endpoint.</span>
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">into_endpoint</span>(<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span>::Endpoint;
+&#125;
+
+<span class="hljs-keyword">impl</span>&lt;T: Endpoint&gt; IntoEndpoint <span class="hljs-keyword">for</span> <span class="hljs-title class_">T</span> &#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Endpoint</span> = T;
+
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">into_endpoint</span>(<span class="hljs-keyword">self</span>) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-keyword">Self</span>::Endpoint &#123;
+        <span class="hljs-keyword">self</span>
+    &#125;
+&#125;
+````
+
+
+还可以用around方法，把<span class="hljs-built_in">Fn</span>封装为中间件:
+```rust
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">around</span>&lt;F, Fut, R&gt;(<span class="hljs-keyword">self</span>, f: F) <span class="hljs-punctuation">-&gt;</span> Around&lt;<span class="hljs-keyword">Self</span>::Endpoint, F&gt;
+    <span class="hljs-keyword">where</span>
+        F: <span class="hljs-title function_ invoke__">Fn</span>(Arc&lt;<span class="hljs-keyword">Self</span>::Endpoint&gt;, Request) <span class="hljs-punctuation">-&gt;</span> Fut + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span> + <span class="hljs-symbol">&#x27;static</span>,
+        Fut: Future&lt;Output = <span class="hljs-type">Result</span>&lt;R&gt;&gt; + <span class="hljs-built_in">Send</span> + <span class="hljs-symbol">&#x27;static</span>,
+        R: IntoResponse,
+        <span class="hljs-keyword">Self</span>: <span class="hljs-built_in">Sized</span>,
+    &#123;
+        Around::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-keyword">self</span>.<span class="hljs-title function_ invoke__">into_endpoint</span>(), f)
+    &#125;
+</code></pre></div>
+
+<p>这里接受一个Fn，Fn能接受上一层Endpoint和原始Request。返回一个Around，Around长这样：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">pub</span> <span class="hljs-keyword">struct</span> <span class="hljs-title class_">Around</span>&lt;E, F&gt; &#123;
+    inner: Arc&lt;E&gt;,
+    f: F,
+&#125;</code></pre></div>
+
+<p>同样的，Around也实现了Endpoint，Around的call函数长这样：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#[async_trait::async_trait]</span>
+<span class="hljs-keyword">impl</span>&lt;E, F, Fut, T&gt; Endpoint <span class="hljs-keyword">for</span> <span class="hljs-title class_">Around</span>&lt;E, F&gt;
+<span class="hljs-keyword">where</span>
+    E: Endpoint,
+    F: <span class="hljs-title function_ invoke__">Fn</span>(Arc&lt;E&gt;, Request) <span class="hljs-punctuation">-&gt;</span> Fut + <span class="hljs-built_in">Send</span> + <span class="hljs-built_in">Sync</span> + <span class="hljs-symbol">&#x27;static</span>,
+    Fut: Future&lt;Output = <span class="hljs-type">Result</span>&lt;T&gt;&gt; + <span class="hljs-built_in">Send</span>,
+    T: IntoResponse,
+&#123;
+    <span class="hljs-keyword">type</span> <span class="hljs-title class_">Output</span> = T;
+
+    <span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">call</span>(&amp;<span class="hljs-keyword">self</span>, req: Request) <span class="hljs-punctuation">-&gt;</span> <span class="hljs-type">Result</span>&lt;<span class="hljs-keyword">Self</span>::Output&gt; &#123;
+        (<span class="hljs-keyword">self</span>.f)(<span class="hljs-keyword">self</span>.inner.<span class="hljs-title function_ invoke__">clone</span>(), req).<span class="hljs-keyword">await</span>
+    &#125;
+&#125;</code></pre></div>
+
+<p>其他的功能基本都是基于上面的trait扩展的。比如cookie。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">impl</span>&lt;T, E&gt; Endpoint <span class="hljs-keyword">for</span> <span class="hljs-title class_">ServerSessionEndpoint</span>&lt;T, E&gt;
+<span class="hljs-keyword">where</span>
+    T: SessionStorage,
+    E: Endpoint,
+&#123;
+
+  ...
+&#125;
+</code></pre></div>
+
+
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/web/" class="print-no-link">#web</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>读诗一样写web框架</div>
+      <div>https://fenixc9.github.io/web-like-poem/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2024年1月20日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/consistency-in-zookeeper/" title="zookeeper中的一致性">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">zookeeper中的一致性</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/reading-files-the-hard-way-3/" title="【译】读取文件的困难模式 三">
+                        <span class="hidden-mobile">【译】读取文件的困难模式 三</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

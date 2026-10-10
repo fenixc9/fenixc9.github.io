@@ -1,0 +1,1594 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/reading-files-the-hard-way-2/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【译】读取文件的困难模式 二">
+<meta property="og:url" content="https://fenixc9.github.io/reading-files-the-hard-way-2/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="翻译自酷熊（Amos）以前写的关于Linux上文件，文件系统的reading-files-the-hard-way系列。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/1.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/2.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/3.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/4.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/5.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/6.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/7.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/8.svg">
+<meta property="og:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/9.svg">
+<meta property="article:published_time" content="2023-12-17T13:56:26.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.682Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="rust">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/reading-files-the-hard-way-2/1.svg">
+  
+  
+  
+  <title>【译】读取文件的困难模式 二 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">【译】读取文件的困难模式 二</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-12-17 21:56" pubdate>
+          2023年12月17日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          17k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          145 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Linux"
+        id="heading-edc9f0a5a5d57797bf68e37364743831" role="tab" data-toggle="collapse" href="#collapse-edc9f0a5a5d57797bf68e37364743831"
+        aria-expanded="true"
+      >
+        Linux
+        <span class="list-group-count">(5)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-edc9f0a5a5d57797bf68e37364743831"
+           role="tabpanel" aria-labelledby="heading-edc9f0a5a5d57797bf68e37364743831">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/epoll-and-nonbloking/" title="【译】epoll与非阻塞IO"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】epoll与非阻塞IO</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-1/" title="用Rust玩eBPF —— RedBpf"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— RedBpf</span>
+        </a>
+      
+    
+      
+      
+        <a href="/reading-files-the-hard-way/" title="【译】读取文件的困难模式 一"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】读取文件的困难模式 一</span>
+        </a>
+      
+    
+      
+      
+        <a href="/reading-files-the-hard-way-2/" title="【译】读取文件的困难模式 二"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">【译】读取文件的困难模式 二</span>
+        </a>
+      
+    
+      
+      
+        <a href="/reading-files-the-hard-way-3/" title="【译】读取文件的困难模式 三"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】读取文件的困难模式 三</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">【译】读取文件的困难模式 二</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>原文链接 <a target="_blank" rel="noopener" href="https://fasterthanli.me/series/reading-files-the-hard-way/part-2">https://fasterthanli.me/series/reading-files-the-hard-way/part-2</a></p>
+<p>看看最新的模型，感觉有点可疑。<em>每个程序</em> 最终调用同一组函数。这几乎就像是不同的东西 调用这些时会发生。</p>
+<p>这些是常规函数吗？我们可以使用调试器单步调试它们吗？</p>
+<p>如果我们在 gdb 中运行由 stdio 驱动的 C 程序，并在 <code>read</code> 处中断，我们可以 确认我们确实最终调用了一个 <code>read</code> 函数（称为 <code>__GI___libc_read</code> 在这里，但是哦，好吧）：</p>
+<div class="code-wrapper"><pre><code class="hljs dns">$ gcc -g -O0 readfile-f.c -o readfile-f
+
+$ gdb --silent ./readfile-f
+Reading symbols from ./readfile-f...
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> break read
+Function <span class="hljs-string">&quot;read&quot;</span> not defined.
+Make breakpoint pending on future shared library load? <span class="hljs-punctuation">(</span>y or [n]<span class="hljs-punctuation">)</span> y
+Breakpoint <span class="hljs-number">1</span> <span class="hljs-punctuation">(</span>read<span class="hljs-punctuation">)</span> pending.
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> r
+Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile-f 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library <span class="hljs-string">&quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;</span>.
+
+Breakpoint <span class="hljs-number">1</span>, __GI___libc_read <span class="hljs-punctuation">(</span>fd=<span class="hljs-number">3</span>, buf=<span class="hljs-number">0</span>x5555555594a0, nbytes=<span class="hljs-number">4096</span><span class="hljs-punctuation">)</span> at ../sysdeps/unix/sysv/linux/read.c:<span class="hljs-number">25</span>
+<span class="hljs-number">25</span>      ../sysdeps/unix/sysv/linux/read.c: No such file or directory.
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> bt
+#<span class="hljs-number">0</span>  __GI___libc_read <span class="hljs-punctuation">(</span>fd=<span class="hljs-number">3</span>, buf=<span class="hljs-number">0</span>x5555555594a0, nbytes=<span class="hljs-number">4096</span><span class="hljs-punctuation">)</span> at ../sysdeps/unix/sysv/linux/read.c:<span class="hljs-number">25</span>
+#<span class="hljs-number">1</span>  <span class="hljs-number">0</span>x00007ffff7c88596 <span class="hljs-type">in</span> _IO_new_file_underflow <span class="hljs-punctuation">(</span>fp=<span class="hljs-number">0</span>x5555555592a0<span class="hljs-punctuation">)</span> at ./libio/libioP.h:<span class="hljs-number">947</span>
+#<span class="hljs-number">2</span>  <span class="hljs-number">0</span>x00007ffff7c86e00 <span class="hljs-type">in</span> __GI__IO_file_xsgetn <span class="hljs-punctuation">(</span>fp=<span class="hljs-number">0</span>x5555555592a0, data=&lt;optimized out&gt;, n=<span class="hljs-number">15</span><span class="hljs-punctuation">)</span> at ./libio/fileops.c:<span class="hljs-number">1321</span>
+#<span class="hljs-number">3</span>  <span class="hljs-number">0</span>x00007ffff7c7b709 <span class="hljs-type">in</span> __GI__IO_fread <span class="hljs-punctuation">(</span>buf=<span class="hljs-number">0</span>x555555559480, size=<span class="hljs-number">1</span>, count=<span class="hljs-number">15</span>, fp=<span class="hljs-number">0</span>x5555555592a0<span class="hljs-punctuation">)</span> at ./libio/iofread.c:<span class="hljs-number">38</span>
+#<span class="hljs-number">4</span>  <span class="hljs-number">0</span>x0000555555555288 <span class="hljs-type">in</span> main <span class="hljs-punctuation">(</span>argc=<span class="hljs-number">1</span>, argv=<span class="hljs-number">0</span>x7fffffffdb98<span class="hljs-punctuation">)</span> at readfile-f.c:<span class="hljs-number">16</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span>
+</code></pre></div>
+
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+GDB 是一个开源调试器，可在 Linux、macOS和 Windows 上运行 （有一些限制）。
+除了许多其他功能之外，它还允许设置断点和单步执行代码。
+我们会大量使用它。
+</code></pre></div>
+<p>Rust 程序也是如此：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs shell"><span class="hljs-meta prompt_">$ </span><span class="language-bash">rust-gdb --silent target/debug/readfile-rs</span>
+Reading symbols from target/debug/readfile-rs...
+(gdb) break read
+Breakpoint 1 at 0x1ea73: file library/std/src/fs.rs, line 872.
+(gdb) r
+Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile-rs/target/debug/readfile-rs 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library &quot;/lib/x86_64-linux-gnu/libthread_db.so.1&quot;.
+
+Breakpoint 1, std::sys::unix::fs::OpenOptions::read () at library/std/src/sys/unix/fs.rs:893
+893     library/std/src/sys/unix/fs.rs: No such file or directory.
+(gdb) c
+Continuing.
+
+Breakpoint 1, __GI___libc_read (fd=3, buf=0x5555555a8ba0, nbytes=220) at ../sysdeps/unix/sysv/linux/read.c:25
+25      ../sysdeps/unix/sysv/linux/read.c: No such file or directory.
+(gdb) bt
+<span class="hljs-meta prompt_">#</span><span class="language-bash">0  __GI___libc_read (fd=3, buf=0x5555555a8ba0, nbytes=220) at ../sysdeps/unix/sysv/linux/read.c:25</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">1  0x000055555557454f <span class="hljs-keyword">in</span> std::sys::unix::fd::FileDesc::read_buf () at library/std/src/sys/unix/fd.rs:136</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">2  std::sys::unix::fs::File::read_buf () at library/std/src/sys/unix/fs.rs:1062</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">3  std::fs::&#123;impl#5&#125;::read_buf () at library/std/src/fs.rs:737</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">4  std::io::default_read_to_end&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:376</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">5  0x000055555557297d <span class="hljs-keyword">in</span> std::io::default_read_to_string::&#123;closure#0&#125;&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:430</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">6  std::io::append_to_string&lt;std::io::default_read_to_string::&#123;closure_env#0&#125;&lt;std::fs::File&gt;&gt; () at library/std/src/io/mod.rs:338</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">7  std::io::default_read_to_string&lt;std::fs::File&gt; () at library/std/src/io/mod.rs:430</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">8  std::fs::&#123;impl#5&#125;::read_to_string () at library/std/src/fs.rs:754</span>
+<span class="hljs-meta prompt_">#</span><span class="language-bash">9  0x000055555555c899 <span class="hljs-keyword">in</span> readfile_rs::main () at src/main.rs:9</span></code></pre></div>
+<p>然而，当我们尝试逐步完成它时……什么也没有。为了探索这些细节，我克隆了 glibc 存储库（因为那是读取函数似乎所在的位置）， 并发现了这个：</p>
+<p>C code</p>
+<div class="code-wrapper"><pre><code class="hljs c">
+<span class="hljs-comment">// in `glibc/sysdeps/unix/sysv/linux/read.c`</span>
+
+<span class="hljs-comment">/* Read NBYTES into BUF from FD.  Return the number read or -1.  */</span>
+<span class="hljs-type">ssize_t</span>
+__libc_read (<span class="hljs-type">int</span> fd, <span class="hljs-type">void</span> *buf, <span class="hljs-type">size_t</span> nbytes)
+&#123;
+  <span class="hljs-keyword">return</span> SYSCALL_CANCEL (read, fd, buf, nbytes);
+&#125;
+libc_hidden_def (__libc_read)
+
+libc_hidden_def (__read)
+weak_alias (__libc_read, __read)
+libc_hidden_def (read)
+weak_alias (__libc_read, read)</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+glibc 的源代码（如上所示）可以在 此 git 存储库（https://sourceware.org/git/?p=glibc.git;a=summary） 或 此中找到非官方 GitHub 镜像（https://github.com/bminor/glibc）。
+由于许多历史和实际原因，libc 是一个非常复杂的软件。还有其他流行的，例如 musl。
+</code></pre></div>
+<p>我们之所以找不到可读的代码是因为……它完全生活在另一片大陆上：</p>
+<p><img src="/reading-files-the-hard-way-2/1.svg" srcset="/img/loading.gif" lazyload alt="1"></p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+strace中的“s”正是代表了“系统调用(syscall)”。
+</code></pre></div>
+<p>它不仅仅是两套不同的软件。他们以不同的特权运行。 Linux 内核（及其设备驱动程序）在<code>Ring 0</code>中运行，这里一切都被允许。 然而，用户态应用程序在<code>Ring 3</code>中运行。</p>
+<p><img src="/reading-files-the-hard-way-2/2.svg" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p>这个图太经典了，所以我不得不在这里展示它，但我不认为它非常符合直觉。我更喜欢这样：</p>
+<p><img src="/reading-files-the-hard-way-2/3.svg" srcset="/img/loading.gif" lazyload alt="3"></p>
+<p>因为你从<code>Ring 0</code> 可以做的事情是你在<code>Ring 3</code>可以做的事情的<strong>严格超集</strong>。<code>Ring 3</code>就像一个监狱。<code>Ring 0</code> 中的任何人都可以访问，但<code>Ring 3</code>只能发送信件（即进行系统调用）。</p>
+<p><img src="/reading-files-the-hard-way-2/4.svg" srcset="/img/loading.gif" lazyload alt="4"></p>
+<p>所以内核处理诸如读取和写入之类的事情。但它也处理进程一类的事情。当我们启动应用程序时，它在进程和内核中运行 决定哪个进程运行以及何时运行。它中断进程并恢复它们， 给重要的更高的优先级 - 而且还给人一种错觉，即单个CPU核心以同时做多件事（当它实际上一次只能做一件事情时）。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+现实要复杂得多。 CPU 核心做做多种事情 立刻，只是不是以一种容易观察的方式。
+</code></pre></div>
+<p>内核负责很多，但让我们重点关注文件。 进程具有与其关联的资源 - 例如文件描述符！当我们打开 一个文件（带有 open 系统调用），内核将会：</p>
+<ul>
+<li>决定是否允许这样做</li>
+<li>询问 VFS 谁负责这条特定路径</li>
+<li>保留一个文件描述符，即：<ul>
+<li>只是一个数字，真的</li>
+<li>每个进程唯一的</li>
+</ul>
+</li>
+<li>记下该编号对应于该资源</li>
+<li>告诉我们号码是多少</li>
+</ul>
+<p>在我们与内核的进一步沟通中，每当我们想要 引用该资源，我们将只使用该号码。</p>
+<p>这回答了您读这篇文章时此时可能想到的问题之一：在大多数程序的 strace 输出中，我们看到了对close的调用（这会关闭一个文件描述符-但在我们的示例C程序中，<strong>我们从来没有费心去调用它</strong>！</p>
+<p>这是因为内核以其无限的智慧<strong>记录了打开的文件描述符，并在进程退出后将它们全部清除</strong>。</p>
+<p>“这一切都有点理论化了”有人在后面低声说道。 “我很高兴 他没有向我们展示内核代码，但是……我们是否应该相信内核真的在清理文件描述符？”</p>
+<p>好问题！ 是列出特定路径的打开文件描述符的命令， 所以我们可以用一个简单的 C 程序快速验证这一点：</p>
+<p>C code<br>&#x2F;&#x2F; in <code>open.c</code></p>
+<div class="code-wrapper"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;fcntl.h&gt;</span></span>
+
+<span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> **argv)</span> &#123;
+    <span class="hljs-type">int</span> fd = open(<span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY);
+
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Our file descriptor for /etc/hosts is %d\n&quot;</span>, fd);
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Press enter to exit...\n&quot;</span>);
+    getc(<span class="hljs-built_in">stdin</span>);
+&#125;</code></pre></div>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs c">$ gcc open.c -o open
+
+$ lsof /etc/hosts <span class="hljs-number">2</span>&gt; /dev/null
+
+$ ./open
+Our file descriptor <span class="hljs-keyword">for</span> /etc/hosts is <span class="hljs-number">3</span>
+Press enter to <span class="hljs-built_in">exit</span>...
+^Z
+[<span class="hljs-number">1</span>]+  Stopped                 ./open
+
+$ lsof /etc/hosts <span class="hljs-number">2</span>&gt; /dev/null
+COMMAND     PID USER   FD   TYPE DEVICE SIZE/OFF     NODE NAME
+open    <span class="hljs-number">1917875</span> amos    <span class="hljs-number">3</span>r   REG    <span class="hljs-number">8</span>,<span class="hljs-number">3</span>      <span class="hljs-number">220</span> <span class="hljs-number">16253092</span> /etc/hosts
+
+$ fg
+./open
+
+
+$ lsof /etc/hosts <span class="hljs-number">2</span>&gt; /dev/null
+</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">我们学到了什么？
+内核是万能的。它决定进程如何运行、管理访问 到所有设备（包括磁盘），并负责执行安全性。
+
+常规函数调用只是“跳转”。到代码的另一部分。系统调用 不是常规函数调用。它们是Ring 3 之间的安全接口 （用户层，我们的应用程序）和Ring 0（内核）。
+
+进行系统调用涉及将参数写入可访问的地方 用户态，并礼貌地要求内核考虑我们的请求。内核 可以出于各种原因拒绝它：该文件可能不存在，我们可能不存在 有权阅读它等
+</code></pre></div>
+<h1 id="进行系统调用"><a href="#进行系统调用" class="headerlink" title="进行系统调用"></a>进行系统调用</h1><p>我们需要消除潜在的混乱根源。我们看到了一个 read() 函数 在 glibc（大多数 Linux 发行版附带的 C 库）的源代码中， 但它与实际的 read 系统调用不同。</p>
+<p>看起来 大多数 Unix 都是用 C 编写的，但是我们可以进行系统调用吗 不使用libc？像这样的事情：</p>
+<p><img src="/reading-files-the-hard-way-2/5.svg" srcset="/img/loading.gif" lazyload alt="5"></p>
+<p>嘿，Go 不是 C - Go 使用 libc 进行系统调用吗？让我们找出答案。</p>
+<p>这是一个简单的 Go 程序的源代码，该程序打印 &#x2F;etc&#x2F;hosts的内容：</p>
+<p>Go code</p>
+<div class="code-wrapper"><pre><code class="hljs go"><span class="hljs-keyword">package</span> main
+
+<span class="hljs-keyword">import</span> (
+  <span class="hljs-string">&quot;io/ioutil&quot;</span>
+  <span class="hljs-string">&quot;fmt&quot;</span>
+)
+
+<span class="hljs-function"><span class="hljs-keyword">func</span> <span class="hljs-title">main</span><span class="hljs-params">()</span></span> &#123;
+  payload, err := ioutil.ReadFile(<span class="hljs-string">&quot;/etc/hosts&quot;</span>)
+  <span class="hljs-keyword">if</span> err != <span class="hljs-literal">nil</span> &#123;
+    <span class="hljs-built_in">panic</span>(err)
+  &#125;
+
+  fmt.Printf(<span class="hljs-string">&quot;%s\n&quot;</span>, <span class="hljs-type">string</span>(payload))
+&#125;</code></pre></div>
+<p>它确实有效，但它似乎没有与 libc 链接：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs accesslog">
+$ go build main.go
+
+$ ./main | head -<span class="hljs-number">3</span>
+<span class="hljs-number">127.0.0.1</span>       localhost
+<span class="hljs-number">127.0.1.1</span>       sonic
+
+
+$ ldd main
+        not a dynamic executable</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+ldd是一个“打印共享对象依赖关系”的工具。
+
+ldd 手册页(https://manpage.me/?q=ldd) 有更多信息。
+
+在我们的例子中，确保我们的程序不使用 glibc。 Go 程序通常是静态链接的，除非它们 使用不起眼的包，例如 net 或 os/user。
+
+好吧，我猜 Go 程序通常都是动态的，但你可以修复它（https://dominik.honnef.co/posts/2015/06/statically_compiled_go_programs__always__even_with_cgo__using_musl/）。
+</code></pre></div>
+<p>尝试在 gdb 中中断 read 也没有任何结果。好吧，我们能确定一下吗 它至少仍然使用 openat 和 read 系统调用？让我们追踪一下：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs dns">$ strace -e openat,read,write ./main
+openat<span class="hljs-punctuation">(</span>AT_FDCWD, <span class="hljs-string">&quot;/sys/kernel/mm/transparent_hugepage/hpage_pmd_size&quot;</span>, O_RDONLY<span class="hljs-punctuation">)</span> = <span class="hljs-number">3</span>
+read<span class="hljs-punctuation">(</span><span class="hljs-number">3</span>, <span class="hljs-string">&quot;2097152<span class="hljs-char escape_">\n</span>&quot;</span>, <span class="hljs-number">20</span><span class="hljs-punctuation">)</span>                = <span class="hljs-number">8</span>
+--- SIGURG &#123;si_signo=SIGURG, si_code=SI_TKILL, si_pid=<span class="hljs-number">1923780</span>, si_uid=<span class="hljs-number">1000</span>&#125; ---
+--- SIGURG &#123;si_signo=SIGURG, si_code=SI_TKILL, si_pid=<span class="hljs-number">1923780</span>, si_uid=<span class="hljs-number">1000</span>&#125; ---
+openat<span class="hljs-punctuation">(</span>AT_FDCWD, <span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY|O_CLOEXEC<span class="hljs-punctuation">)</span> = <span class="hljs-number">3</span>
+read<span class="hljs-punctuation">(</span><span class="hljs-number">3</span>, <span class="hljs-string">&quot;127.0.0.1<span class="hljs-char escape_">\t</span>localhost<span class="hljs-char escape_">\n</span>127.0.1.1<span class="hljs-char escape_">\t</span>so&quot;</span>..., <span class="hljs-number">512</span><span class="hljs-punctuation">)</span> = <span class="hljs-number">220</span>
+read<span class="hljs-punctuation">(</span><span class="hljs-number">3</span>, <span class="hljs-string">&quot;&quot;</span>, <span class="hljs-number">292</span><span class="hljs-punctuation">)</span>                        = <span class="hljs-number">0</span>
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;127.0.0.1<span class="hljs-char escape_">\t</span>localhost<span class="hljs-char escape_">\n</span>127.0.1.1<span class="hljs-char escape_">\t</span>so&quot;</span>..., <span class="hljs-number">221127</span>.<span class="hljs-number">0</span>.<span class="hljs-number">0</span>.<span class="hljs-number">1</span> localhost
+<span class="hljs-number">127.0.1.1</span>       sonic
+
+# The following lines are desirable for IPv6 capable hosts
+<span class="hljs-number">::1</span>     ip6-localhost ip6-loopback
+<span class="hljs-number">fe00::0</span> ip6-localnet
+<span class="hljs-number">ff00::0</span> ip6-mcastprefix
+<span class="hljs-number">ff02::1</span> ip6-allnodes
+<span class="hljs-number">ff02::2</span> ip6-allrouters
+
+<span class="hljs-punctuation">)</span> = <span class="hljs-number">221</span>
++++ exited with <span class="hljs-number">0</span> +++</code></pre></div>
+<p>确实如此！因此不需要 libc 来进行系统调用。终于解脱了。</p>
+<div class="code-wrapper"><pre><code class="hljs">我们学到了什么？
+尽管在某些方面，Go 是比 C 更高级的语言 （它有一个垃圾收集器，它带有并发原语等）， 它不依赖 libc 来进行系统调用。
+
+这与 Node.js 运行时和 Rust 标准库形成对比，后者 两者都使用 libc 进行系统调用。
+</code></pre></div>
+<h1 id="在-x86-64-上进行-Linux-系统调用"><a href="#在-x86-64-上进行-Linux-系统调用" class="headerlink" title="在 x86_64 上进行 Linux 系统调用"></a>在 x86_64 上进行 Linux 系统调用</h1><p>所以我们已经看到，几乎所有语言，无论使用多少层抽象，最终都将会以某种方式进行系统调用。</p>
+<p>但是如何进行系统调用呢？到目前为止，我们一直在使用以下语言：</p>
+<ul>
+<li>使用 libc 通过包装函数（Node.js、Rust、C）进行系统调用</li>
+<li>手动构建系统调用 (Go)</li>
+</ul>
+<p>让我们尝试在汇编中自己创建一个系统调用。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+汇编是大多数编译程序成为完整可执行文件之前的中间形式之一。
+
+用非常简单的话来说：C 编译器将 C 翻译为汇编，即汇编器 将汇编语言翻译成机器代码，链接器将多个汇编语言粘合在一起 将机器代码片段转换为可执行文件。
+</code></pre></div>
+<p>我们将使用yasm，因为其他的工具都让我血压升高。我们的代码将位于 readfile.asm 中，并且我们 将使用此 makefile 构建它：</p>
+<div class="code-wrapper"><pre><code class="hljs stylus">Makefile
+<span class="hljs-selector-class">.PHONY</span>: <span class="hljs-attribute">all</span>
+
+<span class="hljs-attribute">all</span>:
+	yasm -f elf64 -<span class="hljs-selector-tag">g</span> dwarf2 readfile<span class="hljs-selector-class">.asm</span>
+	ld readfile<span class="hljs-selector-class">.o</span> -o readfile</code></pre></div>
+<p>yasm 调用将我们的程序集组装成一个目标文件，并且 ld 调用将其链接到完整的可执行文件。</p>
+<p>我们将从一个非常简单的程序开始，让我们将其放入readfile.asm：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs assembly">            global _start ; _start is our entry point - this is its declaration...
+
+            section .text ; the text section is where we&#x27;ll put executable code
+_start:     xor rdi, rdi  ; ...and this is its definition. we just set rdi to 0.</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+rdi是一个寄存器。
+
+寄存器是 CPU 中的内存位置，可用于多种用途： 临时存储，将参数传递给函数，返回值 函数等。您可以将它们视为全局变量。
+
+每个架构都有自己的一组寄存器。我们在 x86_64，所以我们将使用一些 64 位通用寄存器，如 rax、rdi、rsi。我们会 也可以使用堆栈指针，rsp。
+
+编译和链接都很好，但是当我们运行它时会出现段错误：
+</code></pre></div>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs vim">$ <span class="hljs-keyword">make</span>
+yasm -<span class="hljs-keyword">f</span> elf64 -g dwarf2 <span class="hljs-built_in">readfile</span>.asm
+ld <span class="hljs-built_in">readfile</span>.<span class="hljs-keyword">o</span> -<span class="hljs-keyword">o</span> <span class="hljs-built_in">readfile</span>
+
+$ ./<span class="hljs-built_in">readfile</span> 
+Segmentation fault (core dumped)</code></pre></div>
+<p>为了让我们的程序干净地退出，我们需要..进行系统调用。</p>
+<p>我们需要进行系统调用的第一件事是它的编号。以 Ubuntu 为例， 你可以在头文件中找到它：</p>
+<p>C code<br>&#x2F;&#x2F; in <code>/usr/include/x86_64-linux-gnu/asm/unistd_64.h</code></p>
+<div class="code-wrapper"><pre><code class="hljs cpp"><span class="hljs-comment">// (cut)</span>
+<span class="hljs-meta">#<span class="hljs-keyword">define</span> __NR_exit 60</span>
+<span class="hljs-comment">// (cut)</span></code></pre></div>
+<p>但是你也可以在网上找到一些系统调用表，比如 Filippo’s (<a target="_blank" rel="noopener" href="https://filippo.io/linux-syscall-table/)%EF%BC%8C%E5%8F%AF%E6%90%9C%E7%B4%A2%E3%80%82">https://filippo.io/linux-syscall-table/)，可搜索。</a></p>
+<p>我们需要做的第二件事是..数一下我们的幸运星，因为在 x86_64 上， 有一条专门的指令来进行系统调用。 （它被称为syscall）。</p>
+<p>所以现在我们只需要将系统调用号 60 放入 rax 寄存器中， 并使用 syscall 指令，我们应该可以：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm">            <span class="hljs-meta">global</span> _start
+
+            <span class="hljs-meta">section</span> .text
+<span class="hljs-symbol">_start:</span>     <span class="hljs-keyword">mov</span> <span class="hljs-built_in">rax</span>, <span class="hljs-number">60</span>
+            <span class="hljs-keyword">syscall</span>
+</code></pre></div>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs vim">$ <span class="hljs-keyword">make</span>
+yasm -<span class="hljs-keyword">f</span> elf64 -g dwarf2 <span class="hljs-built_in">readfile</span>.asm
+ld <span class="hljs-built_in">readfile</span>.<span class="hljs-keyword">o</span> -<span class="hljs-keyword">o</span> <span class="hljs-built_in">readfile</span>
+
+$ ldd ./<span class="hljs-built_in">readfile</span>
+        not <span class="hljs-keyword">a</span> dynamic <span class="hljs-built_in">executable</span>
+</code></pre></div>
+<p>就像这样，我们在不使用 libc 的情况下进行了系统调用！那并不难。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+如果在没有 libc 的情况下进行系统调用并不困难，为什么这么多语言都使用 libc 进行系统调用？
+
+嗯，在 x86_64 上进行 Linux 系统调用很容易。 32 位架构有 进行系统调用的不同方式。其他操作系统已经完全 不同的系统调用集。
+
+您可以在 syscall(2) 的手册页中了解其中一些差异。 您可以使用 man 2 syscall 命令从 Linux 系统中提取它，或者 在线阅读(https://man7.org/linux/man-pages/man2/syscall.2.html#NOTES)
+</code></pre></div>
+<p>我们可以在汇编中重新实现整个readfile应用程序吗？让我们看看。</p>
+<p>日志记录不会像使用 Node.js、Rust、C 或 Go 那样简单。所以我们是 必须稍微依赖调试器。感谢 -g dwarf2 标志 我们传递给 yasm，我们有很好的调试信息：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs dns">$ gdb --silent ./readfile
+Reading symbols from ./readfile...
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> break _start
+Breakpoint <span class="hljs-number">1</span> at <span class="hljs-number">0</span>x401000: file readfile.asm, line <span class="hljs-number">4</span>.
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> r
+Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile 
+
+Breakpoint <span class="hljs-number">1</span>, _start <span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span> at readfile.asm:<span class="hljs-number">4</span>
+<span class="hljs-number">4</span>       _start:     mov rax, <span class="hljs-number">60</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> s
+<span class="hljs-number">5</span>                   syscall
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> s
+[Inferior <span class="hljs-number">1</span> <span class="hljs-punctuation">(</span>process <span class="hljs-number">1843089</span><span class="hljs-punctuation">)</span> exited normally]
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span></code></pre></div>
+<p>那么，让我们尝试一下 open 系统调用。它需要与 C 中相同的参数： 首先是一条路径，然后是一组标志。我们将路径存储在 data 部分。</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm">            <span class="hljs-meta">global</span> _start
+
+            <span class="hljs-meta">section</span> .text
+<span class="hljs-symbol">_start:</span>     <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">2</span>      <span class="hljs-comment">; &quot;open&quot; syscall</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, path   <span class="hljs-comment">; arg 1: path</span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsi</span>    <span class="hljs-comment">; arg 2: flags (0 = O_RDONLY)</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">60</span>     <span class="hljs-comment">; &quot;exit&quot; syscall</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-meta">section</span> .data
+<span class="hljs-symbol">path:</span>       <span class="hljs-built_in">db</span>      <span class="hljs-string">&quot;/etc/hosts&quot;</span>, <span class="hljs-number">0</span> <span class="hljs-comment">; null-terminated</span>
+</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+您不需要需要精通汇编才能阅读本文 - 最好 甚至接触我们不完全理解的语言。大多数人从来没有接受汇编的“正式培训”，只是多年来学了一些零碎的东西。
+
+如果您想在继续之前了解更多汇编知识，您可能需要 查看 YASM 文档（https://yasm.tortall.net/Guide.html） 或此 首先是这个 NASM 教程（https://cs.lmu.edu/~ray/notes/nasmtutorial/）。
+</code></pre></div>
+<p>使用 gdb 逐步执行此操作，我们可以确保open 成功， 在另一个终端中使用 lsof：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs dns"># GDB session
+$ gdb --silent ./readfile
+Reading symbols from ./readfile...
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> starti
+Starting program: /home/amos/bearcove/read-files-the-hard-way/readfile 
+
+Program stopped.
+_start <span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span> at readfile.asm:<span class="hljs-number">4</span>
+<span class="hljs-number">4</span>       _start:     mov     rax, <span class="hljs-number">2</span>      <span class="hljs-comment">; &quot;open&quot; syscall</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> s
+<span class="hljs-number">5</span>                   mov     rdi, path   <span class="hljs-comment">; arg 1: path</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> 
+<span class="hljs-number">6</span>                   xor     rsi, rsi    <span class="hljs-comment">; arg 2: flags (0 = O_RDONLY)</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> 
+<span class="hljs-number">7</span>                   syscall
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span> 
+<span class="hljs-number">9</span>                   mov     rax, <span class="hljs-number">60</span>     <span class="hljs-comment">; &quot;exit&quot; syscall</span>
+<span class="hljs-punctuation">(</span>gdb<span class="hljs-punctuation">)</span></code></pre></div>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs crmsh"><span class="hljs-comment"># In another shell</span>
+$ lsof /etc/hosts
+COMMAND      PID <span class="hljs-keyword">USER</span>   <span class="hljs-title">FD</span>   <span class="hljs-keyword">TYPE</span> DEVICE SIZE/OFF     <span class="hljs-keyword">NODE</span> <span class="hljs-title">NAME</span>
+readfile <span class="hljs-number">1846055</span> amos    <span class="hljs-number">3</span>r   REG    <span class="hljs-number">8</span>,<span class="hljs-number">3</span>      <span class="hljs-number">220</span> <span class="hljs-number">16253092</span> /etc/hosts</code></pre></div>
+<p>我们还可以在生成的二进制文件上使用strace。它显示是否有系统调用 成功或失败，这样效果就很好：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs awk">$ strace ./readfile 
+execve(<span class="hljs-string">&quot;./readfile&quot;</span>, [<span class="hljs-string">&quot;./readfile&quot;</span>], <span class="hljs-number">0</span>x7fffb827f0f0 <span class="hljs-regexp">/* 63 vars */</span>) = <span class="hljs-number">0</span>
+open(<span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY)            = <span class="hljs-number">3</span>
+<span class="hljs-keyword">exit</span>(<span class="hljs-number">4202496</span>)                           = ?
++++ exited with <span class="hljs-number">0</span> +++</code></pre></div>
+<p>糟糕，看起来我们没有以状态代码 0 退出，让我们解决这个问题：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs awk">mov     rax, <span class="hljs-number">60</span>
+xor     rdi, rdi    ; &lt;--- <span class="hljs-keyword">exit</span> with code <span class="hljs-number">0</span>
+syscall</code></pre></div>
+<p>这样更好。现在让我们尝试从此文件描述符中读取一些字节。 与所有其他系统调用一样，open 的返回值存储在 rax 中。</p>
+<p>我们将使用 rax 进行下一个系统调用，因此我们需要 使用 push 将其保存到堆栈中。另外，我们还需要分配内存 我们的缓冲区 - 让我们在堆栈上分配 16 个字节。</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm"><span class="hljs-meta">global</span> _start
+
+            <span class="hljs-meta">section</span> .text
+<span class="hljs-symbol">_start:</span>     <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">2</span>      <span class="hljs-comment">; &quot;open&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, path   <span class="hljs-comment">; </span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsi</span>    <span class="hljs-comment">; O_RDONLY</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">push</span> <span class="hljs-built_in">rax</span>            <span class="hljs-comment">; push file descriptor onto stack</span>
+            <span class="hljs-keyword">sub</span> <span class="hljs-built_in">rsp</span>, <span class="hljs-number">16</span>         <span class="hljs-comment">; reserve 16 bytes of memory</span>
+
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-built_in">rax</span>    <span class="hljs-comment">; &quot;read&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, [<span class="hljs-built_in">rsp</span>+<span class="hljs-number">16</span>] <span class="hljs-comment">; file descriptor</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsp</span>    <span class="hljs-comment">; address of buffer</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-number">16</span>     <span class="hljs-comment">; size of buffer</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">60</span>     <span class="hljs-comment">; &quot;exit&quot; syscall</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-meta">section</span> .data
+<span class="hljs-symbol">path:</span>       <span class="hljs-built_in">db</span>      <span class="hljs-string">&quot;/etc/hosts&quot;</span>, <span class="hljs-number">0</span> <span class="hljs-comment">; null-terminated</span></code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+堆栈是我们可以用来存储数据的区域。虽然尺寸有限，但是 比堆更容易使用。
+
+为了保留内存，我们只需从 rsp 中减去，该寄存器包含 “堆栈顶部”的地址。
+
+这是一个方便的图表，显示了我们调用 read 之前堆栈发生的情况：
+</code></pre></div>
+<p><img src="/reading-files-the-hard-way-2/6.svg" srcset="/img/loading.gif" lazyload alt="6"></p>
+<p>到目前为止，运行我们的程序仍然没有打印任何内容，但 strace 让我们知道 一切顺利：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs awk">$ make
+yasm -f elf64 -g dwarf2 readfile.asm
+ld readfile.o -o readfile
+
+$ ./readfile 
+
+$ strace ./readfile 
+execve(<span class="hljs-string">&quot;./readfile&quot;</span>, [<span class="hljs-string">&quot;./readfile&quot;</span>], <span class="hljs-number">0</span>x7ffc3dfee7d0 <span class="hljs-regexp">/* 60 vars */</span>) = <span class="hljs-number">0</span>
+open(<span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY)            = <span class="hljs-number">3</span>
+read(<span class="hljs-number">3</span>, <span class="hljs-string">&quot;127.0.0.1\tlocalh&quot;</span>, <span class="hljs-number">16</span>)        = <span class="hljs-number">16</span>
+<span class="hljs-keyword">exit</span>(<span class="hljs-number">3</span>)                                 = ?
++++ exited with <span class="hljs-number">3</span> +++
+</code></pre></div>
+
+<p>现在让我们使用 write 调用将该缓冲区打印到标准输出。</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm"><span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-built_in">rax</span>    <span class="hljs-comment">; &quot;read&quot;</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, [<span class="hljs-built_in">rsp</span>+<span class="hljs-number">16</span>] <span class="hljs-comment">; file descriptor</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsp</span>    <span class="hljs-comment">; address of buffer</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-number">16</span>     <span class="hljs-comment">; size of buffer</span>
+<span class="hljs-keyword">syscall</span>
+
+<span class="hljs-comment">; `rax` contains the number of bytes read</span>
+<span class="hljs-comment">; write takes the number of bytes to write via `rdx`</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-built_in">rax</span>    <span class="hljs-comment">; number of bytes</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">1</span>      <span class="hljs-comment">; &quot;write&quot;</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, <span class="hljs-number">1</span>      <span class="hljs-comment">; file descriptor (stdout)</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsp</span>    <span class="hljs-comment">; address of buffer</span>
+<span class="hljs-keyword">syscall</span>
+</code></pre></div>
+<p>我们终于看到了一些输出：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs accesslog">$ make
+yasm -f elf64 -g dwarf2 readfile.asm
+ld readfile.o -o readfile
+
+$ ./readfile 
+<span class="hljs-number">127.0.0.1</span>       localh
+</code></pre></div>
+<p>最后我们只需要重复读写，直到read返回0 读取的字节数。 （我们不会进行任何错误检查）。</p>
+<p>这是我们的最终程序：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm">            <span class="hljs-meta">global</span> _start
+
+            <span class="hljs-meta">section</span> .text
+<span class="hljs-symbol">_start:</span>     <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">2</span>      <span class="hljs-comment">; &quot;open&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, path   <span class="hljs-comment">; </span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsi</span>    <span class="hljs-comment">; O_RDONLY</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">push</span> <span class="hljs-built_in">rax</span>            <span class="hljs-comment">; push file descriptor onto stack</span>
+            <span class="hljs-keyword">sub</span> <span class="hljs-built_in">rsp</span>, <span class="hljs-number">16</span>         <span class="hljs-comment">; reserve 16 bytes of memory</span>
+<span class="hljs-symbol"></span>
+<span class="hljs-symbol">read_buffer:</span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-built_in">rax</span>    <span class="hljs-comment">; &quot;read&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, [<span class="hljs-built_in">rsp</span>+<span class="hljs-number">16</span>] <span class="hljs-comment">; file descriptor</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsp</span>    <span class="hljs-comment">; address of buffer</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-number">16</span>     <span class="hljs-comment">; size of buffer</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">test</span>    <span class="hljs-built_in">rax</span>, <span class="hljs-built_in">rax</span>
+            <span class="hljs-comment">; jz means &#x27;jump if zero&#x27;</span>
+            <span class="hljs-keyword">jz</span>      exit
+
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-built_in">rax</span>    <span class="hljs-comment">; number of bytes</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">1</span>      <span class="hljs-comment">; &quot;write&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, <span class="hljs-number">1</span>      <span class="hljs-comment">; file descriptor (stdout)</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsp</span>    <span class="hljs-comment">; address of buffer</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-keyword">jmp</span> read_buffer
+<span class="hljs-symbol"></span>
+<span class="hljs-symbol">exit:</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">60</span>     <span class="hljs-comment">; &quot;exit&quot;</span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rdi</span>, <span class="hljs-built_in">rdi</span>    <span class="hljs-comment">; return code 0</span>
+            <span class="hljs-keyword">syscall</span>
+
+            <span class="hljs-meta">section</span> .data
+<span class="hljs-symbol">path:</span>       <span class="hljs-built_in">db</span>      <span class="hljs-string">&quot;/etc/hosts&quot;</span>, <span class="hljs-number">0</span> <span class="hljs-comment">; null-terminated</span></code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">我们学到了什么？
+在 Linux x86_64 上进行系统调用涉及将值放入某些寄存器中， 然后使用 syscall 指令。
+
+我们可以使用栈（向下增长）作为临时存储空间。
+
+
+酷熊的热心小贴士
+本文中有关系统调用的信息是仅限于Linux平台的。
+
+例如，Windows 系统调用编号会随着操作系统版本的不同而变化 - 有时 甚至服务包。如果您好奇，看看这个表。
+
+虽然可以在不使用操作系统库的情况下进行系统调用，但它是 并不总是实用。
+</code></pre></div>
+<p>读书累了？<br>我们不都是这样吗？换个视频怎么样？</p>
+<p>内存映射文件<br>让我们尝试在另一个程序上使用 strace： ripgrep。</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs dns">$ strace rg &#x27;localhost&#x27; /etc/hosts
+<span class="hljs-punctuation">(</span>cut<span class="hljs-punctuation">)</span>
+openat<span class="hljs-punctuation">(</span>AT_FDCWD, <span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY|O_CLOEXEC<span class="hljs-punctuation">)</span> = <span class="hljs-number">3</span>
+statx<span class="hljs-punctuation">(</span><span class="hljs-number">3</span>, <span class="hljs-string">&quot;&quot;</span>, AT_STATX_SYNC_AS_STAT|AT_EMPTY_PATH, STATX_ALL, &#123;stx_mask=STATX_ALL|STATX_MNT_ID, stx_attributes=<span class="hljs-number">0</span>, stx_mode=S_IFREG|<span class="hljs-number">0644</span>, stx_size=<span class="hljs-number">220</span>, ...&#125;<span class="hljs-punctuation">)</span> = <span class="hljs-number">0</span>
+mmap<span class="hljs-punctuation">(</span>NULL, <span class="hljs-number">220</span>, PROT_READ, MAP_SHARED, <span class="hljs-number">3</span>, <span class="hljs-number">0</span><span class="hljs-punctuation">)</span> = <span class="hljs-number">0</span>x7fd3a694a000
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;\33[0m\33[32m1\33[0m:127.0.0.1<span class="hljs-char escape_">\t</span>\33[0m\33[1&quot;</span>..., <span class="hljs-number">511</span>:<span class="hljs-number">127.0.0.1</span>        localhost<span class="hljs-punctuation">)</span> = <span class="hljs-number">51</span>
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;<span class="hljs-char escape_">\n</span>&quot;</span>, <span class="hljs-number">1</span>
+<span class="hljs-punctuation">)</span>                       = <span class="hljs-number">1</span>
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;\33[0m\33[32m5\33[0m:::1     ip6-\33[0m\33&quot;</span>..., <span class="hljs-number">665</span>:<span class="hljs-number">::1</span>     ip6-localhost ip6-loopback<span class="hljs-punctuation">)</span> = <span class="hljs-number">66</span>
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;<span class="hljs-char escape_">\n</span>&quot;</span>, <span class="hljs-number">1</span>
+<span class="hljs-punctuation">)</span>                       = <span class="hljs-number">1</span>
+munmap<span class="hljs-punctuation">(</span><span class="hljs-number">0</span>x7fd3a694a000, <span class="hljs-number">220</span><span class="hljs-punctuation">)</span>             = <span class="hljs-number">0</span>
+close<span class="hljs-punctuation">(</span><span class="hljs-number">3</span><span class="hljs-punctuation">)</span>                                = <span class="hljs-number">0</span>
+<span class="hljs-punctuation">(</span>cut<span class="hljs-punctuation">)</span></code></pre></div>
+<p>我们识别 openat 系统调用，也识别 statx - 但是..它不使用read。这里发生了什么？</p>
+<p>好吧，还记得我们说过内核是全能的监督者吗？ 控制用户空间交互的一切？这也适用于内存！</p>
+<p>在 Linux 这样的操作系统中，每个进程都有自己的<code>虚拟地址空间</code>(virtual address space)。其中一些通过MMU(全称内存管理单元)内存管理映射到物理内存。</p>
+<p><img src="/reading-files-the-hard-way-2/7.svg" srcset="/img/loading.gif" lazyload alt="7"></p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+物理内存被划分为“页”，以便更容易寻址。页数 通常是 4KiB，但并非总是如此！
+
+例如，Apple Silicon 处理器（例如 M1）有 16KiB 页。
+</code></pre></div>
+<p>当进程启动时，会为其堆栈保留一些页面。当在堆上分配内存时，例如使用 malloc， glibc 的分配器向内核请求更多页面，并跟踪所有页面分配，以便<code>free()</code>正常工作。</p>
+<p>首先，让我们检查每个进程是否确实有一个单独的地址空间。</p>
+<p>我们可以制作第一个程序，write.c：</p>
+<p>C code</p>
+<div class="code-wrapper"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span>
+
+<span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> **argv)</span> &#123;
+  <span class="hljs-comment">// allocate 4 bytes</span>
+  <span class="hljs-type">int</span> *ptr = <span class="hljs-built_in">malloc</span>(<span class="hljs-keyword">sizeof</span>(<span class="hljs-type">int</span>));
+  <span class="hljs-comment">// write a very specific value to it</span>
+  *ptr = <span class="hljs-number">0xFEEDFACE</span>;
+  <span class="hljs-comment">// read back the value, and print the address</span>
+  <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Wrote %x to %p\n&quot;</span>, *ptr, ptr);
+  <span class="hljs-comment">// wait for user input</span>
+  getc(<span class="hljs-built_in">stdin</span>);
+&#125;
+</code></pre></div>
+<p>该程序很有可能打印出不同的内容 每次都输入地址，但是当我运行它时，它打印出以下内容：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs applescript">$ gcc <span class="hljs-built_in">write</span>.c -o <span class="hljs-built_in">write</span>
+$ ./<span class="hljs-built_in">write</span>
+Wrote feedface <span class="hljs-keyword">to</span> <span class="hljs-number">0x56459a9c7260</span>
+</code></pre></div>
+<p>我们可以用它来编写第二个程序，read.c：</p>
+<p>C code</p>
+<div class="code-wrapper"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdlib.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span>
+
+<span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">(<span class="hljs-type">int</span> argc, <span class="hljs-type">char</span> **argv)</span> &#123;
+    <span class="hljs-type">int</span> *ptr = (<span class="hljs-type">int</span> *) <span class="hljs-number">0x56459a9c7260</span>;
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;Read %x to %p\n&quot;</span>, *ptr, ptr);
+&#125;
+</code></pre></div>
+<p>并运行它：</p>
+<div class="code-wrapper"><pre><code class="hljs applescript">$ gcc <span class="hljs-built_in">read</span>.c -o <span class="hljs-built_in">read</span>
+$ ./<span class="hljs-built_in">read</span>
+[<span class="hljs-number">1</span>]   <span class="hljs-number">6429</span> segmentation fault (core dumped)   ./<span class="hljs-built_in">read</span></code></pre></div>
+<p>发生了什么？ 0x56459a9c7260 是 write 虚拟地址中的有效地址 地址空间，但不在 read 中。尝试从中读取数据是一种访问 违规，这会导致内核向我们的进程发送信号，并且 该信号的默认处理程序会终止该进程。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+我们在第 1 部分中使用它来让我们的 stdio 支持的 C 程序出现段错误！
+</code></pre></div>
+<p>访问冲突只是一种缺页（page fault）。当我们尝试读取或写入当前不是的（虚拟）地址时 映射到物理内存就会发生缺页。</p>
+<p>这正是<code>mmap</code>背后的技巧。当我们第一次映射一个文件时， 内核可能会急切地将文件的前4K读入自己的缓冲区中， 并设置页表以便（用户态）进程可以直接读取该缓冲区：</p>
+<p><img src="/reading-files-the-hard-way-2/8.svg" srcset="/img/loading.gif" lazyload alt="8"></p>
+<p>但是一旦进程读取过去第一个 4K，那就是缺页！</p>
+<p>请记住，内核可以做任何事情来响应页面错误：它可能确定这是访问冲突，并向进程发送信号。在这种情况下，它选择简单地履行其承诺“这个虚拟地址范围包含文件的内容”，只是……直到需要它为止。</p>
+<p><img src="/reading-files-the-hard-way-2/9.svg" srcset="/img/loading.gif" lazyload alt="9"></p>
+<p>文件的请求部分被实际读取，设置一个新的页面映射：</p>
+<p>内核对于一段时间没有被访问过的页，当然可以自由地“调出”页面（或者只要它想要，真的！）。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+执行程序时，其映像是内存映射的。
+
+这允许程序在从磁盘完全读取出来之前开始执行，尤其当可执行文件很大，或者 I/O 设备很慢时，这点非常重要。
+</code></pre></div>
+<h1 id="在汇编中使用mmap"><a href="#在汇编中使用mmap" class="headerlink" title="在汇编中使用mmap"></a>在汇编中使用mmap</h1><p>我们可以在汇编程序中使用它吗？我们当然可以！</p>
+<p>因为我们不确定<code>mmap</code>需要什么参数（以及要放置哪些寄存器） ），我们将使用这个 x86 的可搜索 Linux 系统调用表 x86_64 通过 @FiloSottile。</p>
+<p>首先，像往常一样，我们需要打开文件：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm"><span class="hljs-symbol">_start:</span>     <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">2</span>          <span class="hljs-comment">; &quot;open&quot;</span>
+            <span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, path       <span class="hljs-comment">; </span>
+            <span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rsi</span>        <span class="hljs-comment">; O_RDONLY</span>
+            <span class="hljs-keyword">syscall</span>
+</code></pre></div>
+<p>接下来，我们想要找到文件的大小（以字节为单位），因此我们可以通过 它到 mmap。我们将使用 fstat 系统调用来实现此目的，该系统调用需要 fd (a 文件描述符）在寄存器 rdi 中，以及 struct stat __user* statbuf 在寄存器rsi中。</p>
+<p>为了帮助我编写下一部分，我编写了一个简单的 C 程序来转储 结构体的大小，以及 st_size 字段的偏移量，以及两个 常量：</p>
+<p>C code</p>
+<div class="code-wrapper"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stdio.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;stddef.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;sys/stat.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-keyword">include</span> <span class="hljs-string">&lt;sys/mman.h&gt;</span></span>
+
+<span class="hljs-type">int</span> <span class="hljs-title function_">main</span><span class="hljs-params">()</span> &#123;
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;size of stat struct: %zu\n&quot;</span>, <span class="hljs-keyword">sizeof</span>(<span class="hljs-keyword">struct</span> stat));
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;offset of st_size  : %zu\n&quot;</span>, offsetof(<span class="hljs-keyword">struct</span> stat, st_size));
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;PROT_READ   = 0x%x\n&quot;</span>, PROT_READ);
+    <span class="hljs-built_in">printf</span>(<span class="hljs-string">&quot;MAP_PRIVATE = 0x%x\n&quot;</span>, MAP_PRIVATE);
+&#125;
+</code></pre></div>
+<p>哪个输出：</p>
+<div class="code-wrapper"><pre><code class="hljs apache"><span class="hljs-attribute">size</span> of stat struct: <span class="hljs-number">144</span>
+<span class="hljs-attribute">offset</span> of st_size  : <span class="hljs-number">48</span>
+<span class="hljs-attribute">PROT_READ</span>   = <span class="hljs-number">0</span>x1
+<span class="hljs-attribute">MAP_PRIVATE</span> = <span class="hljs-number">0</span>x2
+</code></pre></div>
+<p>因此，看起来我们需要在堆栈上分配 144 个字节：</p>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs perl">mov     rdi, rax        ; fd (returned from <span class="hljs-keyword">open</span>)
+<span class="hljs-function"><span class="hljs-keyword">sub</span>     <span class="hljs-title">rsp</span>, 144        </span>; allocate <span class="hljs-keyword">stat</span> struct
+mov     rsi, rsp        ; address of <span class="hljs-string">&#x27;struct stat&#x27;</span>
+mov     rax, <span class="hljs-number">5</span>          ; <span class="hljs-string">&quot;fstat&quot;</span> <span class="hljs-keyword">syscall</span>
+<span class="hljs-keyword">syscall</span></code></pre></div>
+<p>然后我们可以将文件描述符、文件大小和标志提供给 mmap。 请注意，我们可以指定一个地址（但 NULL 也可以）和一个偏移量 （但是 0 就可以了，因为我们想要整个文件）。</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+mmap 系统调用需要：
+
+addr in %rdi
+len in %rsi
+prot（protection）in %rdx
+flags in %r10
+fd in %r8
+off（offset）in %r9
+</code></pre></div>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm"><span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, [<span class="hljs-built_in">rsp</span>+<span class="hljs-number">48</span>]   <span class="hljs-comment">; len = file size (from &#x27;struct stat&#x27;)</span>
+<span class="hljs-keyword">add</span>     <span class="hljs-built_in">rsp</span>, <span class="hljs-number">144</span>        <span class="hljs-comment">; free &#x27;struct stat&#x27;</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">r8</span>, <span class="hljs-built_in">rdi</span>         <span class="hljs-comment">; fd (still in rdi from last syscall)</span>
+<span class="hljs-keyword">xor</span>     <span class="hljs-built_in">rdi</span>, <span class="hljs-built_in">rdi</span>        <span class="hljs-comment">; address = 0</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-number">0x1</span>        <span class="hljs-comment">; protection = PROT_READ</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">r10</span>, <span class="hljs-number">0x2</span>        <span class="hljs-comment">; flags = MAP_PRIVATE</span>
+<span class="hljs-keyword">xor</span>     <span class="hljs-built_in">r9</span>, <span class="hljs-built_in">r9</span>          <span class="hljs-comment">; offset = 0</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">9</span>          <span class="hljs-comment">; &quot;mmap&quot; syscall</span>
+<span class="hljs-keyword">syscall</span>
+</code></pre></div>
+<p>最后，我们可以在一个 write 系统调用中写出整个文件：</p>
+<div class="code-wrapper"><pre><code class="hljs">酷熊的热心小贴士
+write 系统调用需要：
+
+fd in %rdi
+buf in %rsi
+count in%rdx
+</code></pre></div>
+<p>x86 assembly</p>
+<div class="code-wrapper"><pre><code class="hljs x86asm"><span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdx</span>, <span class="hljs-built_in">rsi</span>        <span class="hljs-comment">; count (file size from last call)</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rsi</span>, <span class="hljs-built_in">rax</span>        <span class="hljs-comment">; buffer address (returned from mmap)</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rdi</span>, <span class="hljs-number">1</span>          <span class="hljs-comment">; fd = stdout</span>
+<span class="hljs-keyword">mov</span>     <span class="hljs-built_in">rax</span>, <span class="hljs-number">1</span>          <span class="hljs-comment">; &quot;write&quot; syscall</span>
+<span class="hljs-keyword">syscall</span>
+</code></pre></div>
+<p>我们终于得到它了：</p>
+<p>Shell session</p>
+<div class="code-wrapper"><pre><code class="hljs dns">$ make
+yasm -f elf64 -g dwarf2 readfile.asm
+ld readfile.o -o readfile
+
+$ strace ./readfile &gt; /dev/null
+execve<span class="hljs-punctuation">(</span><span class="hljs-string">&quot;./readfile&quot;</span>, [<span class="hljs-string">&quot;./readfile&quot;</span>], <span class="hljs-number">0</span>x7ffffc6ddbf0 /* <span class="hljs-number">60</span> vars */<span class="hljs-punctuation">)</span> = <span class="hljs-number">0</span>
+open<span class="hljs-punctuation">(</span><span class="hljs-string">&quot;/etc/hosts&quot;</span>, O_RDONLY<span class="hljs-punctuation">)</span>            = <span class="hljs-number">3</span>
+fstat<span class="hljs-punctuation">(</span><span class="hljs-number">3</span>, &#123;st_mode=S_IFREG|<span class="hljs-number">0644</span>, st_size=<span class="hljs-number">220</span>, ...&#125;<span class="hljs-punctuation">)</span> = <span class="hljs-number">0</span>
+mmap<span class="hljs-punctuation">(</span>NULL, <span class="hljs-number">220</span>, PROT_READ, MAP_PRIVATE, <span class="hljs-number">3</span>, <span class="hljs-number">0</span><span class="hljs-punctuation">)</span> = <span class="hljs-number">0</span>x7f11fbe5a000
+write<span class="hljs-punctuation">(</span><span class="hljs-number">1</span>, <span class="hljs-string">&quot;127.0.0.1<span class="hljs-char escape_">\t</span>localhost<span class="hljs-char escape_">\n</span>127.0.1.1<span class="hljs-char escape_">\t</span>so&quot;</span>..., <span class="hljs-number">220</span><span class="hljs-punctuation">)</span> = <span class="hljs-number">220</span>
+exit<span class="hljs-punctuation">(</span><span class="hljs-number">0</span><span class="hljs-punctuation">)</span>                                 = ?
++++ exited with <span class="hljs-number">0</span> +++
+</code></pre></div>
+<div class="code-wrapper"><pre><code class="hljs">我们学到了什么？
+进程的地址空间指的是虚拟内存，那么 通过页表映射到物理内存。当访问未映射的范围时， 它会导致页面错误。
+
+我们可以通过mmap将它们映射到虚拟地址空间，而不是使用`read`读文件。在mmap的范围中read将会使内核实际读那部分文件。
+
+可执行文件在运行时是内存映射的（即使在 Windows 上）。
+</code></pre></div>
+<p>在下一部分中，我们将看看内核内部，看看如何 文件的组织和读取 - 以及我们如何通过使用来查找和读取它们 这些知识，我们可以绕过尽可能多的抽象。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Linux/" class="category-chain-item">Linux</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/linux/" class="print-no-link">#linux</a>
+      
+        <a href="/tags/rust/" class="print-no-link">#rust</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>【译】读取文件的困难模式 二</div>
+      <div>https://fenixc9.github.io/reading-files-the-hard-way-2/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年12月17日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/reading-files-the-hard-way-3/" title="【译】读取文件的困难模式 三">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">【译】读取文件的困难模式 三</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/dove-in-memory/" title="我记忆中的那只鸽子">
+                        <span class="hidden-mobile">我记忆中的那只鸽子</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

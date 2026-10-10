@@ -1,0 +1,1061 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/lunarvim/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="有时我们会觉得VSCode还不够快，想尝试下neovim，但是又被其繁杂的配置劝退。这时可以尝试下lunarvim，一套开箱即用的neovim配置。是懒得折腾又想尝试neovim的人的福音。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="lunarvim + neovide的炫酷开发环境">
+<meta property="og:url" content="https://fenixc9.github.io/lunarvim/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="有时我们会觉得VSCode还不够快，想尝试下neovim，但是又被其繁杂的配置劝退。这时可以尝试下lunarvim，一套开箱即用的neovim配置。是懒得折腾又想尝试neovim的人的福音。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/1.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/2.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/3.png">
+<meta property="og:image" content="https://fenixc9.github.io/lunarvim/4.gif">
+<meta property="article:published_time" content="2023-02-11T16:45:52.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.658Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="ide">
+<meta property="article:tag" content="vim">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/lunarvim/1.png">
+  
+  
+  
+  <title>lunarvim + neovide的炫酷开发环境 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">lunarvim + neovide的炫酷开发环境</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-02-12 00:45" pubdate>
+          2023年2月12日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          39 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Vim"
+        id="heading-944037673fd019101da363c74a0feed9" role="tab" data-toggle="collapse" href="#collapse-944037673fd019101da363c74a0feed9"
+        aria-expanded="true"
+      >
+        Vim
+        <span class="list-group-count">(1)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-944037673fd019101da363c74a0feed9"
+           role="tabpanel" aria-labelledby="heading-944037673fd019101da363c74a0feed9">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/lunarvim/" title="lunarvim + neovide的炫酷开发环境"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">lunarvim + neovide的炫酷开发环境</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">lunarvim + neovide的炫酷开发环境</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="环境和依赖"><a href="#环境和依赖" class="headerlink" title="环境和依赖"></a>环境和依赖</h1><p>lunarvim 的官方文档：<br><a target="_blank" rel="noopener" href="https://www.lunarvim.org/zh-Hans/docs/installation">https://www.lunarvim.org/zh-Hans/docs/installation</a></p>
+<p>笔者这里是Ubuntu 22</p>
+<div class="code-wrapper"><pre><code class="hljs shell">fenix@thisway:~$ lsb_release -a
+No LSB modules are available.
+Distributor ID:	Ubuntu
+Description:	Ubuntu 22.04.1 LTS
+Release:	22.04
+Codename:	jammy</code></pre></div>
+
+
+<h2 id="1-Neovim"><a href="#1-Neovim" class="headerlink" title="1. Neovim"></a>1. Neovim</h2><p>目前lunarvim要求neovim版本<code>0.8.0</code> 以上。</p>
+<p>在这里可以找到：<br><a target="_blank" rel="noopener" href="https://github.com/neovim/neovim/releases/tag/stable">https://github.com/neovim/neovim/releases/tag/stable</a></p>
+<p>安装deb：</p>
+<div class="code-wrapper"><pre><code class="hljs nginx"><span class="hljs-attribute">rpm</span> -ivh nvim-linux64.deb</code></pre></div>
+
+<h2 id="2-rust"><a href="#2-rust" class="headerlink" title="2. rust"></a>2. rust</h2><p>安装依赖rust环境：</p>
+<div class="code-wrapper"><pre><code class="hljs stylus">curl <span class="hljs-attr">--proto</span> <span class="hljs-string">&#x27;=https&#x27;</span> <span class="hljs-attr">--tlsv1</span>.<span class="hljs-number">2</span> -sSf https:<span class="hljs-comment">//sh.rustup.rs | sh</span></code></pre></div>
+
+<p>rust默认的中央仓库如果访问较慢，可以在<code>~/.cargo/config</code>中配置一些国内镜像：</p>
+<div class="code-wrapper"><pre><code class="hljs ini"><span class="hljs-section">[source.crates-io]</span>
+<span class="hljs-attr">registry</span> = <span class="hljs-string">&quot;https://github.com/rust-lang/crates.io-index&quot;</span>
+<span class="hljs-comment"># 指定镜像</span>
+<span class="hljs-attr">replace-with</span> = <span class="hljs-string">&#x27;ustc&#x27;</span>
+
+
+<span class="hljs-comment"># 中国科学技术大学</span>
+<span class="hljs-section">[source.ustc]</span>
+<span class="hljs-attr">registry</span> = <span class="hljs-string">&quot;git://mirrors.ustc.edu.cn/crates.io-index&quot;</span>
+
+<span class="hljs-comment"># 上海交通大学</span>
+<span class="hljs-section">[source.sjtu]</span>
+<span class="hljs-attr">registry</span> = <span class="hljs-string">&quot;https://mirrors.sjtug.sjtu.edu.cn/git/crates.io-index&quot;</span>
+
+<span class="hljs-comment"># 清华大学</span>
+<span class="hljs-section">[source.tuna]</span>
+<span class="hljs-attr">registry</span> = <span class="hljs-string">&quot;https://mirrors.tuna.tsinghua.edu.cn/git/crates.io-index.git&quot;</span>
+
+<span class="hljs-comment"># rustcc社区</span>
+<span class="hljs-section">[source.rustcc]</span>
+<span class="hljs-attr">registry</span> = <span class="hljs-string">&quot;https://code.aliyun.com/rustcc/crates.io-index.git&quot;</span></code></pre></div>
+
+<h2 id="3-安装git-make-gcc-python-pip-node-npm"><a href="#3-安装git-make-gcc-python-pip-node-npm" class="headerlink" title="3. 安装git,make,gcc,python,pip,node,npm"></a>3. 安装git,make,gcc,python,pip,node,npm</h2><div class="code-wrapper"><pre><code class="hljs mipsasm">sudo apt <span class="hljs-keyword">install </span>git <span class="hljs-keyword">build-essential </span>python3 python-pip nodejs npm</code></pre></div>
+
+<h1 id="安装lunarvim"><a href="#安装lunarvim" class="headerlink" title="安装lunarvim"></a>安装lunarvim</h1><p>执行脚本:</p>
+<div class="code-wrapper"><pre><code class="hljs awk">LV_BRANCH=<span class="hljs-string">&#x27;release-1.2/neovim-0.8&#x27;</span> bash &lt;(curl -s https:<span class="hljs-regexp">//</span>raw.githubusercontent.com<span class="hljs-regexp">/lunarvim/</span>lunarvim<span class="hljs-regexp">/fc6873809934917b470bff1b072171879899a36b/u</span>tils<span class="hljs-regexp">/installer/i</span>nstall.sh)</code></pre></div>
+
+<p>配置环境变量</p>
+<div class="code-wrapper"><pre><code class="hljs routeros"><span class="hljs-built_in">export</span> <span class="hljs-attribute">PATH</span>=/home/fenix/.local/bin:$PATH
+alias <span class="hljs-attribute">vim</span>=lvim</code></pre></div>
+<h2 id="安装字体"><a href="#安装字体" class="headerlink" title="安装字体"></a>安装字体</h2><p>安装最新版nerd-fonts</p>
+<div class="code-wrapper"><pre><code class="hljs awk">wget -c https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/ryanoasis/</span>nerd-fonts<span class="hljs-regexp">/releases/</span>download<span class="hljs-regexp">/&#123;版本&#125;/</span>SourceCodePro.zip</code></pre></div>
+<p>安装字体</p>
+<div class="code-wrapper"><pre><code class="hljs bash"><span class="hljs-built_in">sudo</span> unzip SourceCodePro -d /usr/share/fonts/SourceCodePro
+<span class="hljs-built_in">cd</span> /usr/share/fonts/SourceCodePro
+<span class="hljs-built_in">sudo</span> mkfontscale <span class="hljs-comment"># 生成核心字体信息</span>
+<span class="hljs-built_in">sudo</span> mkfontdir <span class="hljs-comment"># 生成字体文件夹</span>
+<span class="hljs-built_in">sudo</span> fc-cache -fv <span class="hljs-comment"># 刷新系统字体缓存</span></code></pre></div>
+<p>为你的终端配置字体为SourceCodePro，lunarvim的emoji和icon就可以正常显示了。</p>
+<h2 id="插件"><a href="#插件" class="headerlink" title="插件"></a>插件</h2><p>执行vim后 <code>:LvimUpdate</code> 尝试更新插件</p>
+<h2 id="lsp语言插件"><a href="#lsp语言插件" class="headerlink" title="lsp语言插件"></a>lsp语言插件</h2><p><code>:TSInstall </code> 后面接上语言，笔者这里就只安装Rust了。<br>执行</p>
+<div class="code-wrapper"><pre><code class="hljs dart">:<span class="hljs-title class_">TSInstall</span> rust</code></pre></div>
+<p>可以看到<br><img src="/lunarvim/1.png" srcset="/img/loading.gif" lazyload alt="1"></p>
+<p>支持补全和注释显示<br><img src="/lunarvim/2.png" srcset="/img/loading.gif" lazyload alt="2"></p>
+<p>目前的版本还不支持inlay-hint，我们需要再配置几个插件</p>
+<p>leader键 + L + c</p>
+<p>找到：</p>
+<div class="code-wrapper"><pre><code class="hljs lua">lvim.plugins = &#123;
+
+&#125;</code></pre></div>
+
+<p>添加rust-tools：</p>
+<div class="code-wrapper"><pre><code class="hljs lua">
+lvim.plugins = &#123;
+ &#123;
+    <span class="hljs-string">&quot;simrat39/rust-tools.nvim&quot;</span>,
+    <span class="hljs-built_in">config</span> = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>
+      <span class="hljs-keyword">local</span> status_ok, rust_tools = <span class="hljs-built_in">pcall</span>(<span class="hljs-built_in">require</span>, <span class="hljs-string">&quot;rust-tools&quot;</span>)
+      <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> status_ok <span class="hljs-keyword">then</span>
+        <span class="hljs-keyword">return</span>
+      <span class="hljs-keyword">end</span>
+
+      <span class="hljs-keyword">local</span> opts = &#123;
+        tools = &#123;
+          executor = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;rust-tools/executors&quot;</span>).termopen, <span class="hljs-comment">-- can be quickfix or termopen</span>
+          reload_workspace_from_cargo_toml = <span class="hljs-literal">true</span>,
+          inlay_hints = &#123;
+            auto = <span class="hljs-literal">true</span>,
+            only_current_line = <span class="hljs-literal">false</span>,
+            show_parameter_hints = <span class="hljs-literal">true</span>,
+            parameter_hints_prefix = <span class="hljs-string">&quot;&lt;-&quot;</span>,
+            other_hints_prefix = <span class="hljs-string">&quot;=&gt;&quot;</span>,
+            max_len_align = <span class="hljs-literal">false</span>,
+            max_len_align_padding = <span class="hljs-number">1</span>,
+            right_align = <span class="hljs-literal">false</span>,
+            right_align_padding = <span class="hljs-number">7</span>,
+            highlight = <span class="hljs-string">&quot;Comment&quot;</span>,
+          &#125;,
+          hover_actions = &#123;
+            border = &#123;
+                    &#123; <span class="hljs-string">&quot;╭&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;─&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;╮&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;│&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;╯&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;─&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;╰&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+                    &#123; <span class="hljs-string">&quot;│&quot;</span>, <span class="hljs-string">&quot;FloatBorder&quot;</span> &#125;,
+            &#125;,
+            auto_focus = <span class="hljs-literal">true</span>,
+          &#125;,
+        &#125;,
+        server = &#123;
+          on_attach = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;lvim.lsp&quot;</span>).common_on_attach,
+          on_init = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;lvim.lsp&quot;</span>).common_on_init,
+          settings = &#123;
+            [<span class="hljs-string">&quot;rust-analyzer&quot;</span>] = &#123;
+              checkOnSave = &#123;
+                command = <span class="hljs-string">&quot;clippy&quot;</span>
+              &#125;
+            &#125;
+          &#125;,
+        &#125;,
+      &#125;
+      <span class="hljs-keyword">local</span> extension_path = vim.fn.expand <span class="hljs-string">&quot;~/&quot;</span> .. <span class="hljs-string">&quot;.vscode/extensions/vadimcn.vscode-lldb-1.7.3/&quot;</span>
+
+      <span class="hljs-keyword">local</span> codelldb_path = extension_path .. <span class="hljs-string">&quot;adapter/codelldb&quot;</span>
+      <span class="hljs-keyword">local</span> liblldb_path = extension_path .. <span class="hljs-string">&quot;lldb/lib/liblldb.dylib&quot;</span>
+
+      opts.dap = &#123;
+              adapter = <span class="hljs-built_in">require</span>(<span class="hljs-string">&quot;rust-tools.dap&quot;</span>).get_codelldb_adapter(codelldb_path, liblldb_path),
+      &#125;
+      rust_tools.setup(opts)
+    <span class="hljs-keyword">end</span>,
+    ft = &#123; <span class="hljs-string">&quot;rust&quot;</span>, <span class="hljs-string">&quot;rs&quot;</span> &#125;,
+  &#125;,
+&#125;</code></pre></div>
+
+<p>然后hint就可以在右边正常显示了<br><img src="/lunarvim/3.png" srcset="/img/loading.gif" lazyload alt="3"></p>
+<p>一些Rust用的命令</p>
+<ul>
+<li>运行Rust代码<code>:RustRun</code></li>
+<li>展开宏<code>RustExpandMacro</code></li>
+<li>编译为IR <code>RustEmitIR</code></li>
+</ul>
+<h2 id="其他插件"><a href="#其他插件" class="headerlink" title="其他插件"></a>其他插件</h2><p>此外还有一些比较常用的插件:</p>
+<ol>
+<li>markdown预览</li>
+</ol>
+<div class="code-wrapper"><pre><code class="hljs lua">&#123;
+  <span class="hljs-string">&quot;iamcco/markdown-preview.nvim&quot;</span>,
+  run = <span class="hljs-string">&quot;cd app &amp;&amp; npm install&quot;</span>,
+  ft = <span class="hljs-string">&quot;markdown&quot;</span>,
+  <span class="hljs-built_in">config</span> = <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>
+    vim.g.mkdp_auto_start = <span class="hljs-number">1</span>
+  <span class="hljs-keyword">end</span>,
+&#125;,</code></pre></div>
+<ol start="2">
+<li>自动保存</li>
+</ol>
+<div class="code-wrapper"><pre><code class="hljs dns">&#123;
+  <span class="hljs-string">&quot;Pocco81/auto-save.nvim&quot;</span>,
+  config = function<span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span>
+    require<span class="hljs-punctuation">(</span><span class="hljs-string">&quot;auto-save&quot;</span><span class="hljs-punctuation">)</span>.setup<span class="hljs-punctuation">(</span><span class="hljs-punctuation">)</span>
+  end,
+&#125;,</code></pre></div>
+
+
+<h1 id="neovide"><a href="#neovide" class="headerlink" title="neovide"></a>neovide</h1><p>neovide是一个Rust实现的neovim前端，非常炫酷，支持这样的cursor动态效果，丝滑滚动，窗口动画等<br><img src="/lunarvim/4.gif" srcset="/img/loading.gif" lazyload alt="4"></p>
+<h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><p>我们这里就不自己编译了，这里下载二进制包</p>
+<div class="code-wrapper"><pre><code class="hljs awk">https:<span class="hljs-regexp">//gi</span>thub.com<span class="hljs-regexp">/neovide/</span>neovide<span class="hljs-regexp">/releases/</span>latest<span class="hljs-regexp">/download/</span>neovide.tar.gz</code></pre></div>
+<p>解压完成后</p>
+<div class="code-wrapper"><pre><code class="hljs awk">mv neovide <span class="hljs-regexp">/usr/</span>local<span class="hljs-regexp">/bin/</span></code></pre></div>
+<p>即可</p>
+<p>然后配置我们的lvim脚本 <code>~/.local/bin/lvim</code><br>最后一行改为：</p>
+<div class="code-wrapper"><pre><code class="hljs bash"><span class="hljs-built_in">exec</span> -a lvim neovide 	 <span class="hljs-string">&quot;<span class="hljs-variable">$@</span>&quot;</span> -- -u <span class="hljs-string">&quot;<span class="hljs-variable">$LUNARVIM_BASE_DIR</span>/init.lua&quot;</span></code></pre></div>
+<p>即可体验neovide下的lunarvim，直接执行lvim即可。</p>
+<h2 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h2><p>配置可以在这里看到<br><a target="_blank" rel="noopener" href="https://neovide.dev/configuration.html">https://neovide.dev/configuration.html</a><br>这里有完整的配置。配置文件就是lunarvim的配置文件，打开lvim后点<code>leader键 + L + c</code><br>就是config.lua。将配置加到最后即可，目前笔者配置了下面几个:</p>
+<div class="code-wrapper"><pre><code class="hljs stylus">--透明度
+vim<span class="hljs-selector-class">.g</span><span class="hljs-selector-class">.neovide_transparency</span> = <span class="hljs-number">0.9</span>
+
+-- <span class="hljs-attribute">cursor</span>特效 
+vim<span class="hljs-selector-class">.g</span><span class="hljs-selector-class">.neovide_cursor_vfx_mode</span> = <span class="hljs-string">&quot;railgun&quot;</span>
+<span class="hljs-attr">--vim</span><span class="hljs-selector-class">.g</span><span class="hljs-selector-class">.neovide_cursor_vfx_mode</span> = <span class="hljs-string">&quot;ripple&quot;</span>
+
+-- neovide profile用于查看目前帧数，渲染延迟
+vim<span class="hljs-selector-class">.g</span>.neovide_profiler=true</code></pre></div>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Vim/" class="category-chain-item">Vim</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/vim/" class="print-no-link">#vim</a>
+      
+        <a href="/tags/ide/" class="print-no-link">#ide</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>lunarvim + neovide的炫酷开发环境</div>
+      <div>https://fenixc9.github.io/lunarvim/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年2月12日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Rust实现的文件目录树</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/monotonic-stack/" title="单调栈的一些应用">
+                        <span class="hidden-mobile">单调栈的一些应用</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

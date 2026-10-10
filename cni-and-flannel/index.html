@@ -1,0 +1,1045 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/cni-and-flannel/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="这个系列将介绍CNI及一些CNI的实现">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CNI学习系列1 认识CNI">
+<meta property="og:url" content="https://fenixc9.github.io/cni-and-flannel/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="这个系列将介绍CNI及一些CNI的实现">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-03-28T07:49:26.000Z">
+<meta property="article:modified_time" content="2026-10-09T18:03:54.633Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="CNI">
+<meta property="article:tag" content="Kubernetes">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>CNI学习系列1 认识CNI · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">CNI学习系列1 认识CNI</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-03-28 15:49" pubdate>
+          2023年3月28日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.9k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          33 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Kubernetes"
+        id="heading-30136395f01879792198317c11831ea4" role="tab" data-toggle="collapse" href="#collapse-30136395f01879792198317c11831ea4"
+        aria-expanded="true"
+      >
+        Kubernetes
+        <span class="list-group-count">(4)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-30136395f01879792198317c11831ea4"
+           role="tabpanel" aria-labelledby="heading-30136395f01879792198317c11831ea4">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/cni-and-flannel/" title="CNI学习系列1 认识CNI"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">CNI学习系列1 认识CNI</span>
+        </a>
+      
+    
+      
+      
+        <a href="/cni-flannel/" title="CNI学习系列2 Flannel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">CNI学习系列2 Flannel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/try-apisix/" title="云原生网关apisix"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">云原生网关apisix</span>
+        </a>
+      
+    
+      
+      
+        <a href="/cni-calico/" title="CNI学习系列3 calico"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">CNI学习系列3 calico</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">CNI学习系列1 认识CNI</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="介绍CNI"><a href="#介绍CNI" class="headerlink" title="介绍CNI"></a>介绍CNI</h1><h3 id="什么是CNI？"><a href="#什么是CNI？" class="headerlink" title="什么是CNI？"></a>什么是CNI？</h3><p>CNI (Container Network Interface) 。容器网络接口。由CNCF出品，旨在配置linux 容器的网络规范的库。现在已经成最流行的网络标准，被包含k8s在内的众多容器解决方案采用。</p>
+<h3 id="CNI长啥样？"><a href="#CNI长啥样？" class="headerlink" title="CNI长啥样？"></a>CNI长啥样？</h3><ul>
+<li>CNI的插件都以可执行文件的形式存放在集群节点上</li>
+</ul>
+<div class="code-wrapper"><pre><code class="hljs autoit">[root<span class="hljs-symbol">@node1</span> amd64]<span class="hljs-meta"># ls /opt/cni/bin/</span>
+bandwidth  bridge  dhcp  firewall  flannel  host-device  host-<span class="hljs-keyword">local</span>  ipvlan  loopback  macvlan  portmap  ptp  sbr  <span class="hljs-keyword">static</span>  tuning  vlan  vrf</code></pre></div>
+<h3 id="CNI插件怎么生效"><a href="#CNI插件怎么生效" class="headerlink" title="CNI插件怎么生效"></a>CNI插件怎么生效</h3><p>kubelet将按照NETCONFPATH的环境变量找相关的cni配置文件，比如我在配置文件中声明了<code>flannel</code> 和<code>bandwidth</code> 这两个插件，他将会到<code>CNI_PATH</code> 中查找相应的插件执行。</p>
+<p>CNI规范要求所有参数要么以标准输入的json字符串的形式，要么以环境变量的形式给到插件。同时插件也应json形式标准输出结果。</p>
+<p>一个官方的CNI NETCONF 例子如下</p>
+<div class="code-wrapper"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span>
+  <span class="hljs-attr">&quot;cniVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;1.0.0&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;dbnet&quot;</span><span class="hljs-punctuation">,</span>
+  <span class="hljs-attr">&quot;plugins&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+    <span class="hljs-punctuation">&#123;</span>
+      <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bridge&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-comment">// plugin specific parameters</span>
+      <span class="hljs-attr">&quot;bridge&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;cni0&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;keyA&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span><span class="hljs-string">&quot;some more&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;plugin specific&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-string">&quot;configuration&quot;</span><span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+      
+      <span class="hljs-attr">&quot;ipam&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;host-local&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-comment">// ipam specific</span>
+        <span class="hljs-attr">&quot;subnet&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.1.0.0/16&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;gateway&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.1.0.1&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;routes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+            <span class="hljs-punctuation">&#123;</span><span class="hljs-attr">&quot;dst&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.0.0.0/0&quot;</span><span class="hljs-punctuation">&#125;</span>
+        <span class="hljs-punctuation">]</span>
+      <span class="hljs-punctuation">&#125;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;dns&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;nameservers&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span> <span class="hljs-string">&quot;10.1.0.1&quot;</span> <span class="hljs-punctuation">]</span>
+      <span class="hljs-punctuation">&#125;</span>
+    <span class="hljs-punctuation">&#125;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">&#123;</span>
+      <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;tuning&quot;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;capabilities&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;mac&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span>
+      <span class="hljs-punctuation">&#125;</span><span class="hljs-punctuation">,</span>
+      <span class="hljs-attr">&quot;sysctl&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;net.core.somaxconn&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;500&quot;</span>
+      <span class="hljs-punctuation">&#125;</span>
+    <span class="hljs-punctuation">&#125;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;portmap&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;capabilities&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><span class="hljs-attr">&quot;portMappings&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">&#125;</span>
+    <span class="hljs-punctuation">&#125;</span>
+  <span class="hljs-punctuation">]</span>
+<span class="hljs-punctuation">&#125;</span></code></pre></div>
+
+<h3 id="插件的分类"><a href="#插件的分类" class="headerlink" title="插件的分类?"></a>插件的分类?</h3><h4 id="Main：接口创建"><a href="#Main：接口创建" class="headerlink" title="Main：接口创建"></a>Main：接口创建</h4><ul>
+<li>bridge：创建网桥，并添加主机和容器到该网桥</li>
+<li>ipvlan：在容器中添加一个 ipvlan 接口</li>
+<li>loopback：创建一个回环接口</li>
+<li>macvlan：创建一个新的 MAC 地址，将所有的流量转发到容器</li>
+<li>ptp：创建 veth 对</li>
+<li>vlan：分配一个 vlan 设备</li>
+</ul>
+<h4 id="IPAM：IP-地址分配"><a href="#IPAM：IP-地址分配" class="headerlink" title="IPAM：IP 地址分配"></a>IPAM：IP 地址分配</h4><ul>
+<li>dhcp：在主机上运行守护程序，代表容器发出 DHCP 请求</li>
+<li>host-local：维护分配 IP 的本地数据库</li>
+</ul>
+<h4 id="Meta：其它插件"><a href="#Meta：其它插件" class="headerlink" title="Meta：其它插件"></a>Meta：其它插件</h4><ul>
+<li>flannel：根据 flannel 的配置文件创建接口</li>
+<li>tuning：调整现有接口的 sysctl 参数</li>
+<li>portmap：一个基于 iptables 的 portmapping 插件。将端口从主机的地址空间映射到容器。<br>单个CNI插件的职责是单一的，比如bridge插件负责网桥的相关配置， firewall插件负责防火墙相关配置， portmap 插件负责端口映射相关配置。</li>
+</ul>
+<p>命令看起来像是这样：</p>
+<div class="code-wrapper"><pre><code class="hljs routeros"><span class="hljs-comment"># CNI_COMMAND=ADD 顾名思义表示创建。</span>
+<span class="hljs-comment"># XXX=XXX 其他参数定义见下文。</span>
+<span class="hljs-comment"># &lt; config.json 表示从标准输入传递配置文件</span>
+<span class="hljs-attribute">CNI_COMMAND</span>=ADD <span class="hljs-attribute">XXX</span>=XXX .<span class="hljs-built_in">/bridge </span>&lt; config.json</code></pre></div>
+
+<h3 id="插件有那些参数？"><a href="#插件有那些参数？" class="headerlink" title="插件有那些参数？"></a>插件有那些参数？</h3><ul>
+<li>CNI_COMMAND ：定义期望的操作，可以是ADD，DEL，CHECK或VERSION。通常用于添加网络还是删除网络。</li>
+<li>CNI_CONTAINERID ： 容器ID，由容器运行时管理的容器唯一标识符。</li>
+<li>CNI_NETNS：容器网络命名空间的路径。（形如 &#x2F;run&#x2F;netns&#x2F;[nsname] )。</li>
+<li>CNI_IFNAME ：需要被创建的网络接口名称，例如eth0。</li>
+<li>CNI_ARGS ：运行时调用时传入的额外参数，格式为分号分隔的key-value对，例如 FOO&#x3D;BAR;ABC&#x3D;123 </li>
+<li>CNI_PATH : CNI插件可执行文件的路径，例如&#x2F;opt&#x2F;cni&#x2F;bin。</li>
+</ul>
+<h2 id="项目结构"><a href="#项目结构" class="headerlink" title="项目结构"></a>项目结构</h2><ul>
+<li>cnitool 一个用于执行插件的工具。工具执行依赖两个环境变量：<code>NETCONFPATH</code> 配置文件路径，默认是在<code>/etc/cni/net.d</code>目录下搜索 *.conflist文件。<code>CNI_PATH</code> 这个环境变量保存插件。</li>
+<li>libcni  这里面就是CNI规范中的接口，里面是golang的interface。</li>
+<li>plugins  这里有些自己开发插件的模板项目</li>
+</ul>
+<h2 id="一个例子"><a href="#一个例子" class="headerlink" title="一个例子"></a>一个例子</h2><p>我们下面演示下内置的一些简单插件的使用，我们以bridge为例：</p>
+<ol>
+<li><p>首先在linux内部 &#x2F;opt&#x2F;cni&#x2F;bin 下部署插件组</p>
+</li>
+<li><p>以无网络模式启动docker 容器</p>
+</li>
+</ol>
+<div class="code-wrapper"><pre><code class="hljs ini"><span class="hljs-attr">contid</span>=$(docker run -d --net=none --name nginx nginx) <span class="hljs-comment"># 容器ID</span>
+<span class="hljs-attr">pid</span>=$(docker inspect -f <span class="hljs-string">&#x27;&#123;&#123; .State.Pid &#125;&#125;&#x27;</span> <span class="hljs-variable">$contid</span>) <span class="hljs-comment"># 容器进程ID</span>
+<span class="hljs-attr">netnspath</span>=/proc/<span class="hljs-variable">$pid</span>/ns/net <span class="hljs-comment"># 命名空间路径</span>
+</code></pre></div>
+
+
+<p>nsenter进入相应namespace可以看到只有回环网卡。</p>
+<div class="code-wrapper"><pre><code class="hljs apache"><span class="hljs-attribute">nsenter</span> -t $pid -n ip a
+<span class="hljs-attribute">1</span>: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu <span class="hljs-number">65536</span> qdisc noqueue state UNKNOWN group default qlen <span class="hljs-number">1000</span>
+    <span class="hljs-attribute">link</span>/loopback <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span> brd <span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>:<span class="hljs-number">00</span>
+    <span class="hljs-attribute">inet</span> <span class="hljs-number">127.0.0.1</span>/<span class="hljs-number">8</span> scope host lo
+       <span class="hljs-attribute">valid_lft</span> forever preferred_lft forever</code></pre></div>
+
+<ol start="3">
+<li>配置参数json</li>
+</ol>
+<div class="code-wrapper"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span>
+    <span class="hljs-attr">&quot;cniVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.4.0&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;name&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;mynet&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;bridge&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;bridge&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;mynet0&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;isDefaultGateway&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;forceAddress&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">false</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ipMasq&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;hairpinMode&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-literal"><span class="hljs-keyword">true</span></span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ipam&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span>
+        <span class="hljs-attr">&quot;type&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;host-local&quot;</span><span class="hljs-punctuation">,</span>
+        <span class="hljs-attr">&quot;subnet&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.0.0/16&quot;</span>
+    <span class="hljs-punctuation">&#125;</span>
+<span class="hljs-punctuation">&#125;</span>
+</code></pre></div>
+<p>执行ADD操作</p>
+<div class="code-wrapper"><pre><code class="hljs routeros"><span class="hljs-attribute">CNI_COMMAND</span>=ADD <span class="hljs-attribute">CNI_CONTAINERID</span>=<span class="hljs-variable">$contid</span> <span class="hljs-attribute">CNI_NETNS</span>=<span class="hljs-variable">$netnspath</span> <span class="hljs-attribute">CNI_IFNAME</span>=eth0 <span class="hljs-attribute">CNI_PATH</span>=~/cni/bin ~/cni/bin<span class="hljs-built_in">/bridge </span>&lt; bridge.json</code></pre></div>
+
+<p>结果返回</p>
+<div class="code-wrapper"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span>
+    <span class="hljs-attr">&quot;cniVersion&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;0.4.0&quot;</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;interfaces&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        ....
+    <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;ips&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        <span class="hljs-punctuation">&#123;</span>
+            <span class="hljs-attr">&quot;version&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;4&quot;</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">&quot;interface&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-number">2</span><span class="hljs-punctuation">,</span>
+            <span class="hljs-attr">&quot;address&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.0.2/16&quot;</span><span class="hljs-punctuation">,</span> <span class="hljs-comment">//给容器分配的IP地址</span>
+            <span class="hljs-attr">&quot;gateway&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;10.10.0.1&quot;</span> 
+        <span class="hljs-punctuation">&#125;</span>
+    <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;routes&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">[</span>
+        .....
+    <span class="hljs-punctuation">]</span><span class="hljs-punctuation">,</span>
+    <span class="hljs-attr">&quot;dns&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-punctuation">&#123;</span><span class="hljs-punctuation">&#125;</span>
+<span class="hljs-punctuation">&#125;</span>
+</code></pre></div>
+
+<p>这是执行nsenter到容器命名空间已经可以看到我们的网卡了，这里我们还配置ipam为<code>host-local</code> ，所以这里插件只会为我们分配本机上 子网唯一的 ip地址。显然这种简单的思路是不能满足生产中全局唯一的clusterip需求的。</p>
+<p>后续我们将看下flannel在这块是如何实现的。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Kubernetes/" class="category-chain-item">Kubernetes</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Kubernetes/" class="print-no-link">#Kubernetes</a>
+      
+        <a href="/tags/CNI/" class="print-no-link">#CNI</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>CNI学习系列1 认识CNI</div>
+      <div>https://fenixc9.github.io/cni-and-flannel/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2023年3月28日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/cni-flannel/" title="CNI学习系列2 Flannel">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">CNI学习系列2 Flannel</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/time-wheel/" title="如何理解和实现时间轮算法">
+                        <span class="hidden-mobile">如何理解和实现时间轮算法</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
