@@ -1,0 +1,1421 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/cerebras-wafer-scale-inference/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="Cerebras 把整片 300mm 晶圆做成一颗芯片，用面积换带宽、用片上 SRAM 换内存墙，在大模型推理上做出远超 GPU 云的 token 生成速度。本文整理其硬件规格、原理架构、与 Groq 的路线对比、国内 SRAM 路线与成本分析。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一片晶圆做一颗芯片：Cerebras 深度调研">
+<meta property="og:url" content="https://fenixc9.github.io/cerebras-wafer-scale-inference/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="Cerebras 把整片 300mm 晶圆做成一颗芯片，用面积换带宽、用片上 SRAM 换内存墙，在大模型推理上做出远超 GPU 云的 token 生成速度。本文整理其硬件规格、原理架构、与 Groq 的路线对比、国内 SRAM 路线与成本分析。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-12T06:40:00.000Z">
+<meta property="article:modified_time" content="2026-10-12T06:42:56.886Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="推理">
+<meta property="article:tag" content="芯片">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>一片晶圆做一颗芯片：Cerebras 深度调研 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">一片晶圆做一颗芯片：Cerebras 深度调研</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-12 14:40" pubdate>
+          2026年10月12日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          72 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="AI"
+        id="heading-0a40e3c91a3a55c9a37428c6d194d0e5" role="tab" data-toggle="collapse" href="#collapse-0a40e3c91a3a55c9a37428c6d194d0e5"
+        aria-expanded="true"
+      >
+        AI
+        <span class="list-group-count">(1)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-0a40e3c91a3a55c9a37428c6d194d0e5"
+           role="tabpanel" aria-labelledby="heading-0a40e3c91a3a55c9a37428c6d194d0e5">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/cerebras-wafer-scale-inference/" title="一片晶圆做一颗芯片：Cerebras 深度调研"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">一片晶圆做一颗芯片：Cerebras 深度调研</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">一片晶圆做一颗芯片：Cerebras 深度调研</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>Cerebras 是把**整片 300mm 晶圆做成一颗芯片（Wafer-Scale Engine, WSE）**的公司：用”面积换带宽、用片上 SRAM 换内存墙”的方式，在大模型推理（尤其 decode 阶段）做出远超 GPU 云的 token 生成速度，同时也在训练侧用晶圆集群挑战 NVIDIA。</p>
+<p>本文核心事实来自 2019–2025 年中的公开资料（官方规格页、Cerebras Inference 发布、S-1 招股书、行业报道）。环境日期为 2026 年 9 月，凡涉及”最新一代硬件 &#x2F; IPO 最终状态 &#x2F; 最新推理记录”的判断，文中以 <strong>⚠️ 待核实</strong> 标出，请以官方最新发布为准。</p>
+<span id="more"></span>
+
+<h2 id="一、与-GPU-路线的根本分歧"><a href="#一、与-GPU-路线的根本分歧" class="headerlink" title="一、与 GPU 路线的根本分歧"></a>一、与 GPU 路线的根本分歧</h2><p>NVIDIA 的路线是：<strong>小 die + 先进封装 + HBM + NVLink + 大规模互联</strong>，靠系统级扩展取胜。Cerebras 的路线是：<strong>超大 die（整片晶圆）+ 片上海量 SRAM + 片上互联</strong>，靠”把东西放在离计算最近的地方”取胜。这是两条不同的物理路径，不是简单的”更快&#x2F;更慢”。</p>
+<p>Cerebras 的技术护城河不是”算力峰值”，而是<strong>片上内存带宽 + 低延迟互联</strong>。它的核心叙事是绕开 GPU 推理里最致命的 memory-bandwidth-bound 瓶颈：把权重和 KV cache 尽量留在片上统一 SRAM 里，或通过极高带宽的权重流式（Weight Streaming）喂进来。这使得它在 decode 单 token 生成上极具优势。</p>
+<p>它在”推理服务”这一细分赛道已经证明了产品力——Llama、DeepSeek-R1、Qwen3、GPT-OSS 等模型上的数千 token&#x2F;s 记录是真实的商业卖点；但片上 SRAM 容量有限、成本高、CUDA 生态壁垒，使它难以成为通用训练&#x2F;推理的默认选择，更可能长期占据”超低延迟、高单价”的高端推理市场。当前最前沿硬件是 WSE-3 &#x2F; CS-3（5nm、4 万亿晶体管、44GB 片上 SRAM、125 PFLOPS）。<strong>⚠️ 是否已有 WSE-4 &#x2F; CS-4 发布需核实</strong>；但即便有新一代，其架构逻辑与约束与 WSE-3 一脉相承，本文的原理分析仍然成立。</p>
+<h2 id="二、硬件：WSE-晶圆级芯片"><a href="#二、硬件：WSE-晶圆级芯片" class="headerlink" title="二、硬件：WSE 晶圆级芯片"></a>二、硬件：WSE 晶圆级芯片</h2><h3 id="2-1-WSE-代际演进"><a href="#2-1-WSE-代际演进" class="headerlink" title="2.1 WSE 代际演进"></a>2.1 WSE 代际演进</h3><table>
+<thead>
+<tr>
+<th>参数</th>
+<th>WSE-1（2019, CS-1）</th>
+<th>WSE-2（2021, CS-2）</th>
+<th>WSE-3（2024, CS-3）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>制程</td>
+<td>16nm</td>
+<td>7nm</td>
+<td><strong>5nm</strong></td>
+</tr>
+<tr>
+<td>晶体管数</td>
+<td>1.2 万亿</td>
+<td>2.6 万亿</td>
+<td><strong>4 万亿</strong></td>
+</tr>
+<tr>
+<td>AI 核心数</td>
+<td>400,000</td>
+<td>850,000</td>
+<td><strong>900,000</strong></td>
+</tr>
+<tr>
+<td>片上 SRAM</td>
+<td>18 GB</td>
+<td>40 GB</td>
+<td><strong>44 GB</strong></td>
+</tr>
+<tr>
+<td>片上内存带宽</td>
+<td>9 PB&#x2F;s</td>
+<td>20 PB&#x2F;s</td>
+<td><strong>21 PB&#x2F;s</strong></td>
+</tr>
+<tr>
+<td>片上互联带宽（fabric）</td>
+<td>100 Pb&#x2F;s</td>
+<td>220 Pb&#x2F;s</td>
+<td><strong>~214 Pb&#x2F;s</strong></td>
+</tr>
+<tr>
+<td>峰值算力</td>
+<td>—</td>
+<td>—</td>
+<td><strong>~125 PFLOPS（FP16）</strong></td>
+</tr>
+<tr>
+<td>芯片面积</td>
+<td>46,225 mm²</td>
+<td>46,225 mm²</td>
+<td>46,225 mm²（约整片晶圆）</td>
+</tr>
+</tbody></table>
+<p>46,225 mm² 即一片 300mm 晶圆可容纳的近似面积，是”晶圆级”的字面证据。数字来自官方多次公开；个别指标在不同官方口径中略有差异（如 fabric 带宽 214 vs 220 Pb&#x2F;s）。</p>
+<h3 id="2-2-CS-3-与配套系统"><a href="#2-2-CS-3-与配套系统" class="headerlink" title="2.2 CS-3 与配套系统"></a>2.2 CS-3 与配套系统</h3><p>CS-3 是 WSE-3 的系统形态：单机为水冷、机架级设备。官方称最多可将 2048 台 CS-3 组成一个集群，聚合算力达 <strong>~256 exaFLOPS</strong>；配合 MemoryX + SwarmX，可训练参数规模远超单芯片 SRAM 容量的模型。</p>
+<p>WSE 的”短板”是片上容量有限，Cerebras 用两套外部系统补足：</p>
+<table>
+<thead>
+<tr>
+<th>系统</th>
+<th>作用</th>
+<th>关键参数（官方口径，⚠️ 数字随代际变化）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>MemoryX</strong></td>
+<td>片外参数存储，做”权重流式”（Weight Streaming）</td>
+<td>容量可达 PB 级（如 ~1.2 PB），带宽数十 TB&#x2F;s</td>
+</tr>
+<tr>
+<td><strong>SwarmX</strong></td>
+<td>训练时把参数&#x2F;梯度广播到集群各 CS 系统</td>
+<td>极高扇出带宽，支撑大规模数据并行</td>
+</tr>
+</tbody></table>
+<p><strong>权重流式</strong>是理解 Cerebras 的关键补充：模型权重不完全驻留片上，而是从 MemoryX 以高带宽流式注入 WSE，边流边算。这让”训练万亿参数模型”成为可能，但推理时的低延迟优势会随模型超出片容量而衰减。</p>
+<h3 id="2-3-CS-3-与主流-GPU-系统对比"><a href="#2-3-CS-3-与主流-GPU-系统对比" class="headerlink" title="2.3 CS-3 与主流 GPU 系统对比"></a>2.3 CS-3 与主流 GPU 系统对比</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>NVIDIA GPU 系统（如 H100&#x2F;H200&#x2F;B200 集群）</th>
+<th>Cerebras CS-3</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>基本形态</td>
+<td>多 die + HBM + NVLink&#x2F;网络</td>
+<td>整片晶圆单芯片</td>
+</tr>
+<tr>
+<td>权重&#x2F;KV 位置</td>
+<td>主要在 HBM，片上 cache 较小</td>
+<td>大片 SRAM（44GB）+ 流式扩展</td>
+</tr>
+<tr>
+<td>内存带宽</td>
+<td>HBM ~TB&#x2F;s 级（单卡）</td>
+<td>片上 ~21 PB&#x2F;s</td>
+</tr>
+<tr>
+<td>访问延迟</td>
+<td>HBM 较高</td>
+<td>片上 SRAM 极低</td>
+</tr>
+<tr>
+<td>多芯片通信</td>
+<td>NVLink &#x2F; InfiniBand &#x2F; 以太网</td>
+<td>片内 NoC 为主，跨系统靠 SwarmX</td>
+</tr>
+<tr>
+<td>优势</td>
+<td>生态成熟、容量大、训练&#x2F;推理通用、性价比</td>
+<td>超低延迟、超高单用户 token&#x2F;s、带宽极高</td>
+</tr>
+<tr>
+<td>劣势</td>
+<td>decode 受 HBM 带宽限制</td>
+<td>成本&#x2F;功耗高、片上容量有限、生态小</td>
+</tr>
+</tbody></table>
+<h2 id="三、推理为什么快"><a href="#三、推理为什么快" class="headerlink" title="三、推理为什么快"></a>三、推理为什么快</h2><h3 id="3-1-标志性记录"><a href="#3-1-标志性记录" class="headerlink" title="3.1 标志性记录"></a>3.1 标志性记录</h3><p>Cerebras 的推理云（Cerebras Inference）以”世界最快”为定位，公开了一系列刷新记录的吞吐数据（<strong>数值为量级参考，最新值需以官网为准</strong>）：</p>
+<table>
+<thead>
+<tr>
+<th>模型</th>
+<th>吞吐（tokens&#x2F;s）</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Llama 3.1 8B</td>
+<td>~1,800–2,100</td>
+<td>2024 年发布时的旗舰记录</td>
+</tr>
+<tr>
+<td>Llama 3.1 70B</td>
+<td>~450（早期）→ 后续提升</td>
+<td>单用户速度远超 GPU 云</td>
+</tr>
+<tr>
+<td>Llama 3.1 405B</td>
+<td>~969</td>
+<td>大模型仍保持高速度</td>
+</tr>
+<tr>
+<td>Llama 3.3 70B</td>
+<td>~2,200</td>
+<td>70B 级刷新记录</td>
+</tr>
+<tr>
+<td>DeepSeek-R1 671B</td>
+<td>~1,500</td>
+<td>对比 GPU 云宣称约 57x 更快</td>
+</tr>
+<tr>
+<td>Qwen3 235B</td>
+<td>~1,400</td>
+<td>2025 年 MoE 模型</td>
+</tr>
+<tr>
+<td>GPT-OSS-120B</td>
+<td>~3,000</td>
+<td>2025-08 OpenAI 开放模型，宣称最快推理</td>
+</tr>
+</tbody></table>
+<p>关键点：这里”数千 token&#x2F;s”是<strong>单请求&#x2F;低并发下的单用户速度</strong>，这正是 Cerebras 架构最强的地方。GPU 云在高 batch 下也能做到高聚合吞吐，但单用户速度会显著下降。</p>
+<h3 id="3-2-decode-阶段为什么特别快"><a href="#3-2-decode-阶段为什么特别快" class="headerlink" title="3.2 decode 阶段为什么特别快"></a>3.2 decode 阶段为什么特别快</h3><p>大模型推理分两阶段：</p>
+<ul>
+<li><strong>Prefill（处理 prompt）</strong>：计算密集（compute-bound），GPU 也很强；</li>
+<li><strong>Decode（逐 token 生成）</strong>：数据搬运密集（memory-bandwidth-bound）——每生成一个 token 要读大量权重 + KV cache。</li>
+</ul>
+<p>粗略模型：</p>
+<div class="code-wrapper"><pre><code class="hljs text">每 token 时间 ≈ 读取权重/KV 的时间 + 计算时间</code></pre></div>
+
+<p>在 GPU 上，权重&#x2F;KV 大多在 HBM，HBM 带宽虽高但远不及 SRAM；且跨卡还要走 NVLink。Cerebras 则：</p>
+<ol>
+<li><strong>权重&#x2F;KV 尽量放片上 SRAM</strong>（44GB），带宽 ~21 PB&#x2F;s；</li>
+<li><strong>片内 NoC 延迟极低</strong>，模型切分后主要在同片内流动；</li>
+<li><strong>900,000 核 + 编译器数据流调度</strong>，把层&#x2F;attention&#x2F;batch&#x2F;token 细粒度并行。</li>
+</ol>
+<p>于是”等数据”的时间被大幅压缩，token 生成速度自然上去。加上小模型（8B 级）首 token 延迟可到亚 200ms 级（大模型因权重流式&#x2F;初始化会更高），Cerebras 的卖点是<strong>首 token 快 + 后续 token 更快</strong>，适合实时对话、代码补全、agent 循环等对延迟极敏感的场景。</p>
+<p>训练侧则主要借助与 G42 合作的 <strong>Condor Galaxy</strong> 系列超算（CG-1&#x2F;CG-2&#x2F;CG-3）做验证，官方宣称可训练万亿参数级模型。<strong>⚠️ 训练市场的实际份额远小于推理，NVIDIA 仍是训练绝对主导。</strong></p>
+<h2 id="四、原理架构"><a href="#四、原理架构" class="headerlink" title="四、原理架构"></a>四、原理架构</h2><h3 id="4-1-晶圆级集成：不切割的晶圆"><a href="#4-1-晶圆级集成：不切割的晶圆" class="headerlink" title="4.1 晶圆级集成：不切割的晶圆"></a>4.1 晶圆级集成：不切割的晶圆</h3><p>传统做法是把晶圆切成许多小 die 再封装，Cerebras 反过来：</p>
+<ul>
+<li><strong>不切割</strong>，直接在整片晶圆上布线，让相邻区域通过<strong>跨 reticle（光罩）连线</strong>互通；</li>
+<li>整片晶圆必然有缺陷，用<strong>硬件冗余 + 冗余核&#x2F;列绕行</strong>处理良率：坏掉的核被绕过，整体仍可工作；</li>
+<li>结果是 46,225 mm² 的单片计算体，核数、SRAM、互联全部在同一芯片内。</li>
+</ul>
+<p>代价是功耗巨大、散热需水冷、制造与封装成本极高、供应链门槛高。</p>
+<h3 id="4-2-内存层次：SRAM-即主存"><a href="#4-2-内存层次：SRAM-即主存" class="headerlink" title="4.2 内存层次：SRAM 即主存"></a>4.2 内存层次：SRAM 即主存</h3><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>GPU</th>
+<th>Cerebras</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>主存</td>
+<td>HBM（容量大、带宽 TB&#x2F;s 级、延迟高）</td>
+<td>片上 SRAM（容量 44GB、带宽 PB&#x2F;s 级、延迟低）</td>
+</tr>
+<tr>
+<td>扩展</td>
+<td>多卡 HBM + NVLink</td>
+<td>MemoryX 权重流式（PB 级、数十 TB&#x2F;s）</td>
+</tr>
+<tr>
+<td>cache</td>
+<td>L2 较小</td>
+<td>无独立”cache”，SRAM 即主存，分布式与核绑定</td>
+</tr>
+</tbody></table>
+<p>核心思想：<strong>把带宽和延迟做到极致，用容量换速度</strong>。</p>
+<h3 id="4-3-片上互联与执行模型"><a href="#4-3-片上互联与执行模型" class="headerlink" title="4.3 片上互联与执行模型"></a>4.3 片上互联与执行模型</h3><p>每个核与相邻核组成 <strong>2D mesh</strong>，数据以 packet 在 fabric 上路由，带宽达 <strong>Pb&#x2F;s 量级</strong>，延迟远低于跨卡 NVLink&#x2F;网络——“张量并行&#x2F;流水并行”发生在片内，避免了 GPU 集群常见的跨节点通信与同步开销。</p>
+<p>执行模型上，Cerebras 采用偏**静态数据流（dataflow）**的方式：编译期把计算图映射到具体核与片上路由，运行时按计划流动。好处是数据搬运可被编译器全局优化，减少不必要的读写；代价是灵活性不如 GPU，模型&#x2F;算子需适配其软件栈。软件栈以 <strong>CSL（Cerebras Software Language，类 C 的底层语言）</strong> + graph compiler 为核心，把 PyTorch&#x2F;JAX 模型切分、布局到片上 SRAM、安排权重与 KV cache、做 continuous batching。与 CUDA 生态相比工具链成熟度仍是短板，但推理 API 层已相对友好。</p>
+<h3 id="4-4-训练-vs-推理的取舍"><a href="#4-4-训练-vs-推理的取舍" class="headerlink" title="4.4 训练 vs 推理的取舍"></a>4.4 训练 vs 推理的取舍</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>是否吃片上容量</th>
+<th>Cerebras 优势</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>小模型推理（≤ 片容量）</td>
+<td>权重可全驻留</td>
+<td><strong>极强</strong>（低延迟、高 token&#x2F;s）</td>
+</tr>
+<tr>
+<td>大模型推理（&gt; 片容量）</td>
+<td>需权重流式</td>
+<td>仍强，但受外部带宽牵制</td>
+</tr>
+<tr>
+<td>训练（万亿参数）</td>
+<td>依赖 MemoryX&#x2F;SwarmX</td>
+<td>有竞争力，但生态&#x2F;成本劣势明显</td>
+</tr>
+</tbody></table>
+<p>Cerebras 的甜点区是”模型能装进片内或接近片内 + 对延迟极敏感”的推理。</p>
+<h2 id="五、Cerebras-vs-Groq：两条-SRAM-路线"><a href="#五、Cerebras-vs-Groq：两条-SRAM-路线" class="headerlink" title="五、Cerebras vs Groq：两条 SRAM 路线"></a>五、Cerebras vs Groq：两条 SRAM 路线</h2><p>两家都反 HBM、都用 SRAM、都走”编译器驱动的静态数据流”，但<strong>扩展哲学完全相反</strong>：</p>
+<ul>
+<li><strong>Cerebras &#x3D; Scale-Up（把一颗芯片做大）</strong>：不切割晶圆，把整片做成一颗 46,225 mm² 的巨芯片，靠片内 NoC 把带宽和容量一次性拉满。</li>
+<li><strong>Groq &#x3D; Scale-Out（把很多小芯片拼成逻辑大芯片）</strong>：用常规可量产 die，靠<strong>确定性以太网</strong>把几百张 LPU 拼成一个”逻辑巨芯片”，编译期把时钟周期全部排死。</li>
+</ul>
+<h3 id="5-1-逐项对比"><a href="#5-1-逐项对比" class="headerlink" title="5.1 逐项对比"></a>5.1 逐项对比</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Cerebras（WSE-3 &#x2F; CS-3）</th>
+<th>Groq（LPU）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>芯片形态</td>
+<td>整片晶圆单芯片</td>
+<td>标准可量产 die，单卡较小</td>
+</tr>
+<tr>
+<td>制程</td>
+<td>5nm</td>
+<td>较成熟制程（14nm 起）</td>
+</tr>
+<tr>
+<td>片上 SRAM</td>
+<td><strong>44 GB</strong></td>
+<td><strong>~230 MB&#x2F;卡</strong>（量级）</td>
+</tr>
+<tr>
+<td>片上带宽</td>
+<td>~21 PB&#x2F;s</td>
+<td>~80 TB&#x2F;s 量级&#x2F;卡</td>
+</tr>
+<tr>
+<td>核&#x2F;算力</td>
+<td>900,000 核，~125 PFLOPS</td>
+<td>大量确定性 VLIW&#x2F;MAC 单元</td>
+</tr>
+<tr>
+<td>执行模型</td>
+<td>静态数据流 + 编译器布局到核与路由</td>
+<td><strong>完全确定性 dataflow</strong>，编译期排定时钟，无 cache&#x2F;仲裁&#x2F;动态调度</td>
+</tr>
+<tr>
+<td>容量策略</td>
+<td>片内 44GB + MemoryX 权重流式（PB 级）</td>
+<td>单卡装不下大模型，<strong>必须靠数百卡拆分</strong></td>
+</tr>
+<tr>
+<td>扩展方式</td>
+<td>片内 NoC 为主，跨系统靠 SwarmX</td>
+<td>确定性网络把多卡拼成逻辑大芯片</td>
+</tr>
+<tr>
+<td>延迟特性</td>
+<td>单芯片内极低延迟</td>
+<td>延迟<strong>可预测、抖动小</strong>（确定性是核心卖点）</td>
+</tr>
+<tr>
+<td>制造&#x2F;成本</td>
+<td>极高（整片晶圆、水冷、良率冗余）</td>
+<td>相对常规 die，但需大量卡堆叠</td>
+</tr>
+<tr>
+<td>训练能力</td>
+<td>可训练（MemoryX&#x2F;SwarmX）</td>
+<td>主打推理</td>
+</tr>
+<tr>
+<td>定位</td>
+<td>训练 + 推理，推理主打”最快”</td>
+<td>纯推理，主打”确定性与低延迟”</td>
+</tr>
+</tbody></table>
+<h3 id="5-2-本质差异"><a href="#5-2-本质差异" class="headerlink" title="5.2 本质差异"></a>5.2 本质差异</h3><ol>
+<li><strong>容量 vs 良率</strong>：Cerebras 把容量押在”单片巨芯片”上，代价是制造良率与成本；Groq 把容量押在”多卡堆叠”上，代价是跨卡拆分与通信，但换来可量产、低成本、成熟制程。</li>
+<li><strong>延迟 vs 确定性</strong>：Cerebras 追求<strong>绝对低延迟&#x2F;高吞吐</strong>；Groq 追求<strong>延迟可预测（低抖动）</strong>，这对实时系统、agent 循环、金融&#x2F;工业场景很关键。</li>
+<li><strong>带宽来源</strong>：Cerebras 的带宽来自<strong>片内 SRAM + NoC</strong>；Groq 的带宽来自<strong>片上 SRAM + 确定性网络</strong>。两者都能绕开 HBM 的带宽墙，但瓶颈位置不同——Cerebras 受片容量限制，Groq 受卡数与网络拆分限制。</li>
+<li><strong>共同点</strong>：都吃”<strong>编译器 + 静态数据流</strong>“这碗饭——因为 SRAM 容量小、必须精细复用，编译器质量直接决定性能上限。这也是它们与 GPU”动态调度 + HBM”路线的根本分野。</li>
+</ol>
+<p>一句话：Cerebras 用<strong>制造</strong>换容量，Groq 用<strong>网络</strong>换容量；前者赢在单片带宽，后者赢在可量产与确定性。</p>
+<h2 id="六、国内-SRAM-路线厂商"><a href="#六、国内-SRAM-路线厂商" class="headerlink" title="六、国内 SRAM 路线厂商"></a>六、国内 SRAM 路线厂商</h2><p>国内<strong>没有广为人知的”中国版 Cerebras”（晶圆级商业化）</strong>，但 SRAM 路线有两个活跃分支：<strong>数据流&#x2F;可重构</strong> 和 <strong>SRAM 存算一体（CIM）</strong>。（⚠️ 产品与融资细节需核实）</p>
+<table>
+<thead>
+<tr>
+<th>公司</th>
+<th>路线</th>
+<th>用 SRAM？</th>
+<th>对标</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>清微智能（Tsingmicro）</strong></td>
+<td>可重构数据流 RPU</td>
+<td>重片上 SRAM</td>
+<td>最接近 Groq&#x2F;SambaNova</td>
+<td>清华系，”软件定义硬件”</td>
+</tr>
+<tr>
+<td><strong>亿铸科技</strong></td>
+<td>SRAM 存算一体</td>
+<td>✅</td>
+<td>存算一体大模型推理</td>
+<td>这批里最直接打大模型推理场景</td>
+</tr>
+<tr>
+<td><strong>后摩智能（Houmo.AI）</strong></td>
+<td>SRAM 存算一体</td>
+<td>✅</td>
+<td>边缘&#x2F;智驾</td>
+<td>主打高能效</td>
+</tr>
+<tr>
+<td><strong>苹芯科技（Pimchip）</strong></td>
+<td>SRAM 存算一体</td>
+<td>✅</td>
+<td>边缘 AI</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>九天睿芯（Reexen）</strong></td>
+<td>SRAM 存算一体</td>
+<td>✅</td>
+<td>传感&#x2F;边缘</td>
+<td></td>
+</tr>
+<tr>
+<td><strong>知存科技（Witmem）</strong></td>
+<td>NOR Flash 存算一体</td>
+<td>❌（Flash）</td>
+<td>存算一体</td>
+<td>需与 SRAM 路线区分</td>
+</tr>
+<tr>
+<td><strong>晶圆级集成</strong></td>
+<td>高校&#x2F;研究所为主</td>
+<td>—</td>
+<td>Cerebras</td>
+<td>清华&#x2F;中科院&#x2F;北大等有原型，<strong>无成熟商业公司</strong></td>
+</tr>
+</tbody></table>
+<p>路线差异：</p>
+<ul>
+<li><strong>数据流&#x2F;可重构（清微智能等）</strong>：思路最接近 Groq——把计算图编译期映射到片上，重 SRAM、轻 HBM，追求能效与确定性。但片上 SRAM 规模远小于 Cerebras，也不走晶圆级。</li>
+<li><strong>SRAM 存算一体（亿铸&#x2F;后摩&#x2F;苹芯&#x2F;九天睿芯等）</strong>：在 SRAM 阵列内直接做乘加，省掉”权重搬运”这一步，是绕过内存墙的另一种解法；优势在能效与成熟制程可用，劣势是精度&#x2F;工艺&#x2F;规模化难。</li>
+<li><strong>晶圆级</strong>：国内几乎只有学术原型，原因与 Cerebras 的门槛一致——良率冗余、水冷、封装、供应链，且没有一家有 Cerebras 那样的资本与客户规模来跑通。</li>
+</ul>
+<p>一个关键背景：<strong>出口管制反而利好 SRAM&#x2F;存算一体路线</strong>。国产高端 HBM、先进制程、高端 GPU 均受出口管制影响，这使国内团队更有动力绕开”先进制程 + HBM + 多卡互联”这条被卡脖子的主流路线，转向成熟制程 + SRAM 存算一体（不依赖先进 HBM）、3D 堆叠&#x2F;近存计算（用封装而非制程换带宽）、数据流&#x2F;可重构架构（用编译器换面积）。所以国内 SRAM 路线的动力，一部分是技术，一部分是<strong>供应链安全</strong>——这与 Cerebras&#x2F;Groq 在美国”挑战 NVIDIA”的动机不同。</p>
+<h2 id="七、成本：”更快但更贵的推理”"><a href="#七、成本：”更快但更贵的推理”" class="headerlink" title="七、成本：”更快但更贵的推理”"></a>七、成本：”更快但更贵的推理”</h2><blockquote>
+<p>推理成本必须区分两个维度——<strong>① 云 API 单价（$&#x2F;1M tokens）</strong> 与 <strong>② 自建系统 TCO（$&#x2F;有效 token）</strong>。前者是用户看到的价，后者是厂商的账。<strong>⚠️ 下列价格均为公开资料中的量级参考，2025H2–2026 变动频繁，务必以官网最新价格为准。</strong></p>
+</blockquote>
+<h3 id="7-1-云-API-单价（量级参考）"><a href="#7-1-云-API-单价（量级参考）" class="headerlink" title="7.1 云 API 单价（量级参考）"></a>7.1 云 API 单价（量级参考）</h3><table>
+<thead>
+<tr>
+<th>平台</th>
+<th>代表模型</th>
+<th>输入 $&#x2F;1M</th>
+<th>输出 $&#x2F;1M</th>
+<th>定位</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Cerebras Inference</strong></td>
+<td>Llama 3.1 8B</td>
+<td>~$0.10</td>
+<td>~$0.10</td>
+<td>极致速度，单价偏高</td>
+</tr>
+<tr>
+<td><strong>Cerebras Inference</strong></td>
+<td>Llama 3.3 70B</td>
+<td>~$0.60</td>
+<td>~$0.60</td>
+<td>70B 级最快</td>
+</tr>
+<tr>
+<td><strong>Cerebras Inference</strong></td>
+<td>DeepSeek-R1 671B</td>
+<td>~$2.00+</td>
+<td>~$8.00+</td>
+<td>大模型仍快</td>
+</tr>
+<tr>
+<td><strong>Groq Cloud</strong></td>
+<td>Llama 3.1 8B</td>
+<td>~$0.05</td>
+<td>~$0.08</td>
+<td>比 Cerebras 更低</td>
+</tr>
+<tr>
+<td><strong>Groq Cloud</strong></td>
+<td>Llama 3.3 70B</td>
+<td>~$0.59</td>
+<td>~$0.79</td>
+<td>与 Cerebras 接近</td>
+</tr>
+<tr>
+<td><strong>GPU 云</strong>（Together&#x2F;Fireworks 等）</td>
+<td>Llama 70B</td>
+<td>~$0.88</td>
+<td>~$0.88</td>
+<td>生态成熟、弹性大</td>
+</tr>
+<tr>
+<td><strong>GPU 云</strong></td>
+<td>DeepSeek-R1</td>
+<td>~$0.55–$2.00</td>
+<td>~$2.00+</td>
+<td>批量&#x2F;缓存优惠多</td>
+</tr>
+<tr>
+<td><strong>OpenAI&#x2F;Anthropic 闭源</strong></td>
+<td>GPT-4o 级</td>
+<td>~$2.50</td>
+<td>~$10.00</td>
+<td>旗舰闭源溢价</td>
+</tr>
+</tbody></table>
+<p>观察：</p>
+<ul>
+<li>同模型上，SRAM 路线（Cerebras&#x2F;Groq）单价并不便宜，甚至更贵；它们卖的是<strong>速度&#x2F;延迟</strong>，不是价格。</li>
+<li>Groq 通常比 Cerebras 略便宜：标准 die + 成熟制程 + 规模效应，成本结构更友好。</li>
+<li>GPU 云单价通常最低&#x2F;最有弹性，因为有规模、有缓存折扣、有竞价实例。</li>
+</ul>
+<h3 id="7-2-自建系统-TCO"><a href="#7-2-自建系统-TCO" class="headerlink" title="7.2 自建系统 TCO"></a>7.2 自建系统 TCO</h3><table>
+<thead>
+<tr>
+<th>成本项</th>
+<th>Cerebras CS-3</th>
+<th>Groq 集群</th>
+<th>NVIDIA GPU 集群</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>硬件单价</td>
+<td>数<strong>百万美元</strong>级&#x2F;台</td>
+<td>单卡相对便宜，但需数百卡</td>
+<td>H100&#x2F;B200 单卡数万美元</td>
+</tr>
+<tr>
+<td>功耗&#x2F;散热</td>
+<td>~<strong>20+ kW&#x2F;台</strong>，必须水冷</td>
+<td>单卡低，但卡数多，集群功耗高</td>
+<td>~10 kW&#x2F;8 卡节点，风&#x2F;液冷</td>
+</tr>
+<tr>
+<td>制造良率</td>
+<td><strong>整片晶圆，良率成本极高</strong></td>
+<td>标准 die，良率友好</td>
+<td>成熟量产</td>
+</tr>
+<tr>
+<td>利用率</td>
+<td>单芯片大、调度简单，利用率可能高</td>
+<td>确定性网络易打满</td>
+<td>依赖 batch&#x2F;调度，中小负载利用率可能低</td>
+</tr>
+<tr>
+<td>单位有效 token 成本</td>
+<td>高 capex + 高功耗，<strong>但每秒接单能力极强</strong></td>
+<td>卡多、网络好，单位成本可控</td>
+<td><strong>规模摊销最优，单位成本最低</strong></td>
+</tr>
+</tbody></table>
+<p>决定成本的关键变量：<strong>Batch&#x2F;并发</strong>（SRAM 路线在低并发单请求下速度优势最大，GPU 在高 batch 下吞吐&#x2F;成本反超）、<strong>输入输出比</strong>（推理贵在输出，输出越长 SRAM 路线的”快”越值钱）、<strong>模型大小 vs 片容量</strong>（装进 SRAM 时成本效率最高，超出后边际成本上升）、<strong>量化与 KV cache 管理</strong>、<strong>利用率</strong>（再快的芯片，闲置就是浪费）。</p>
+<h3 id="7-3-成本与速度的排序"><a href="#7-3-成本与速度的排序" class="headerlink" title="7.3 成本与速度的排序"></a>7.3 成本与速度的排序</h3><div class="code-wrapper"><pre><code class="hljs text">成本排序（同模型、单位 token）：  GPU 云  &lt;  Groq  &lt;  Cerebras
+速度排序（单用户 token/s）：       Cerebras  &gt;  Groq  &gt;  GPU 云</code></pre></div>
+
+<ul>
+<li><strong>要便宜、要弹性、要生态</strong>：选 GPU 云；</li>
+<li><strong>要极致速度、愿为延迟付溢价</strong>：选 Cerebras；</li>
+<li><strong>要可预测低抖动、成本又比 Cerebras 友好</strong>：选 Groq；</li>
+<li><strong>国产替代</strong>：SRAM 存算一体路线理论上能效更优、可绕开 HBM 管制，但<strong>规模与生态尚未到能压成本的阶段</strong>，短期更多是能效叙事而非价格优势。</li>
+</ul>
+<p>一句话：SRAM 路线不是”更便宜的推理”，而是”<strong>更快但更贵的推理</strong>“。</p>
+<h2 id="八、前景与核心判断"><a href="#八、前景与核心判断" class="headerlink" title="八、前景与核心判断"></a>八、前景与核心判断</h2><p><strong>机会</strong>：agent、实时对话、代码补全等对 TTFT&#x2F;TPOT 极敏感的推理需求爆发；晶圆级 + 片上 SRAM 是少数能真正绕开内存墙的路径，短期难被复制；G42 等国家级&#x2F;大企业订单提供稳定收入；每次刷新 token&#x2F;s 记录都是营销。</p>
+<p><strong>挑战</strong>：NVIDIA 生态壁垒（CUDA、模型适配、人才、供应链）；44GB 片上 SRAM 对超大模型不够，需流式，削弱延迟优势；晶圆级芯片制造、水冷、机架成本高，单位经济学未必优于 GPU 云；供应与部署门槛高，无法像 GPU 一样由普通云厂商大规模铺开；Groq、d-Matrix、云厂商自研 ASIC 分食推理市场；G42 关系曾引发美国 CFIUS 审查，影响 IPO 与海外扩张。</p>
+<p><strong>核心判断</strong>：</p>
+<ul>
+<li><strong>短期（1–2 年）</strong>：继续在”最快推理”叙事上领先，重点客户是高价值、延迟敏感的推理场景；训练侧更多是标杆项目而非主流。</li>
+<li><strong>中期（3–5 年）</strong>：胜负取决于<strong>能否把软件生态做厚</strong> + <strong>能否用新一代硬件提升片内容量&#x2F;降低成本</strong>。若生态补齐，可从”最快”走向”最实用”。</li>
+<li><strong>长期</strong>：晶圆级路线是 AI 芯片的重要分支，但更可能与 GPU 形成”分工”而非”取代”——GPU 做通用&#x2F;训练，Cerebras 类做超低延迟推理或特定负载。</li>
+</ul>
+<p>一句话总结：Cerebras 用面积、功耗和成本，换来了大模型推理中最稀缺的两样东西——<strong>带宽与低延迟</strong>。它的上限取决于能否把”最快”转化为”最常用”。</p>
+<h2 id="附：⚠️-待核实清单"><a href="#附：⚠️-待核实清单" class="headerlink" title="附：⚠️ 待核实清单"></a>附：⚠️ 待核实清单</h2><ol>
+<li>是否已发布 <strong>WSE-4 &#x2F; CS-4</strong>，及其规格；</li>
+<li>Cerebras <strong>IPO 最终状态</strong>（是否已上市、估值、募资额）；</li>
+<li>2025H2–2026 年<strong>最新推理记录</strong>、<strong>MemoryX &#x2F; SwarmX 容量与带宽</strong>、<strong>定价</strong>；</li>
+<li>最新<strong>合作与客户</strong>（AWS、Mistral、政府&#x2F;主权 AI 等）；</li>
+<li><strong>Groq LPU 最新代际</strong>制程、SRAM 容量、单卡带宽与 TOPS；</li>
+<li><strong>国内厂商最新状态</strong>：清微智能、亿铸科技、后摩智能、苹芯、九天睿芯的产品落地与融资；国产 HBM（长鑫等）与存算一体路线的量产进展。</li>
+</ol>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li>Cerebras 官方规格页与 WSE-3 发布博客、Cerebras Inference 发布文章与 benchmark</li>
+<li>Cerebras S-1 招股书（2024）</li>
+<li>行业报道：Reuters、The Information、TechCrunch 等关于 IPO &#x2F; G42 &#x2F; 融资的报道</li>
+</ul>
+<blockquote>
+<p><strong>免责声明</strong>：本文为学习&#x2F;调研用途，部分数据来自公开转述，量级参考为主。涉及投资、采购或技术选型时，请以官方最新一手资料为准。</p>
+</blockquote>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI/" class="print-no-link">#AI</a>
+      
+        <a href="/tags/%E8%8A%AF%E7%89%87/" class="print-no-link">#芯片</a>
+      
+        <a href="/tags/%E6%8E%A8%E7%90%86/" class="print-no-link">#推理</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>一片晶圆做一颗芯片：Cerebras 深度调研</div>
+      <div>https://fenixc9.github.io/cerebras-wafer-scale-inference/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月12日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/worker%E8%AE%A1%E8%B4%B9/" title="【cloudflare】Cloudflare Workers 计费模型">
+                        <span class="hidden-mobile">【cloudflare】Cloudflare Workers 计费模型</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
