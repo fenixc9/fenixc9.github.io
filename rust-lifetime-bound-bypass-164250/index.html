@@ -1,0 +1,1175 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/rust-lifetime-bound-bypass-164250/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="用局部变量、引用和析构函数讲清 Rust issue 164250：短命引用如何绕过 static 约束，为什么 safe Rust 也会出现内存安全问题，以及社区正在怎样修复。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞">
+<meta property="og:url" content="https://fenixc9.github.io/rust-lifetime-bound-bypass-164250/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="用局部变量、引用和析构函数讲清 Rust issue 164250：短命引用如何绕过 static 约束，为什么 safe Rust 也会出现内存安全问题，以及社区正在怎样修复。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-14T03:51:12.000Z">
+<meta property="article:modified_time" content="2026-10-14T03:51:12.438Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="内存安全">
+<meta property="article:tag" content="生命周期">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-14 11:51" pubdate>
+          2026年10月14日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          34 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(25)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-traits-beginners-guide/" title="Rust 初学者容易混淆的 20 个 Trait：用法、设计目的与边界"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust 初学者容易混淆的 20 个 Trait：用法、设计目的与边界</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-five-core-crates/" title="Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-lifetime-bound-bypass-164250/" title="没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>Rust 的一个重要承诺是：在正确实现的编译器和底层库支持下，安全代码不应该访问已经失效的内存。但 2026 年 10 月 13 日提交的 <a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/issues/164250">issue #164250</a> 展示了一个漏洞：<strong>程序没有写任何 <code>unsafe</code>，却能把局部变量的引用保存到全局，等变量销毁后继续读取。</strong></p>
+<p>问题出在编译器漏掉了生命周期约束检查。理解它不需要先钻进编译器源码，只要抓住三个概念：引用、<code>&#39;static</code> 和析构函数。</p>
+<p>本文依据截至 <strong>2026-10-14</strong> 查阅到的 issue 和修复 PR 整理。文中的运行结果来自报告者，未在本地独立复现；修复进展也是该日期的快照。</p>
+<span id="more"></span>
+
+<h2 id="引用像一张地址纸条，纸条还在不代表东西还在"><a href="#引用像一张地址纸条，纸条还在不代表东西还在" class="headerlink" title="引用像一张地址纸条，纸条还在不代表东西还在"></a>引用像一张地址纸条，纸条还在不代表东西还在</h2><p>假设你把一件物品放在临时储物柜里，再把柜子的地址写在纸条上。纸条可以保存很久，但储物柜一旦清空，纸条就不能再证明原来的物品还在那里。</p>
+<p>程序中的引用也有类似的问题：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">text</span> = <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;hello&quot;</span>);
+<span class="hljs-keyword">let</span> <span class="hljs-variable">borrowed</span> = &amp;text;</code></pre></div>
+
+<p><code>text</code> 拥有字符串，<code>borrowed</code> 只是借用它。<strong>复制引用不会让原来的字符串多活一会儿。</strong> 一旦 <code>text</code> 销毁，引用就不能继续用于访问它。</p>
+<p>Rust 的生命周期检查要保证：所有使用引用的地方，都发生在它指向的数据仍然有效的时候。正常情况下，试图让引用逃出局部变量的有效范围，编译器就会拒绝。</p>
+<h2 id="static-是约束，不是给变量续命"><a href="#static-是约束，不是给变量续命" class="headerlink" title="&#39;static 是约束，不是给变量续命"></a><code>&#39;static</code> 是约束，不是给变量续命</h2><p>漏洞中的结构体可以先简化为：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">Q</span>&lt;T: <span class="hljs-symbol">&#x27;static</span>&gt;(<span class="hljs-type">Option</span>&lt;T&gt;);</code></pre></div>
+
+<p><code>Option&lt;T&gt;</code> 表示里面可以有一个 <code>T</code>，也可以没有。<code>T: &#39;static</code> 则对允许放进去的类型提出要求。</p>
+<p>这里最容易误解的是：<code>&#39;static</code> 并不意味着所有值都必须活到程序结束。一个拥有自己数据的 <code>String</code> 可以满足 <code>T: &#39;static</code>，但它仍然可以正常销毁。</p>
+<p><strong>如果 <code>T</code> 是引用，情况就不同了：它不能借用一个只在局部范围内有效的对象。</strong> 因而，本例里的 <code>&amp;text</code> 不能作为满足 <code>&#39;static</code> 要求的引用放进 <code>Q</code>。</p>
+<p>这个约束也不会把局部变量变成全局变量，更不会延长它的实际寿命。</p>
+<h2 id="编译器放过了哪一步"><a href="#编译器放过了哪一步" class="headerlink" title="编译器放过了哪一步"></a>编译器放过了哪一步</h2><p>issue 中的关键步骤非常短：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">text</span> = <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;hello&quot;</span>);
+<span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">value</span> = <span class="hljs-title function_ invoke__">Q</span>(<span class="hljs-literal">None</span>);
+value.<span class="hljs-number">0</span> = <span class="hljs-title function_ invoke__">Some</span>(&amp;text); <span class="hljs-comment">// 本应因生命周期不满足而被拒绝</span></code></pre></div>
+
+<p><code>.0</code> 是访问元组结构体的第一个字段。先创建一个空的 <code>Q</code>，再给它的字段赋值，这条路径竟然能绕过结构体的生命周期要求。</p>
+<p>正常检查应当同时确认两件事：字段装进去的值能否匹配，以及包含这个字段的类型是否仍满足声明的约束。本例通过了前面的匹配，却漏掉了后面的要求。</p>
+<p>标题里的“协变字段赋值”与生命周期转换有关：一个能长期使用的引用，通常也可以交给只在较短时间内使用它的代码。这样的转换本身合理，但转换之后，其他类型约束仍然必须成立。本漏洞的问题就是这条边界没有守住。</p>
+<p>这并不表示 Rust 正常允许短命引用变成长命引用。<strong>这是编译器错误接受了本应非法的程序。</strong></p>
+<h2 id="真正让引用逃出去的是-Drop"><a href="#真正让引用逃出去的是-Drop" class="headerlink" title="真正让引用逃出去的是 Drop"></a>真正让引用逃出去的是 <code>Drop</code></h2><p>只把引用放进 <code>Q</code>，还不足以解释后续的失效内存访问。关键在于 <code>Q</code> 的析构函数。</p>
+<p>Rust 的 <code>Drop</code> 用来在值销毁时执行清理代码。它可以关闭资源，也可以执行其他逻辑。原帖里的实现选择把字段中的值移到一个全局容器里。</p>
+<p>下面是原帖的完整复现，增加了少量注释：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">use</span> std::sync::Mutex;
+
+<span class="hljs-comment">// 保存到这里的值可以在局部作用域结束后继续取出。</span>
+<span class="hljs-keyword">static</span> KEPT: Mutex&lt;<span class="hljs-type">Vec</span>&lt;<span class="hljs-type">Box</span>&lt;<span class="hljs-keyword">dyn</span> std::any::Any + <span class="hljs-built_in">Send</span>&gt;&gt;&gt; =
+    Mutex::<span class="hljs-title function_ invoke__">new</span>(<span class="hljs-type">Vec</span>::<span class="hljs-title function_ invoke__">new</span>());
+
+<span class="hljs-keyword">struct</span> <span class="hljs-title class_">Q</span>&lt;T: <span class="hljs-symbol">&#x27;static</span> + <span class="hljs-built_in">Send</span>&gt;(<span class="hljs-type">Option</span>&lt;T&gt;);
+
+<span class="hljs-keyword">impl</span>&lt;T: <span class="hljs-symbol">&#x27;static</span> + <span class="hljs-built_in">Send</span>&gt; <span class="hljs-built_in">Drop</span> <span class="hljs-keyword">for</span> <span class="hljs-title class_">Q</span>&lt;T&gt; &#123;
+    <span class="hljs-keyword">fn</span> <span class="hljs-title function_">drop</span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) &#123;
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-variable">Some</span>(t) = <span class="hljs-keyword">self</span>.<span class="hljs-number">0</span>.<span class="hljs-title function_ invoke__">take</span>() &#123;
+            KEPT.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>().<span class="hljs-title function_ invoke__">push</span>(<span class="hljs-type">Box</span>::<span class="hljs-title function_ invoke__">new</span>(t));
+        &#125;
+    &#125;
+&#125;
+
+<span class="hljs-keyword">fn</span> <span class="hljs-title function_">main</span>() &#123;
+    &#123;
+        <span class="hljs-keyword">let</span> <span class="hljs-variable">l</span> = <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;hello world, this is long enough&quot;</span>);
+        <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">q</span> = <span class="hljs-title function_ invoke__">Q</span>(<span class="hljs-literal">None</span>);
+        q.<span class="hljs-number">0</span> = <span class="hljs-title function_ invoke__">Some</span>(&amp;l); <span class="hljs-comment">// 漏洞：接受了不满足 &#x27;static 的引用。</span>
+    &#125;
+
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">_z</span> = <span class="hljs-type">String</span>::<span class="hljs-title function_ invoke__">from</span>(<span class="hljs-string">&quot;XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX&quot;</span>);
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">k</span> = KEPT.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">&quot;&#123;&#125;&quot;</span>, k[<span class="hljs-number">0</span>].downcast_ref::&lt;&amp;<span class="hljs-symbol">&#x27;static</span> <span class="hljs-type">String</span>&gt;().<span class="hljs-title function_ invoke__">unwrap</span>());
+&#125;</code></pre></div>
+
+<p>暂时不用研究 <code>Mutex</code>、<code>Box</code> 和 <code>Any</code> 的每个细节。它们在这里承担的作用是：提供一个可以保存不同类型值、之后再取出的全局容器。它们没有为局部字符串延长寿命。</p>
+<p>代码发生的顺序是：</p>
+<ol>
+<li>创建局部字符串 <code>l</code>，再创建 <code>q</code>。</li>
+<li>编译器错误地允许把 <code>&amp;l</code> 放入 <code>q</code>。</li>
+<li>离开内部作用域时，<code>q</code> 先析构。它的 <code>Drop</code> 依据 <code>T: &#39;static</code> 的承诺，把引用放进全局容器。</li>
+<li>接着 <code>l</code> 销毁，字符串占用的资源被释放，原引用失效。</li>
+<li>后续代码从全局容器取出引用，仍把它当作有效引用读取。</li>
+</ol>
+<p>问题不是 <code>Drop</code> 太晚执行。它执行时 <code>l</code> 还在。问题是它<strong>保存了一份能在 <code>l</code> 销毁后被再次使用的引用</strong>。</p>
+<p>从析构函数的视角看，使用 <code>T: &#39;static</code> 是有依据的，因为结构体和实现都写了这个约束。漏洞发生在调用侧：编译器让一个不符合承诺的值进入了这个类型。</p>
+<h2 id="为什么读出了后来的字符串"><a href="#为什么读出了后来的字符串" class="headerlink" title="为什么读出了后来的字符串"></a>为什么读出了后来的字符串</h2><p>作者报告，这段程序读出了后面创建的字符串中的 <code>XXXX…</code>；启用 AddressSanitizer 后，则报告 <code>stack-use-after-scope</code>，即访问了作用域结束后已失效的栈上对象。见 <a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/issues/164250">原帖复现与结果</a>。</p>
+<p>可以把它理解为：地址纸条仍指向原来的位置，但那个位置已经不再属于原来的对象，甚至可能被后来的对象复用。</p>
+<p>这里还有一个细节：<code>&amp;l</code> 指向的是 <code>String</code> 对象本身，<code>String</code> 再管理堆上的字符串数据。因此，既不能因为字符串数据在堆上就忽略局部对象的寿命，也不能因为输出看起来正常就认为引用有效。</p>
+<p><strong>发生未定义行为后，输出没有保证。</strong> 读出 <code>XXXX…</code> 是报告者观察到的一种表现；其他环境中可能输出不同内容，也可能崩溃。</p>
+<h2 id="没有-unsafe，为什么依然会出问题"><a href="#没有-unsafe，为什么依然会出问题" class="headerlink" title="没有 unsafe，为什么依然会出问题"></a>没有 <code>unsafe</code>，为什么依然会出问题</h2><p>safe Rust 的安全性依赖编译器正确执行类型和生命周期规则，也依赖底层库正确实现内部的 <code>unsafe</code>。程序没有显式 <code>unsafe</code>，并不能抵消编译器自身的错误。</p>
+<p>官方给这个 issue 标了 <code>I-unsound</code>。这里的“unsound”可以理解为：规则本来应该阻止危险行为，但实现让一个危险程序通过了检查。</p>
+<p>这个例子的重要性在于，它给出了具体反例，证明安全检查存在缺口。它并不能说明所有 Rust 程序都有同样的问题；但对这一条路径，原本应有的保证确实失效了。</p>
+<h2 id="社区怎么修：补查整个类型的约束"><a href="#社区怎么修：补查整个类型的约束" class="headerlink" title="社区怎么修：补查整个类型的约束"></a>社区怎么修：补查整个类型的约束</h2><p>社区已提交 <a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/pull/164277">PR #164277</a>，标题是 <code>require MIR local types to be well-formed</code>。</p>
+<p>MIR 是编译器处理程序时使用的一种中间表示。Well-Formed 可以直观理解为“这个类型是否满足它自己声明的要求”。候选补丁在借用检查阶段，对 MIR 中被分类为 <code>LocalKind::Temp</code> 的局部声明增加这项检查。</p>
+<p>这样，检查器看到 <code>Q&lt;T&gt;</code> 时，就不能只接受字段的类型匹配，还必须证明 <code>T</code> 满足 <code>&#39;static</code> 等约束。对于局部变量的引用，这个证明应当失败。</p>
+<p>补丁中的回归测试预期原来的赋值报错：</p>
+<div class="code-wrapper"><pre><code class="hljs text">error[E0597]: `text` does not live long enough
+assignment requires that `text` is borrowed for `&#x27;static`</code></pre></div>
+
+<p>也就是：<code>text</code> 活得不够久，而这次赋值要求借用满足 <code>&#39;static</code>。</p>
+<p>测试覆盖了自动析构和显式调用 <code>drop</code>，并分别配置当前与下一代 trait solver。这里说的是 <a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/pull/164277/files">PR 的代码与测试预期</a>，不代表本文已经独立构建编译器或验证全部 CI。</p>
+<p>截至 2026-10-14 查阅时，PR 尚未合并，已经转交 Types Team，由 lcnr 接手。评审者还提出一个范围问题：<a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/pull/164277#discussion_r4263609798">类型转换和用户显式类型标注，是否也应该补做 WF 检查？</a> 因此，最终补丁仍可能调整，不能据此认定某个已发布版本已经修复。</p>
+<h2 id="这个漏洞严重吗"><a href="#这个漏洞严重吗" class="headerlink" title="这个漏洞严重吗"></a>这个漏洞严重吗</h2><p>从技术性质上看，它很严重：安全代码可以产生悬空引用，突破了 Rust 要提供的内存安全保证。</p>
+<p>从日常程序的触发概率看，维护者给出了较谨慎的判断。讨论中的变体被报告能追溯到 Rust 1.4，也就是 2015 年；lcnr 在原帖补充说明中认为，漏洞存在约 11 年才被发现，实际造成内存不安全需要刻意构造的 <code>Drop</code> 实现，因此优先级从 <code>P-critical</code> 调整为 <code>P-high</code>。见 <a target="_blank" rel="noopener" href="https://github.com/rust-lang/rust/issues/164250">维护者说明</a>。</p>
+<p>这个判断表达的是修复优先级与实际风险评估，并没有否认漏洞，也不能作为某个具体项目一定不受影响的证明。</p>
+<p>对于正在跟踪这个问题的开发者，最有价值的后续信息是：最终补丁是否合并、进入哪个 nightly，以及哪个正式版本包含修复。本文查阅时这些发布信息尚未确定。</p>
+<p>这次漏洞也让生命周期的作用变得具体：引用只记录访问关系，不负责让数据存活；类型约束只有被编译器完整检查，才能成为其他代码可以依赖的承诺。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F/" class="print-no-link">#生命周期</a>
+      
+        <a href="/tags/%E5%86%85%E5%AD%98%E5%AE%89%E5%85%A8/" class="print-no-link">#内存安全</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞</div>
+      <div>https://fenixc9.github.io/rust-lifetime-bound-bypass-164250/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月14日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/rust-five-core-crates/" title="Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing">
+                        <span class="hidden-mobile">Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
