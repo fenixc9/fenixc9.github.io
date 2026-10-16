@@ -1,0 +1,1103 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/zk-snark-zero-knowledge-proofs/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="zk-SNARK 让你证明&quot;我知道秘密&quot;，却不泄露秘密本身。本文从零知识证明的三个性质讲起，拆解 zk-SNARK 的五步编译管线（算术电路、R1CS、QAP、椭圆曲线编码与配对、随机盲化），配以简化伪代码，最后落到 Tornado Cash 的取款电路与 Groth16 可信设置的取舍。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash">
+<meta property="og:url" content="https://fenixc9.github.io/zk-snark-zero-knowledge-proofs/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="zk-SNARK 让你证明&quot;我知道秘密&quot;，却不泄露秘密本身。本文从零知识证明的三个性质讲起，拆解 zk-SNARK 的五步编译管线（算术电路、R1CS、QAP、椭圆曲线编码与配对、随机盲化），配以简化伪代码，最后落到 Tornado Cash 的取款电路与 Groth16 可信设置的取舍。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-16T07:34:14.000Z">
+<meta property="article:modified_time" content="2026-10-16T07:40:37.195Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="TornadoCash">
+<meta property="article:tag" content="区块链">
+<meta property="article:tag" content="密码学">
+<meta property="article:tag" content="零知识证明">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-16 15:34" pubdate>
+          2026年10月16日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          46 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="区块链"
+        id="heading-75d8fafb0706c9381d4c91e3b184f19d" role="tab" data-toggle="collapse" href="#collapse-75d8fafb0706c9381d4c91e3b184f19d"
+        aria-expanded="true"
+      >
+        区块链
+        <span class="list-group-count">(2)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-75d8fafb0706c9381d4c91e3b184f19d"
+           role="tabpanel" aria-labelledby="heading-75d8fafb0706c9381d4c91e3b184f19d">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust-mini-blockchain/" title="自己动手实现区块链"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">自己动手实现区块链</span>
+        </a>
+      
+    
+      
+      
+        <a href="/zk-snark-zero-knowledge-proofs/" title="零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>零知识证明（Zero-Knowledge Proof, ZKP）解决的是现代数字系统里一对天然的矛盾：<strong>验证者想要正确性保证，证明者不想泄露敏感输入</strong>。没有 ZKP 时，系统往往只能二选一——要么公开一切换取可验证，要么隐藏一切要求别人信任你。zk-SNARK 给出了第三条路：<strong>不泄露数据的前提下证明正确性</strong>。</p>
+<p>本文从零知识证明的基础概念讲起，拆解 zk-SNARK 的五步编译管线，配以简化伪代码，最后落到它的标志性应用——Tornado Cash 混币协议——以及 Groth16 可信设置的取舍。</p>
+<span id="more"></span>
+
+<h2 id="一、零知识证明：证明你知道秘密，却不泄露它"><a href="#一、零知识证明：证明你知道秘密，却不泄露它" class="headerlink" title="一、零知识证明：证明你知道秘密，却不泄露它"></a>一、零知识证明：证明你知道秘密，却不泄露它</h2><p>一个零知识证明必须满足三个性质：</p>
+<ol>
+<li><strong>完备性（Completeness）</strong>：陈述为真时，诚实验证者一定会被说服；</li>
+<li><strong>可靠性（Soundness）</strong>：陈述为假时，作弊者几乎不可能骗过验证者；</li>
+<li><strong>零知识性（Zero-knowledge）</strong>：验证者除了”陈述为真”之外一无所获。</li>
+</ol>
+<p>经典例子是<strong>阿里巴巴洞穴</strong>：Peggy 知道环形洞穴中魔法门的口令，她随机走 A 或 B 路进去，Victor 在洞外随机喊一条路径让她出来。如果 Peggy 真知道口令，总能从指定路径出来；如果不知道，每次只有 50% 概率蒙对。重复 20 轮后，蒙对概率降至百万分之一。Victor 由此确信 Peggy 知道口令——却自始至终不知道口令本身。</p>
+<p>注意两点：其一，这是<strong>概率性证明</strong>而非数学意义上的确定性证明，但作弊概率可以压到可忽略；其二，交互式证明的转录<strong>不可传递</strong>——第三方看到录像只会认为是伪造的，这恰恰是零知识性的一部分。</p>
+<h2 id="二、zk-SNARK-名字里的五个字母"><a href="#二、zk-SNARK-名字里的五个字母" class="headerlink" title="二、zk-SNARK 名字里的五个字母"></a>二、zk-SNARK 名字里的五个字母</h2><table>
+<thead>
+<tr>
+<th>缩写</th>
+<th>含义</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Z</strong>ero-knowledge</td>
+<td>零知识</td>
+<td>不泄露秘密</td>
+</tr>
+<tr>
+<td><strong>S</strong>uccinct</td>
+<td>简洁</td>
+<td>证明极小（约 200 字节），验证毫秒级</td>
+</tr>
+<tr>
+<td><strong>N</strong>on-interactive</td>
+<td>非交互</td>
+<td>证明者发一条消息即可，无需来回对话</td>
+</tr>
+<tr>
+<td><strong>AR</strong>gument</td>
+<td>论证</td>
+<td>安全性依赖计算假设，而非信息论保证</td>
+</tr>
+<tr>
+<td><strong>K</strong>nowledge</td>
+<td>知识</td>
+<td>证明”知道秘密输入 w”</td>
+</tr>
+</tbody></table>
+<p>形式化地说，zk-SNARK 让你证明：<strong>“我存在私有输入 w，使得公开计算 C(x, w) &#x3D; 1”</strong>。其中 x 是公开输入，w 是私密见证（witness），C 是程序或电路。</p>
+<p>它的力量来自一条编译管线：</p>
+<div class="code-wrapper"><pre><code class="hljs text">程序 → 算术电路 → R1CS → QAP → 密码学证明</code></pre></div>
+
+<h2 id="三、五步编译管线"><a href="#三、五步编译管线" class="headerlink" title="三、五步编译管线"></a>三、五步编译管线</h2><h3 id="第-1-步：算术电路——把计算变成代数"><a href="#第-1-步：算术电路——把计算变成代数" class="headerlink" title="第 1 步：算术电路——把计算变成代数"></a>第 1 步：算术电路——把计算变成代数</h3><p>zk-SNARK 不能直接理解普通程序（分支、循环、内存），需要先把计算转化为<strong>有限域上的算术电路</strong>——由加法门、乘法门、常数乘法门组成的无环图。比如要证明”我知道 x, y, z 满足 <code>x·y + z = 35</code>“（公开输出 out&#x3D;35，私有输入 x&#x3D;3, y&#x3D;10, z&#x3D;5）：</p>
+<div class="code-wrapper"><pre><code class="hljs text">t1 = x * y
+t2 = t1 + z
+断言 t2 = out</code></pre></div>
+
+<h3 id="第-2-步：R1CS——约束系统"><a href="#第-2-步：R1CS——约束系统" class="headerlink" title="第 2 步：R1CS——约束系统"></a>第 2 步：R1CS——约束系统</h3><p>把电路的每个门变成一条<strong>秩 1 约束</strong>，形如 <code>(A_i·s) × (B_i·s) = (C_i·s)</code>，其中 s 是包含所有变量和中间量的向量。上例产生 3 条约束：</p>
+<div class="code-wrapper"><pre><code class="hljs text">约束 1:  x           · y           = t1        （乘法门）
+约束 2:  (t1 + z)    · 1           = t2        （加法写成 ×1）
+约束 3:  t2          · 1           = out       （等式检查）</code></pre></div>
+
+<p>加法之所以写成 <code>×1</code>，是因为 R1CS 只支持一个乘法门——这就是”秩 1”（Rank-1）的含义。这一步把”计算正确性”变成了一组可代数检验的等式。</p>
+<h3 id="第-3-步：QAP——所有约束压缩成一个多项式整除性检查"><a href="#第-3-步：QAP——所有约束压缩成一个多项式整除性检查" class="headerlink" title="第 3 步：QAP——所有约束压缩成一个多项式整除性检查"></a>第 3 步：QAP——所有约束压缩成一个多项式整除性检查</h3><p>这是整个体系最精妙的一步。对每个变量，用<strong>拉格朗日插值</strong>生成多项式族 u_j(X), v_j(X), w_j(X)，使它们在点 X&#x3D;1,2,…,m 处的取值正好等于各约束行中的系数。对某个具体赋值 s，定义 U(X)、V(X)、W(X)。<strong>如果所有约束都成立</strong>，多项式 <code>U(X)·V(X) − W(X)</code> 在 X&#x3D;1..m 处全为零——即它必须被目标多项式 <code>t(X) = (X−1)(X−2)...(X−m)</code> 整除：</p>
+<div class="code-wrapper"><pre><code class="hljs text">U(X) · V(X) = W(X) + H(X) · t(X)</code></pre></div>
+
+<p>一条整除性陈述等价于满足全部 R1CS 约束——数百万个门的检查被压缩成了一个代数事实。</p>
+<h3 id="第-4-步：椭圆曲线编码-双线性配对——隐藏但仍可验证"><a href="#第-4-步：椭圆曲线编码-双线性配对——隐藏但仍可验证" class="headerlink" title="第 4 步：椭圆曲线编码 + 双线性配对——隐藏但仍可验证"></a>第 4 步：椭圆曲线编码 + 双线性配对——隐藏但仍可验证</h3><p>问题来了：如果直接公开 U(τ), V(τ) 等域值，会泄露 witness。解法是<strong>把域元素藏进椭圆曲线群元素</strong>：</p>
+<ul>
+<li>编码 <code>[a]₁ = a·g₁</code>。由于离散对数难题，看到 [a]₁ 无法还原 a；但线性关系仍然保持：<code>[a+b]₁ = [a]₁ + [b]₁</code>；</li>
+<li><strong>双线性配对</strong> <code>e: G₁ × G₂ → Gᴛ</code> 满足 <code>e(a·g, b·g) = (a·b)·g</code>——这让验证者可以在隐藏的标量上检查乘法关系（如 U(τ)·V(τ) 与 W(τ)+H(τ)·t(τ) 的相等性），却看不到任何标量本身。</li>
+</ul>
+<h3 id="第-5-步：随机盲化——零知识性的来源"><a href="#第-5-步：随机盲化——零知识性的来源" class="headerlink" title="第 5 步：随机盲化——零知识性的来源"></a>第 5 步：随机盲化——零知识性的来源</h3><p>仅有编码还不够：证明元素是 witness 的线性组合，仍可能泄露信息。现代 zk-SNARK 给证明元素加入<strong>随机盲化因子</strong>，同一 witness 因此可以生成多个不可关联的证明，编码本身不泄露 witness 的任何信息。</p>
+<h2 id="四、伪代码"><a href="#四、伪代码" class="headerlink" title="四、伪代码"></a>四、伪代码</h2><h3 id="交互式零知识证明（Schnorr-识别协议）"><a href="#交互式零知识证明（Schnorr-识别协议）" class="headerlink" title="交互式零知识证明（Schnorr 识别协议）"></a>交互式零知识证明（Schnorr 识别协议）</h3><div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># 公开参数：大素数 p、生成元 g；Peggy 知道秘密 x，公开 y = g^x mod p</span>
+
+<span class="hljs-comment"># ---------- Peggy（证明者）----------</span>
+r = random()                        <span class="hljs-comment"># 随机盲化因子，每次证明都换新的</span>
+C = <span class="hljs-built_in">pow</span>(g, r, p)                    <span class="hljs-comment"># 承诺：C = g^r</span>
+send(C)
+
+<span class="hljs-comment"># ---------- Victor（验证者）----------</span>
+challenge = random_choice([<span class="hljs-string">&quot;reveal_r&quot;</span>, <span class="hljs-string">&quot;reveal_x_plus_r&quot;</span>])   <span class="hljs-comment"># 随机二选一</span>
+send(challenge)
+
+<span class="hljs-comment"># ---------- Peggy 应答 ----------</span>
+<span class="hljs-keyword">if</span> challenge == <span class="hljs-string">&quot;reveal_r&quot;</span>:
+    send(r)
+<span class="hljs-keyword">else</span>:
+    send((x + r) % (p - <span class="hljs-number">1</span>))
+
+<span class="hljs-comment"># ---------- Victor 验证 ----------</span>
+<span class="hljs-keyword">if</span> challenge == <span class="hljs-string">&quot;reveal_r&quot;</span>:
+    <span class="hljs-keyword">assert</span> C == <span class="hljs-built_in">pow</span>(g, r, p)
+<span class="hljs-keyword">else</span>:
+    <span class="hljs-keyword">assert</span> (C * y) % p == <span class="hljs-built_in">pow</span>(g, x + r, p)   <span class="hljs-comment"># g^r · g^x = g^(x+r)</span>
+
+<span class="hljs-comment"># 重复 N 轮 → 作弊概率 2^(-N)；Victor 始终不知道 x</span></code></pre></div>
+
+<h3 id="Schnorr-签名（Fiat–Shamir-非交互化）"><a href="#Schnorr-签名（Fiat–Shamir-非交互化）" class="headerlink" title="Schnorr 签名（Fiat–Shamir 非交互化）"></a>Schnorr 签名（Fiat–Shamir 非交互化）</h3><div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># ---------- Peggy 签名消息 m ----------</span>
+r = random()
+C = <span class="hljs-built_in">pow</span>(g, r, p)                          <span class="hljs-comment"># 承诺</span>
+e = H(C, m) % (p - <span class="hljs-number">1</span>)                     <span class="hljs-comment"># Fiat-Shamir：挑战 = 哈希(承诺, 消息)</span>
+s = (r + e * x) % (p - <span class="hljs-number">1</span>)
+signature = (C, s)                        <span class="hljs-comment"># 发给任何人</span>
+
+<span class="hljs-comment"># ---------- 任何人验证 ----------</span>
+<span class="hljs-keyword">assert</span> <span class="hljs-built_in">pow</span>(g, s, p) == (C * <span class="hljs-built_in">pow</span>(y, e, p)) % p</code></pre></div>
+
+<p>把”验证者随机挑战”换成”哈希(承诺, 消息)”，就不再需要交互——但签名可公开传递、绑定身份，零知识性让位于公开可验证性。</p>
+<h3 id="zk-SNARK-管线（Groth16-概念版）"><a href="#zk-SNARK-管线（Groth16-概念版）" class="headerlink" title="zk-SNARK 管线（Groth16 概念版）"></a>zk-SNARK 管线（Groth16 概念版）</h3><div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># ---- 第 3 步之后的密码学部分 ----</span>
+
+<span class="hljs-comment"># ---- 可信设置（生成有毒废料 τ）----</span>
+tau = random()                            <span class="hljs-comment"># 用完必须销毁，否则任何人可伪造证明</span>
+pk = encodings_of([u_j(tau), v_j(tau), w_j(tau)], t(tau), blinding_bases)
+vk = minimal_verification_key()
+
+<span class="hljs-comment"># ---- Prove（在 τ 处求值 + 盲化）----</span>
+<span class="hljs-comment"># 不需要知道 τ 本身——用 pk 中 u_j(τ) 的编码做同态线性组合：</span>
+U = <span class="hljs-built_in">sum</span>(s_j * enc(u_j(tau)) <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> <span class="hljs-built_in">vars</span>)     <span class="hljs-comment"># 指数中运算，看不到 s_j</span>
+V = <span class="hljs-built_in">sum</span>(s_j * enc(v_j(tau)) <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> <span class="hljs-built_in">vars</span>)
+W = <span class="hljs-built_in">sum</span>(s_j * enc(w_j(tau)) <span class="hljs-keyword">for</span> j <span class="hljs-keyword">in</span> <span class="hljs-built_in">vars</span>)
+H = enc(quotient) + random_blinding
+r1, r2 = random(), random()               <span class="hljs-comment"># 盲化因子 → 零知识性来源</span>
+pi = (A, B, C)                            <span class="hljs-comment"># Groth16：证明只有三个群元素</span>
+
+<span class="hljs-comment"># ---- Verify（一次配对方程，恒定时间）----</span>
+<span class="hljs-keyword">assert</span> pairing_check(pi, vk, public_inputs=[out])</code></pre></div>
+
+<h3 id="Tornado-Cash-取款电路"><a href="#Tornado-Cash-取款电路" class="headerlink" title="Tornado Cash 取款电路"></a>Tornado Cash 取款电路</h3><div class="code-wrapper"><pre><code class="hljs python"><span class="hljs-comment"># ============ 公开输入（链上可见）============</span>
+<span class="hljs-comment">#   root          : 资金池 Merkle 树根（合约存储）</span>
+<span class="hljs-comment">#   nullifier_hash: 作废符哈希（合约标记已花费）</span>
+<span class="hljs-comment">#   recipient     : 提款地址</span>
+<span class="hljs-comment"># ============ 私有 witness（本地，不上链）============</span>
+<span class="hljs-comment">#   secret        : note 里的秘密值</span>
+<span class="hljs-comment">#   merkle_path   : 从叶子到根的路径（兄弟节点 + 方向）</span>
+<span class="hljs-comment">#   nullifier     : nullifier 原像</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">prove</span>(<span class="hljs-params">secret, merkle_path, nullifier, root, nullifier_hash</span>):
+    commitment = PedersenHash(secret)                 <span class="hljs-comment"># 存款时已提交的承诺</span>
+    <span class="hljs-keyword">assert</span> merkle_verify(commitment, merkle_path, root)   <span class="hljs-comment"># 约束族 1：成员性</span>
+    <span class="hljs-keyword">assert</span> Hash(nullifier) == nullifier_hash          <span class="hljs-comment"># 约束族 2：作废符绑定</span>
+    <span class="hljs-keyword">return</span> groth16_prove(circuit, [secret, merkle_path, nullifier])
+    <span class="hljs-comment"># ← 只有证明 π 上链</span>
+
+<span class="hljs-keyword">def</span> <span class="hljs-title function_">on_chain_withdraw</span>(<span class="hljs-params">pi, root, nullifier_hash, recipient</span>):
+    <span class="hljs-keyword">assert</span> nullifier_hash <span class="hljs-keyword">not</span> <span class="hljs-keyword">in</span> spent_list           <span class="hljs-comment"># 防双花（合约检查）</span>
+    <span class="hljs-keyword">assert</span> groth16_verify(vk, [root, nullifier_hash, recipient], pi)
+    spent_list.add(nullifier_hash)
+    transfer(pool, recipient, FIXED_AMOUNT)           <span class="hljs-comment"># 固定面额付款</span></code></pre></div>
+
+<p>观察者视角：只知道”树中某笔存款被取出”，无法把 nullifier_hash 与 commitment 配对（zk 证明保证），也无法关联到任何钱包身份。</p>
+<h2 id="五、Groth16-与可信设置"><a href="#五、Groth16-与可信设置" class="headerlink" title="五、Groth16 与可信设置"></a>五、Groth16 与可信设置</h2><p>Groth16（2016 年）是 Tornado Cash 采用的构造，也是最有影响力的配对类 zk-SNARK：证明只有三个群元素，验证只需一次紧凑的配对方程。它的代价是<strong>可信设置</strong>：</p>
+<ul>
+<li>Setup 时生成一个秘密点 τ（”有毒废料”，toxic waste），证明密钥里只含 τ 的密码学编码，证明者永远不知道 τ 本身；</li>
+<li>如果有人知道 τ，就能伪造证明——所以 τ 生成后必须销毁；</li>
+<li>Groth16 的设置<strong>按电路定制</strong>，电路一改就要重新仪式。后续的 PLONK 改为通用设置（一次仪式适用所有电路），zk-STARK 则完全免设置。</li>
+</ul>
+<p>Tornado Cash 的解法是公开的<strong>多方仪式（ceremony）</strong>：1000 多名志愿者依次贡献熵，只要至少一人诚实地销毁了自己的部分，τ 就无法被任何人重构。这也是 2024 年 11 月美国第五巡回上诉法院判决中引用的关键事实——“一旦智能合约变得不可变，就没人能收回对它的控制权”。</p>
+<h2 id="六、数字签名是退化的零知识证明吗"><a href="#六、数字签名是退化的零知识证明吗" class="headerlink" title="六、数字签名是退化的零知识证明吗"></a>六、数字签名是退化的零知识证明吗</h2><p>直觉上很接近：签名确实证明了”我知道私钥”而不泄露私钥。而且 Schnorr <strong>识别协议</strong>在文献里就是诚实验证者零知识的知识证明（ZKPoK）——Schnorr <strong>签名</strong>正是它经 Fiat–Shamir 变换后绑上消息的产物。</p>
+<p>但标准数字签名不是严格的零知识证明，差别有三点：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>数字签名</th>
+<th>零知识证明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可传递性</td>
+<td>人人可验证、可转发、可保存（违反零知识性）</td>
+<td>交互式转录不可传递</td>
+</tr>
+<tr>
+<td>身份</td>
+<td>暴露”是哪个 key”（可归属）</td>
+<td>不暴露是哪个 witness</td>
+</tr>
+<tr>
+<td>表达能力</td>
+<td>只证”我知道 sk”</td>
+<td>任意计算 C(x,w)&#x3D;1</td>
+</tr>
+</tbody></table>
+<p>放到一根”匿名化程度”的轴上看就清晰了：<strong>数字签名</strong>（证明知识，暴露身份）→ <strong>环签名</strong>（加匿名集，签名者藏在公钥组中，门罗币采用）→ <strong>zk-SNARK</strong>（加任意计算与完全零知识）。Tornado Cash 的取款证明恰好是两者的合体——证明知道某张 note 的秘密，但不暴露是哪张、也不经过任何钱包签名。若改用普通签名来证明 note 所有权，取款地址立刻与签名身份绑定，匿名性直接归零。</p>
+<h2 id="七、zk-SNARK-vs-zk-STARK"><a href="#七、zk-SNARK-vs-zk-STARK" class="headerlink" title="七、zk-SNARK vs zk-STARK"></a>七、zk-SNARK vs zk-STARK</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>zk-SNARK（Groth16）</th>
+<th>zk-STARK</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>可信设置</td>
+<td>需要（按电路定制，有毒废料）</td>
+<td>不需要（透明，公开随机性）</td>
+</tr>
+<tr>
+<td>证明大小</td>
+<td>极小（约 200 字节）</td>
+<td>较大（数十到数百 KB）</td>
+</tr>
+<tr>
+<td>验证速度</td>
+<td>快（毫秒级）</td>
+<td>快，但证明更大</td>
+</tr>
+<tr>
+<td>底层假设</td>
+<td>椭圆曲线离散对数（配对）</td>
+<td>哈希函数（抗量子）</td>
+</tr>
+<tr>
+<td>代表应用</td>
+<td>Tornado Cash、Zcash</td>
+<td>StarkNet、可扩展 rollup</td>
+</tr>
+</tbody></table>
+<h2 id="结语"><a href="#结语" class="headerlink" title="结语"></a>结语</h2><p>zk-SNARK 的本质是一条五步编译管线：把计算变成算术电路 → 变成约束系统 → 插值压缩成一个多项式整除性检查 → 用椭圆曲线编码隐藏、用双线性配对验证 → 用随机盲化实现零知识。它同时解决了正确性可验证与隐私不泄露这两个矛盾需求，而 Tornado Cash 把这套机制用在 Merkle 树成员性证明上，实现了透明链上的强匿名性——围绕它的制裁与法律诉讼，也在过去几年里成为整个隐私技术行业的判例来源。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Zero-knowledge_proof">Wikipedia: Zero-knowledge proof</a></li>
+<li><a target="_blank" rel="noopener" href="https://incml.github.io/huijiang/blog/2026/zk-snark/">An Introduction to Zero-Knowledge Proofs and zk-SNARKs（incml.github.io, 2026）</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.gtlaw.com/en/insights/2024/12/fifth-circuit-rejects-ofac-sanction-of-tornado-cash-crypto-code">GT Law: Fifth Circuit Rejects OFAC Sanction of Tornado Cash Crypto Code（2024-12）</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.v2-tornadocash.com/">v2-tornadocash.com</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/" class="category-chain-item">区块链</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/" class="print-no-link">#区块链</a>
+      
+        <a href="/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/" class="print-no-link">#密码学</a>
+      
+        <a href="/tags/%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/" class="print-no-link">#零知识证明</a>
+      
+        <a href="/tags/TornadoCash/" class="print-no-link">#TornadoCash</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>零知识证明与 zk-SNARK：从阿里巴巴洞穴到 Tornado Cash</div>
+      <div>https://fenixc9.github.io/zk-snark-zero-knowledge-proofs/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月16日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/codex-goal-explained/" title="Codex 为什么能一直干下去？通俗理解 Goal 的实现机制">
+                        <span class="hidden-mobile">Codex 为什么能一直干下去？通俗理解 Goal 的实现机制</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
