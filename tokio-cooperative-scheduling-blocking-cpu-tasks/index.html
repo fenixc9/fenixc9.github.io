@@ -1,0 +1,1315 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/tokio-cooperative-scheduling-blocking-cpu-tasks/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#1b2a41">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="从 Mutex 跨 await 到单次 poll 死循环，解释 Tokio 的协作调度边界、与 Go 抢占的区别，以及开发检测和生产隔离方案。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理">
+<meta property="og:url" content="https://fenixc9.github.io/tokio-cooperative-scheduling-blocking-cpu-tasks/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="从 Mutex 跨 await 到单次 poll 死循环，解释 Tokio 的协作调度边界、与 Go 抢占的区别，以及开发检测和生产隔离方案。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-20T11:03:41.000Z">
+<meta property="article:modified_time" content="2026-10-20T11:03:41.952Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Rust">
+<meta property="article:tag" content="Tokio">
+<meta property="article:tag" content="并发">
+<meta property="article:tag" content="异步">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#3b82f6","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/banner-post.jpg') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.4)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle">Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理</span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-20 19:03" pubdate>
+          2026年10月20日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.5k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          47 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar category-bar" style="margin-right: -1rem">
+    
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item 
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rust"
+        id="heading-f5e265d607cb720058fc166e00083fe8" role="tab" data-toggle="collapse" href="#collapse-f5e265d607cb720058fc166e00083fe8"
+        aria-expanded="true"
+      >
+        Rust
+        <span class="list-group-count">(26)</span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+      <div class="category-collapse collapse show" id="collapse-f5e265d607cb720058fc166e00083fe8"
+           role="tabpanel" aria-labelledby="heading-f5e265d607cb720058fc166e00083fe8">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/rust_lock_free/" title="【译】Rust无锁数据结构"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust无锁数据结构</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-mod-detail/" title="【译】Rust模块系统的清晰解释"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】Rust模块系统的清晰解释</span>
+        </a>
+      
+    
+      
+      
+        <a href="/smart-pointer/" title="Rust智能指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust智能指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-pin/" title="Rust的Pin是咋回事?"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的Pin是咋回事?</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-future/" title="Rust异步系列1 认识Future"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列1 认识Future</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future/" title="Rust异步系列2 Futures工具包（上）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列2 Futures工具包（上）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-2/" title="Rust异步系列3 Futures工具包（下）"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 Futures工具包（下）</span>
+        </a>
+      
+    
+      
+      
+        <a href="/impl-trait/" title="Rust的impl trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust的impl trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-error-handle/" title="Rust错误处理"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust错误处理</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std/" title="Rust并发系列1-Thread"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列1-Thread</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-2/" title="Rust并发系列2-Lock"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列2-Lock</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-concurrent-std-3/" title="Rust并发系列3-channel"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust并发系列3-channel</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-raw-pointer/" title="Rust裸指针"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust裸指针</span>
+        </a>
+      
+    
+      
+      
+        <a href="/directory-tree-in-rust/" title="Rust实现的文件目录树"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的文件目录树</span>
+        </a>
+      
+    
+      
+      
+        <a href="/ebpf-in-rust-2/" title="用Rust玩eBPF —— aya-rs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">用Rust玩eBPF —— aya-rs</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-generic-associated-type/" title="Rust中的泛型关联类型"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust中的泛型关联类型</span>
+        </a>
+      
+    
+      
+      
+        <a href="/remote-development-with-rust-on-fly-io/" title="【译】在 fly.io 上使用 Rust 进行远程开发"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">【译】在 fly.io 上使用 Rust 进行远程开发</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-existential-type/" title="如何理解existential types"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">如何理解existential types</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-how-to-use-future-3/" title="Rust异步系列3 IO trait"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust异步系列3 IO trait</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-simd/" title="Rust与simd"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust与simd</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-impl-unsafe-lru/" title="Rust实现的LRU安全吗？"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust实现的LRU安全吗？</span>
+        </a>
+      
+    
+      
+      
+        <a href="/web-like-poem/" title="读诗一样写web框架"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">读诗一样写web框架</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-traits-beginners-guide/" title="Rust 初学者容易混淆的 20 个 Trait：用法、设计目的与边界"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust 初学者容易混淆的 20 个 Trait：用法、设计目的与边界</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-five-core-crates/" title="Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Rust 生态的五个核心 crates：Serde、Tokio、Rayon、clap 与 tracing</span>
+        </a>
+      
+    
+      
+      
+        <a href="/rust-lifetime-bound-bypass-164250/" title="没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">没有 unsafe，也能访问失效内存？读懂 Rust 的一次生命周期漏洞</span>
+        </a>
+      
+    
+      
+      
+        <a href="/tokio-cooperative-scheduling-blocking-cpu-tasks/" title="Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理"
+           class="list-group-item list-group-item-action
+           active">
+          <span class="category-post">Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+  </aside>
+
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p><strong>Tokio 无法抢占一个不返回的 <code>poll</code>。治理的关键是缩短持锁范围、让连续计算有界、限制资源并发，并用运行时监测和进程隔离补足失控场景。</strong> 把函数写成 <code>async</code>、增加 <code>.await</code> 或设置 <code>timeout</code>，都不能自动保证执行器线程及时获得控制权。</p>
+<p>一个 Rust 服务在低负载时工作正常，增加并发后却出现 P99 飙升、定时器延迟，甚至健康检查无响应。原因可能并非网络慢，而是某段同步代码迟迟没有把线程交还给异步执行器。</p>
+<p>本文从单次 <code>poll</code> 的执行边界出发，解释 Tokio 与 Go 的调度取舍，以及如何在开发时发现阻塞、在生产中限制影响。资料核验日期为 <strong>2026-10-20</strong>。代码为局部示例，未在具体项目中编译、压测；时间预算与并发额度需要根据实际负载确定。</p>
+<span id="more"></span>
+
+<h2 id="1-调度边界：为什么单个-poll-的死循环会卡住-worker"><a href="#1-调度边界：为什么单个-poll-的死循环会卡住-worker" class="headerlink" title="1. 调度边界：为什么单个 poll 的死循环会卡住 worker"></a>1. 调度边界：为什么单个 poll 的死循环会卡住 worker</h2><p>执行器调用任务的 <code>poll()</code>；只有它返回，执行器才能继续调度。同步计算、同步阻塞 API、争抢同步锁，都可能让一次 poll 持续很久。</p>
+<div class="code-wrapper"><pre><code class="hljs rust">tokio::<span class="hljs-title function_ invoke__">spawn</span>(<span class="hljs-keyword">async</span> &#123;
+    <span class="hljs-keyword">loop</span> &#123;
+        std::hint::<span class="hljs-title function_ invoke__">spin_loop</span>();
+    &#125;
+&#125;);</code></pre></div>
+
+<ul>
+<li><code>current_thread</code>：唯一执行器线程被占住，其他任务无法继续。</li>
+<li><code>multi_thread</code>：占住一条 worker；其他 worker 可以继续，但不能保证所有任务均不受影响。</li>
+<li>所有 worker 都被占住：异步任务调度基本停滞。</li>
+</ul>
+<p>Work stealing 可以转移等待运行的任务，不能抢走一个正在执行的 poll。Tokio 的协作预算需要代码执行到参与预算检查的操作，无法约束纯 CPU 死循环。</p>
+<p><strong><code>.await</code> 只是潜在暂停点。</strong> 如果被等待的 future 一直立即返回 <code>Ready</code>，执行可能一直继续；检查重点是多久真正让出控制权，而非代码中有多少个 <code>.await</code>。</p>
+<h2 id="2-为什么不像-Go-一样异步抢占"><a href="#2-为什么不像-Go-一样异步抢占" class="headerlink" title="2. 为什么不像 Go 一样异步抢占"></a>2. 为什么不像 Go 一样异步抢占</h2><p>Go 的抢占由编译器和运行时共同支持：在支持的平台上通过信号等操作系统机制请求抢占，检查异步安全点，保存寄存器和 goroutine 执行现场，再进入调度器。并非任意指令处都无条件切走。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Go goroutine</th>
+<th>Rust async &#x2F; Tokio</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>执行现场</td>
+<td>独立 goroutine 栈及运行时上下文</td>
+<td>Future 状态机；执行 poll 时使用 worker 线程栈</td>
+</tr>
+<tr>
+<td>暂停与恢复</td>
+<td>运行时配合编译器保存和恢复现场</td>
+<td>poll 返回后，执行器重新获得控制权</td>
+</tr>
+<tr>
+<td>纯 CPU 长循环</td>
+<td>通常可以异步抢占</td>
+<td>Tokio 无法强制打断</td>
+</tr>
+<tr>
+<td>设计取舍</td>
+<td>更完整的运行时支持</td>
+<td>不为每个异步任务维护独立调用栈，执行器可作为库接入</td>
+</tr>
+</tbody></table>
+<p>例如 async 函数调用同步 <code>calculate()</code>，后者的嵌套函数调用现场仍在 worker 的线程栈上，Future 没有自动保存“同步函数执行到一半”的状态。发送一个信号并不等于获得保存、切换和恢复该现场的完整能力。类似 Go 的方案需要更深的编译器支持或其他栈与上下文机制，无法只靠现有 Tokio 调度策略添加。</p>
+<p>抢占也不等于取消：它能让其他任务运行，不能修复死循环或释放其中持有的锁。</p>
+<p>依据：<a target="_blank" rel="noopener" href="https://go.dev/src/runtime/preempt.go">Go runtime 抢占源码说明</a>、<a target="_blank" rel="noopener" href="https://doc.rust-lang.org/std/future/trait.Future.html">Future 接口</a>、<a target="_blank" rel="noopener" href="https://tokio.rs/blog/2020-04-preemption">Tokio 协作让出设计</a>。</p>
+<h2 id="3-Mutex：缩短临界区，并保证写回一致性"><a href="#3-Mutex：缩短临界区，并保证写回一致性" class="headerlink" title="3. Mutex：缩短临界区，并保证写回一致性"></a>3. Mutex：缩短临界区，并保证写回一致性</h2><p><code>std::sync::Mutex</code> 在竞争时会阻塞线程；适合低竞争、短临界区的普通内存状态。<code>tokio::sync::Mutex</code> 的等待不会阻塞线程，允许 guard 跨 await，但锁仍被占着：慢 I&#x2F;O 会让其他任务排队。异步 Mutex 没有消除串行瓶颈。</p>
+<p>默认模式：锁内获取快照 → 释放锁 → 异步 I&#x2F;O → 再次短暂加锁写回。</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> (url, version) = &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">guard</span> = state.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+    (guard.url.<span class="hljs-title function_ invoke__">clone</span>(), guard.version)
+&#125;;
+
+<span class="hljs-keyword">let</span> <span class="hljs-variable">response</span> = <span class="hljs-title function_ invoke__">fetch</span>(&amp;url).<span class="hljs-keyword">await</span>?;
+
+&#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">guard</span> = state.<span class="hljs-title function_ invoke__">lock</span>().<span class="hljs-title function_ invoke__">unwrap</span>();
+    <span class="hljs-keyword">if</span> guard.version == version &#123;
+        guard.result = <span class="hljs-title function_ invoke__">Some</span>(response);
+    &#125; <span class="hljs-keyword">else</span> &#123;
+        <span class="hljs-comment">// 相关状态已变化：按业务选择丢弃、重试或返回冲突。</span>
+    &#125;
+&#125;</code></pre></div>
+
+<p>注意：相关状态变更必须更新版本号；多个请求基于同一版本时，仍要定义结果覆盖规则，必要时增加请求 ID。大对象可复制 <code>Arc</code>，避免锁内深拷贝。将锁封装在同步方法中、不暴露 guard，有助于从接口上约束持锁范围。</p>
+<p>确实必须独占异步资源完成整个操作时，可以使用 Tokio Mutex，但要接受串行吞吐上限；按场景考虑连接池、分片锁或任务独占资源并通过 channel 接收命令。单任务逐条等待命令仍然串行，不会自动提高并行度。</p>
+<h2 id="4-控制计算粒度与资源并发"><a href="#4-控制计算粒度与资源并发" class="headerlink" title="4. 控制计算粒度与资源并发"></a>4. 控制计算粒度与资源并发</h2><table>
+<thead>
+<tr>
+<th>工作类型</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>很短的计算</td>
+<td>在 async 内直接执行</td>
+</tr>
+<tr>
+<td>可拆分的计算</td>
+<td>分批执行，批次之间主动让出</td>
+</tr>
+<tr>
+<td>较重、持续的 CPU 计算</td>
+<td>专用 CPU 线程池，例如 Rayon</td>
+</tr>
+<tr>
+<td>有界同步阻塞 I&#x2F;O</td>
+<td>spawn_blocking，并限制并发</td>
+</tr>
+<tr>
+<td>长期后台循环</td>
+<td>专用线程，并设计退出机制</td>
+</tr>
+<tr>
+<td>必须可强制终止的失控计算</td>
+<td>独立进程</td>
+</tr>
+</tbody></table>
+<h3 id="分批处理：软时间预算"><a href="#分批处理：软时间预算" class="headerlink" title="分批处理：软时间预算"></a>分批处理：软时间预算</h3><p>以下为局部示例，<code>Item</code>、<code>process_one</code> 由业务提供：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">use</span> std::time::&#123;Duration, Instant&#125;;
+
+<span class="hljs-keyword">async</span> <span class="hljs-keyword">fn</span> <span class="hljs-title function_">process</span>(items: <span class="hljs-type">Vec</span>&lt;Item&gt;) &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">budget</span> = Duration::<span class="hljs-title function_ invoke__">from_micros</span>(<span class="hljs-number">500</span>);
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut </span><span class="hljs-variable">started</span> = Instant::<span class="hljs-title function_ invoke__">now</span>();
+
+    <span class="hljs-keyword">for</span> <span class="hljs-variable">item</span> <span class="hljs-keyword">in</span> items &#123;
+        <span class="hljs-title function_ invoke__">process_one</span>(item); <span class="hljs-comment">// 单次操作本身也必须有界</span>
+        <span class="hljs-keyword">if</span> started.<span class="hljs-title function_ invoke__">elapsed</span>() &gt;= budget &#123;
+            tokio::task::<span class="hljs-title function_ invoke__">yield_now</span>().<span class="hljs-keyword">await</span>;
+            started = Instant::<span class="hljs-title function_ invoke__">now</span>();
+        &#125;
+    &#125;
+&#125;</code></pre></div>
+
+<p>500μs 是示例目标，不是通用标准或硬性上限。若一次 <code>process_one()</code> 运行两秒，仍会占住 worker 两秒。<code>yield_now</code> 提供让出机会，不保证每个其他任务都先运行。</p>
+<p><code>tokio::task::coop::consume_budget().await</code> 可以按操作消耗协作预算，但不测量实际 CPU 时间，也不能中断已经开始的同步计算。</p>
+<h3 id="计算移出-worker：额度跟随实际计算生命周期"><a href="#计算移出-worker：额度跟随实际计算生命周期" class="headerlink" title="计算移出 worker：额度跟随实际计算生命周期"></a>计算移出 worker：额度跟随实际计算生命周期</h3><div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-keyword">let</span> <span class="hljs-variable">permit</span> = cpu_slots.<span class="hljs-title function_ invoke__">clone</span>().<span class="hljs-title function_ invoke__">acquire_owned</span>().<span class="hljs-keyword">await</span>?;
+<span class="hljs-keyword">let</span> <span class="hljs-variable">result</span> = tokio::task::<span class="hljs-title function_ invoke__">spawn_blocking</span>(<span class="hljs-keyword">move</span> || &#123;
+    <span class="hljs-keyword">let</span> <span class="hljs-variable">_permit</span> = permit;
+    <span class="hljs-title function_ invoke__">heavy_compute</span>(input)
+&#125;)
+.<span class="hljs-keyword">await</span>?;</code></pre></div>
+
+<p>先获取额度，再提交计算；让闭包持有额度。即使请求方取消等待，仍在执行的计算也不会提前释放额度。否则可能出现“请求取消、额度归还、后台计算继续”，导致实际并发突破限制。</p>
+<p>这只限制已提交计算；等待额度的请求还需要入口限流、有界队列或拒绝策略，防止无限堆积。CPU 线程池也要按部署 CPU 配额配置，避免与 async worker 争抢全部 CPU。</p>
+<p>依据：<a target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html">spawn_blocking</a>、<a target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/task/coop/fn.consume_budget.html">consume_budget</a>。</p>
+<h2 id="5-开发阶段：静态检查、慢-poll-和采样"><a href="#5-开发阶段：静态检查、慢-poll-和采样" class="headerlink" title="5. 开发阶段：静态检查、慢 poll 和采样"></a>5. 开发阶段：静态检查、慢 poll 和采样</h2><h3 id="Clippy-与编辑器"><a href="#Clippy-与编辑器" class="headerlink" title="Clippy 与编辑器"></a>Clippy 与编辑器</h3><p>在 crate 根部开启：</p>
+<div class="code-wrapper"><pre><code class="hljs rust"><span class="hljs-meta">#![warn(clippy::await_holding_lock)]</span>
+<span class="hljs-meta">#![warn(clippy::await_holding_refcell_ref)]</span>
+<span class="hljs-meta">#![warn(clippy::disallowed_methods)]</span></code></pre></div>
+
+<p>项目根目录 <code>clippy.toml</code>：</p>
+<div class="code-wrapper"><pre><code class="hljs toml"><span class="hljs-attr">disallowed-methods</span> = [
+    &#123; path = <span class="hljs-string">&quot;std::thread::sleep&quot;</span>, reason = <span class="hljs-string">&quot;异步代码请使用 tokio::time::sleep&quot;</span> &#125;,
+    &#123; path = <span class="hljs-string">&quot;std::fs::read&quot;</span>, reason = <span class="hljs-string">&quot;异步代码请使用 tokio::fs::read&quot;</span> &#125;,
+    &#123; path = <span class="hljs-string">&quot;std::fs::read_to_string&quot;</span>, reason = <span class="hljs-string">&quot;异步代码请使用 tokio::fs::read_to_string&quot;</span> &#125;,
+    &#123; path = <span class="hljs-string">&quot;std::fs::write&quot;</span>, reason = <span class="hljs-string">&quot;异步代码请使用 tokio::fs::write&quot;</span> &#125;,
+]</code></pre></div>
+
+<div class="code-wrapper"><pre><code class="hljs bash">cargo clippy --workspace --all-targets -- -D clippy::disallowed_methods -D clippy::await_holding_lock</code></pre></div>
+
+<p>此黑名单同时作用于同步与异步代码，不自动豁免 <code>spawn_blocking</code> 内调用；合法阻塞操作应集中封装，在必要的小范围使用 <code>#[allow(clippy::disallowed_methods)]</code>。它不能全面分析第三方依赖内部的间接阻塞，也不能判断任意 CPU 计算的耗时。锁相关 lint 也不代表所有 Tokio guard 跨 await 的性能问题都会被发现。</p>
+<p>VS Code <code>.vscode/settings.json</code>：</p>
+<div class="code-wrapper"><pre><code class="hljs json"><span class="hljs-punctuation">&#123;</span>
+  <span class="hljs-attr">&quot;rust-analyzer.check.command&quot;</span><span class="hljs-punctuation">:</span> <span class="hljs-string">&quot;clippy&quot;</span>
+<span class="hljs-punctuation">&#125;</span></code></pre></div>
+
+<p>依据：<a target="_blank" rel="noopener" href="https://doc.rust-lang.org/stable/clippy/lint_configuration.html">Clippy 配置</a>、<a target="_blank" rel="noopener" href="https://rust-analyzer.github.io/book/diagnostics.html">rust-analyzer 诊断</a>。</p>
+<h3 id="运行时检测的边界"><a href="#运行时检测的边界" class="headerlink" title="运行时检测的边界"></a>运行时检测的边界</h3><ul>
+<li><code>tokio-console</code>：交互查看任务运行、等待及资源状态。</li>
+<li><code>tokio-blocked</code>：通过 Tokio tracing 检测单次 poll 耗时并告警；文档所述接入需要 tracing 和 <code>--cfg tokio_unstable</code>，主要定位到 spawn 调用点。</li>
+<li>CPU 采样 profiler：进一步定位具体 CPU 热点和调用栈。</li>
+</ul>
+<p>必须实际运行到问题路径。请求耗时长不等于 poll 长：异步等网络两秒可以不占 CPU；poll 长也不一定是 CPU 忙，可能是同步锁、I&#x2F;O 或线程被操作系统停调度。</p>
+<p><strong>基于 poll 结束事件计算耗时的工具，无法仅凭结束事件及时识别一个永不返回的 poll。</strong> 需要额外的心跳、外部观测和线程采样。任务总耗时的 tracing span 也不能直接当成单次 poll 耗时。</p>
+<p>工具来源：<a target="_blank" rel="noopener" href="https://github.com/tokio-rs/console">tokio-console</a>、<a target="_blank" rel="noopener" href="https://github.com/theduke/tokio-blocked">tokio-blocked 及其限制</a>。</p>
+<h2 id="6-生产监控与处置"><a href="#6-生产监控与处置" class="headerlink" title="6. 生产监控与处置"></a>6. 生产监控与处置</h2><table>
+<thead>
+<tr>
+<th>信号</th>
+<th>用途与限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单次 poll 耗时分布、慢 poll 次数</td>
+<td>发现不及时让出的任务；已结束样本不能覆盖未返回的死循环</td>
+</tr>
+<tr>
+<td>调度延迟、定时心跳延迟</td>
+<td>发现执行器响应迟缓</td>
+</tr>
+<tr>
+<td>各线程 CPU 使用率与采样栈</td>
+<td>区分 CPU 忙循环、阻塞等待等原因</td>
+</tr>
+<tr>
+<td>就绪任务队列、计算队列、等待额度耗时</td>
+<td>判断计算能力与背压是否足够</td>
+</tr>
+<tr>
+<td>请求 P99、超时与拒绝数</td>
+<td>衡量用户影响</td>
+</tr>
+</tbody></table>
+<p>Tokio 提供运行时指标；poll 耗时直方图需要显式启用，部分 API 受版本及 <code>tokio_unstable</code> 限制，接入前按项目锁定版本确认。不能仅看平均值或进程总体 CPU。</p>
+<p>生产处理顺序：</p>
+<ol>
+<li><strong>限制影响</strong>：入口限流、计算并发上限、有界队列，过载时拒绝或降级。</li>
+<li><strong>保留证据</strong>：外部采样抓线程栈和 CPU profile，确认热点或阻塞位置。</li>
+<li><strong>协作取消</strong>：在批次边界检查取消标志或 deadline，主动退出。</li>
+<li><strong>隔离失控代码</strong>：必须强制终止的计算放独立进程，超时由进程外控制器终止和回收。</li>
+<li><strong>服务已卡死时兜底</strong>：摘流后由外部管理器重启，避免所有监控和健康检查都依赖同一个 runtime。</li>
+</ol>
+<p>CPU 计算即使移到同进程线程池，仍然会竞争 CPU；线程隔离解决 worker 被直接占住的问题，不保证负载隔离。需要更强边界时使用进程及资源配额。</p>
+<h3 id="timeout-和-abort-的真实边界"><a href="#timeout-和-abort-的真实边界" class="headerlink" title="timeout 和 abort 的真实边界"></a>timeout 和 abort 的真实边界</h3><ul>
+<li><code>timeout</code> 需要执行器获得控制权，不能强行打断不返回的 poll。</li>
+<li><code>JoinHandle::abort()</code> 不能立即终止正在执行的纯 CPU 死循环。</li>
+<li>已开始运行的 <code>spawn_blocking</code> 闭包通常不能通过 abort 停止；请求超时并不表示后台计算结束。</li>
+<li>取消本地 future 不保证远端副作用消失；支付等重试需考虑幂等性。</li>
+</ul>
+<p>依据：<a target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/runtime/struct.RuntimeMetrics.html">RuntimeMetrics</a>、<a target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/time/fn.timeout.html">timeout</a>、<a target="_blank" rel="noopener" href="https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html">spawn_blocking</a>。</p>
+<h2 id="7-其他并发实践"><a href="#7-其他并发实践" class="headerlink" title="7. 其他并发实践"></a>7. 其他并发实践</h2><ul>
+<li>独立 I&#x2F;O 用 <code>join!</code> &#x2F; <code>try_join!</code> 并发等待；它们在当前任务内轮询分支，不自动为分支创建线程。<code>try_join!</code> 出错会丢弃其他分支，需考虑取消安全。</li>
+<li>批量任务用 <code>buffer_unordered(N)</code> 限制同时在途数量；需要输入顺序时用 <code>buffered(N)</code>，代价是可能被前面的慢任务阻挡结果交付。</li>
+<li>共享下游用 Semaphore 控制全局在途数；限制并发不等于限制 QPS。</li>
+<li>有界 channel 传递背压；使用 <code>try_send</code> 时明确满队列后的拒绝、丢弃或合并策略。</li>
+<li>用 <code>JoinSet</code> 管理受控数量的任务并收集错误。丢弃普通 <code>JoinHandle</code> 不会停止任务；丢弃 JoinSet 会请求中止其中任务，但仍受协作取消边界约束。</li>
+<li>简单独立计数可用原子类型；多个字段的一致性通常用锁更容易写对。读多并不自动意味着 RwLock 更快，应测量。</li>
+</ul>
+<h2 id="落地前确定三件事"><a href="#落地前确定三件事" class="headerlink" title="落地前确定三件事"></a>落地前确定三件事</h2><ul>
+<li>当前项目的 Tokio 版本、runtime 类型、worker 数量和容器 CPU 配额。</li>
+<li>允许的调度延迟、慢 poll 阈值、CPU 并发额度与队列容量，应由代表性压测确定。</li>
+<li>哪些任务支持协作取消，哪些必须进程隔离；副作用在取消后如何保证一致性。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rust/" class="category-chain-item">Rust</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Rust/" class="print-no-link">#Rust</a>
+      
+        <a href="/tags/%E5%B9%B6%E5%8F%91/" class="print-no-link">#并发</a>
+      
+        <a href="/tags/%E5%BC%82%E6%AD%A5/" class="print-no-link">#异步</a>
+      
+        <a href="/tags/Tokio/" class="print-no-link">#Tokio</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Tokio 为什么会被一个死循环卡住：协作调度、阻塞检测与 CPU 长任务治理</div>
+      <div>https://fenixc9.github.io/tokio-cooperative-scheduling-blocking-cpu-tasks/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月20日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/distillation-without-teacher-logits/" title="没有教师 Logits，如何蒸馏大模型？拆解 Qwopus 的推理蒸馏实现">
+                        <span class="hidden-mobile">没有教师 Logits，如何蒸馏大模型？拆解 Qwopus 的推理蒸馏实现</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
