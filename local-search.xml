@@ -179,9 +179,9 @@
       
       <tag>Rust</tag>
       
-      <tag>生命周期</tag>
-      
       <tag>内存安全</tag>
+      
+      <tag>生命周期</tag>
       
     </tags>
     
@@ -1105,11 +1105,11 @@
     
     <tags>
       
+      <tag>Rust</tag>
+      
       <tag>eBPF</tag>
       
       <tag>翻译</tag>
-      
-      <tag>Rust</tag>
       
     </tags>
     
@@ -1161,9 +1161,9 @@
     
     <tags>
       
-      <tag>eBPF</tag>
-      
       <tag>Rust</tag>
+      
+      <tag>eBPF</tag>
       
       <tag>Linux</tag>
       
@@ -1190,9 +1190,9 @@
     
     <tags>
       
-      <tag>eBPF</tag>
-      
       <tag>Rust</tag>
+      
+      <tag>eBPF</tag>
       
       <tag>Linux</tag>
       
@@ -1284,31 +1284,6 @@
   
   
   <entry>
-    <title>单调栈的一些应用</title>
-    <link href="/monotonic-stack/"/>
-    <url>/monotonic-stack/</url>
-    
-    <content type="html"><![CDATA[<h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><h2 id="什么是单调栈呢？"><a href="#什么是单调栈呢？" class="headerlink" title="什么是单调栈呢？"></a>什么是单调栈呢？</h2><ul><li>单调栈首先是<strong>栈</strong>，即，这是个能存储数据的数据结构并满足后进先出的特性。</li><li>其次单调栈要满足<strong>单调</strong>的特性，及栈中的元素是有序的，要么栈顶到栈底从小到大，要么从大到小。</li></ul><h2 id="单调栈有啥用？"><a href="#单调栈有啥用？" class="headerlink" title="单调栈有啥用？"></a>单调栈有啥用？</h2><p>应该说单调栈的应用并不是非常广泛，只能用于解决一类特定问题：一组数据中，为每个元素找出左边（右边）比它大（小）的第一个元素。</p><p>比如我们现在有一个数组需要找出每个元素<strong>右边比他大的第一个元素</strong>。如果暴力求解扫描每个元素后面的最值，将带来 O(n^2) 复杂度。如果使用单调栈法则有O(n)复杂度。</p><p>单调栈的解法：</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-type">int</span>[] <span class="hljs-title function_">monoStack</span><span class="hljs-params">(<span class="hljs-type">int</span>[] nums)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> nums.length;    <span class="hljs-comment">// 用于保存结果</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">res</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    <span class="hljs-comment">// 单调栈本体</span>    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">s</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-comment">// 由于我们要的是右边的最大值，需要 反向循环</span>    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> n - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; i--) &#123;        <span class="hljs-comment">// 只要当前元素比栈顶元素大，则不停弹出栈顶元素</span>        <span class="hljs-keyword">while</span> (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();        <span class="hljs-comment">// 此时栈顶元素 要么比当前元素大，要么栈上已经没有元素</span>        res[i] = s.isEmpty() ? -<span class="hljs-number">1</span> : s.peek();        <span class="hljs-comment">// 当前元素入栈，此时当前元素是栈中最小的</span>        <span class="hljs-comment">// 栈中数据仍是递增的</span>        s.push(nums[i]);    &#125;    <span class="hljs-keyword">return</span> res;&#125;</code></pre></div><p>应该如何理解上面的逻辑？无论</p><p><code>while (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();</code>  和 <code>es[i] = s.isEmpty() ? -1 : s.peek();</code> </p><p>如何执行，也不影响最后每个元素都会入栈。最终每个元素都被 push 入栈了一次，而最多会被 pop 一次，没有任何冗余操作。所以这里复杂度是 O(n)。</p><p>其次，<code>while (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();</code> 这行意味着新元素总是挤出比自己小的元素，确保自己是最小的。当再也无法弹出后，栈顶元素是次小的（相对于当前元素），则此元素是我们要的<strong>右边比他大的第一个元素</strong> 。 我们可以将其保存起来。</p><h2 id="例题1-求最大图形面积"><a href="#例题1-求最大图形面积" class="headerlink" title="例题1 求最大图形面积"></a>例题1 求最大图形面积</h2><p>leetcode 84<br><a href="https://leetcode.cn/problems/largest-rectangle-in-histogram">https://leetcode.cn/problems/largest-rectangle-in-histogram</a></p><p>给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1 。<br>求在该柱状图中，能够勾勒出来的矩形的最大面积。</p><p><img src="/monotonic-stack/1.png" alt="1"></p><p><strong>当临近的柱子比当前的柱子高的时候，矩形可以扩展</strong>，此时矩阵的高就是当前的柱子的高，矩阵的宽就是两边第一次遇到小于当前柱子高的距离，加到一起就是矩阵整体的宽的。宽高一乘就是面积了。</p><p>所以这里有两种解法，一种是左边求一遍单调栈，右边求一遍单调栈</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">largestRectangleArea</span><span class="hljs-params">(<span class="hljs-type">int</span>[] heights)</span> &#123;    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-type">int</span> <span class="hljs-variable">ret</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;     <span class="hljs-comment">// left[i]含义：i处右边最近的比heights[i]小的索引</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">left</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[heights.length];     <span class="hljs-comment">// right[i]含义：i处左边最近的比heights[i]小的索引</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">right</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[heights.length];    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; heights.length; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt;= heights[i]) d.poll();        left[i] = d.isEmpty() ? -<span class="hljs-number">1</span> : d.peek();        d.push(i);    &#125;    d.clear();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> heights.length - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; i--) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt;= heights[i]) d.poll();        right[i] = d.isEmpty() ? heights.length : d.peek();        d.push(i);    &#125;    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; left.length; i++) &#123;        ret = Math.max(ret, (right[i] - left[i] - <span class="hljs-number">1</span>) * heights[i]);    &#125;    <span class="hljs-keyword">return</span> ret;&#125;</code></pre></div><p>另一种则是一次遍历的方案，这里注意的是，首先因为要计算宽度，所以这里栈中保存的是索引。其次每次弹出元素和每次需要入栈是另一种逆操作。最重要的是这里能一次找出两边的次小值的原因是，每次弹出的元素对应的右次小值可以求出，同时pop完成后最终入栈的又是左次小值。</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">largestRectangleArea</span><span class="hljs-params">(<span class="hljs-type">int</span>[] heights)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> heights.length;    <span class="hljs-type">int</span>[] <span class="hljs-variable">left</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    <span class="hljs-type">int</span>[] <span class="hljs-variable">right</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    Arrays.fill(right, n);    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt; heights[i]) right[d.poll()] = i;        left[i] = d.isEmpty() ? -<span class="hljs-number">1</span> : d.peek();        d.push(i);    &#125;    <span class="hljs-type">int</span> <span class="hljs-variable">ans</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; ++i) &#123;        ans = Math.max(ans, (right[i] - left[i] - <span class="hljs-number">1</span>) * heights[i]);    &#125;    <span class="hljs-keyword">return</span> ans;&#125;</code></pre></div><h2 id="例题2-接雨水"><a href="#例题2-接雨水" class="headerlink" title="例题2 接雨水"></a>例题2 接雨水</h2><p>非常经典的题了。</p><p>给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。<br>示例 1：</p><p><img src="/monotonic-stack/2.png" alt="2"></p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">trap</span><span class="hljs-params">(<span class="hljs-type">int</span>[] height)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> height.length;    <span class="hljs-type">int</span> <span class="hljs-variable">ans</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; height[d.peek()] &lt; height[i]) &#123;            <span class="hljs-type">Integer</span> <span class="hljs-variable">cur</span> <span class="hljs-operator">=</span> d.poll();            <span class="hljs-keyword">if</span> (d.isEmpty()) <span class="hljs-keyword">break</span>;            <span class="hljs-type">int</span> <span class="hljs-variable">l</span> <span class="hljs-operator">=</span> d.peek();            <span class="hljs-type">int</span> <span class="hljs-variable">r</span> <span class="hljs-operator">=</span> i;            <span class="hljs-type">int</span> <span class="hljs-variable">h</span> <span class="hljs-operator">=</span> Math.min(height[r], height[l]) - height[cur];            ans += (r - l - <span class="hljs-number">1</span>) * h;        &#125;    &#125;    <span class="hljs-keyword">return</span> ans;&#125;</code></pre></div>]]></content>
-    
-    
-    <categories>
-      
-      <category>算法</category>
-      
-    </categories>
-    
-    
-    <tags>
-      
-      <tag>单调栈</tag>
-      
-    </tags>
-    
-  </entry>
-  
-  
-  
-  <entry>
     <title>开源轻量对象存储minio</title>
     <link href="/minio/"/>
     <url>/minio/</url>
@@ -1330,6 +1305,31 @@
       <tag>中间件</tag>
       
       <tag>对象存储</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
+    <title>单调栈的一些应用</title>
+    <link href="/monotonic-stack/"/>
+    <url>/monotonic-stack/</url>
+    
+    <content type="html"><![CDATA[<h1 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h1><h2 id="什么是单调栈呢？"><a href="#什么是单调栈呢？" class="headerlink" title="什么是单调栈呢？"></a>什么是单调栈呢？</h2><ul><li>单调栈首先是<strong>栈</strong>，即，这是个能存储数据的数据结构并满足后进先出的特性。</li><li>其次单调栈要满足<strong>单调</strong>的特性，及栈中的元素是有序的，要么栈顶到栈底从小到大，要么从大到小。</li></ul><h2 id="单调栈有啥用？"><a href="#单调栈有啥用？" class="headerlink" title="单调栈有啥用？"></a>单调栈有啥用？</h2><p>应该说单调栈的应用并不是非常广泛，只能用于解决一类特定问题：一组数据中，为每个元素找出左边（右边）比它大（小）的第一个元素。</p><p>比如我们现在有一个数组需要找出每个元素<strong>右边比他大的第一个元素</strong>。如果暴力求解扫描每个元素后面的最值，将带来 O(n^2) 复杂度。如果使用单调栈法则有O(n)复杂度。</p><p>单调栈的解法：</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-type">int</span>[] <span class="hljs-title function_">monoStack</span><span class="hljs-params">(<span class="hljs-type">int</span>[] nums)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> nums.length;    <span class="hljs-comment">// 用于保存结果</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">res</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    <span class="hljs-comment">// 单调栈本体</span>    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">s</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-comment">// 由于我们要的是右边的最大值，需要 反向循环</span>    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> n - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; i--) &#123;        <span class="hljs-comment">// 只要当前元素比栈顶元素大，则不停弹出栈顶元素</span>        <span class="hljs-keyword">while</span> (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();        <span class="hljs-comment">// 此时栈顶元素 要么比当前元素大，要么栈上已经没有元素</span>        res[i] = s.isEmpty() ? -<span class="hljs-number">1</span> : s.peek();        <span class="hljs-comment">// 当前元素入栈，此时当前元素是栈中最小的</span>        <span class="hljs-comment">// 栈中数据仍是递增的</span>        s.push(nums[i]);    &#125;    <span class="hljs-keyword">return</span> res;&#125;</code></pre></div><p>应该如何理解上面的逻辑？无论</p><p><code>while (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();</code>  和 <code>es[i] = s.isEmpty() ? -1 : s.peek();</code> </p><p>如何执行，也不影响最后每个元素都会入栈。最终每个元素都被 push 入栈了一次，而最多会被 pop 一次，没有任何冗余操作。所以这里复杂度是 O(n)。</p><p>其次，<code>while (!s.isEmpty() &amp;&amp; s.peek() &lt;= nums[i]) s.pop();</code> 这行意味着新元素总是挤出比自己小的元素，确保自己是最小的。当再也无法弹出后，栈顶元素是次小的（相对于当前元素），则此元素是我们要的<strong>右边比他大的第一个元素</strong> 。 我们可以将其保存起来。</p><h2 id="例题1-求最大图形面积"><a href="#例题1-求最大图形面积" class="headerlink" title="例题1 求最大图形面积"></a>例题1 求最大图形面积</h2><p>leetcode 84<br><a href="https://leetcode.cn/problems/largest-rectangle-in-histogram">https://leetcode.cn/problems/largest-rectangle-in-histogram</a></p><p>给定 n 个非负整数，用来表示柱状图中各个柱子的高度。每个柱子彼此相邻，且宽度为 1 。<br>求在该柱状图中，能够勾勒出来的矩形的最大面积。</p><p><img src="/monotonic-stack/1.png" alt="1"></p><p><strong>当临近的柱子比当前的柱子高的时候，矩形可以扩展</strong>，此时矩阵的高就是当前的柱子的高，矩阵的宽就是两边第一次遇到小于当前柱子高的距离，加到一起就是矩阵整体的宽的。宽高一乘就是面积了。</p><p>所以这里有两种解法，一种是左边求一遍单调栈，右边求一遍单调栈</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">largestRectangleArea</span><span class="hljs-params">(<span class="hljs-type">int</span>[] heights)</span> &#123;    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-type">int</span> <span class="hljs-variable">ret</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;     <span class="hljs-comment">// left[i]含义：i处右边最近的比heights[i]小的索引</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">left</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[heights.length];     <span class="hljs-comment">// right[i]含义：i处左边最近的比heights[i]小的索引</span>    <span class="hljs-type">int</span>[] <span class="hljs-variable">right</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[heights.length];    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; heights.length; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt;= heights[i]) d.poll();        left[i] = d.isEmpty() ? -<span class="hljs-number">1</span> : d.peek();        d.push(i);    &#125;    d.clear();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> heights.length - <span class="hljs-number">1</span>; i &gt;= <span class="hljs-number">0</span>; i--) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt;= heights[i]) d.poll();        right[i] = d.isEmpty() ? heights.length : d.peek();        d.push(i);    &#125;    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; left.length; i++) &#123;        ret = Math.max(ret, (right[i] - left[i] - <span class="hljs-number">1</span>) * heights[i]);    &#125;    <span class="hljs-keyword">return</span> ret;&#125;</code></pre></div><p>另一种则是一次遍历的方案，这里注意的是，首先因为要计算宽度，所以这里栈中保存的是索引。其次每次弹出元素和每次需要入栈是另一种逆操作。最重要的是这里能一次找出两边的次小值的原因是，每次弹出的元素对应的右次小值可以求出，同时pop完成后最终入栈的又是左次小值。</p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">largestRectangleArea</span><span class="hljs-params">(<span class="hljs-type">int</span>[] heights)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> heights.length;    <span class="hljs-type">int</span>[] <span class="hljs-variable">left</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    <span class="hljs-type">int</span>[] <span class="hljs-variable">right</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">int</span>[n];    Arrays.fill(right, n);    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; heights[d.peek()] &gt; heights[i]) right[d.poll()] = i;        left[i] = d.isEmpty() ? -<span class="hljs-number">1</span> : d.peek();        d.push(i);    &#125;    <span class="hljs-type">int</span> <span class="hljs-variable">ans</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; ++i) &#123;        ans = Math.max(ans, (right[i] - left[i] - <span class="hljs-number">1</span>) * heights[i]);    &#125;    <span class="hljs-keyword">return</span> ans;&#125;</code></pre></div><h2 id="例题2-接雨水"><a href="#例题2-接雨水" class="headerlink" title="例题2 接雨水"></a>例题2 接雨水</h2><p>非常经典的题了。</p><p>给定 n 个非负整数表示每个宽度为 1 的柱子的高度图，计算按此排列的柱子，下雨之后能接多少雨水。<br>示例 1：</p><p><img src="/monotonic-stack/2.png" alt="2"></p><div class="code-wrapper"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-type">int</span> <span class="hljs-title function_">trap</span><span class="hljs-params">(<span class="hljs-type">int</span>[] height)</span> &#123;    <span class="hljs-type">int</span> <span class="hljs-variable">n</span> <span class="hljs-operator">=</span> height.length;    <span class="hljs-type">int</span> <span class="hljs-variable">ans</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;    <span class="hljs-type">Deque</span>&lt;Integer&gt; <span class="hljs-variable">d</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ArrayDeque</span>&lt;&gt;();    <span class="hljs-keyword">for</span> (<span class="hljs-type">int</span> <span class="hljs-variable">i</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>; i &lt; n; i++) &#123;        <span class="hljs-keyword">while</span> (!d.isEmpty() &amp;&amp; height[d.peek()] &lt; height[i]) &#123;            <span class="hljs-type">Integer</span> <span class="hljs-variable">cur</span> <span class="hljs-operator">=</span> d.poll();            <span class="hljs-keyword">if</span> (d.isEmpty()) <span class="hljs-keyword">break</span>;            <span class="hljs-type">int</span> <span class="hljs-variable">l</span> <span class="hljs-operator">=</span> d.peek();            <span class="hljs-type">int</span> <span class="hljs-variable">r</span> <span class="hljs-operator">=</span> i;            <span class="hljs-type">int</span> <span class="hljs-variable">h</span> <span class="hljs-operator">=</span> Math.min(height[r], height[l]) - height[cur];            ans += (r - l - <span class="hljs-number">1</span>) * h;        &#125;    &#125;    <span class="hljs-keyword">return</span> ans;&#125;</code></pre></div>]]></content>
+    
+    
+    <categories>
+      
+      <category>算法</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>单调栈</tag>
       
     </tags>
     
@@ -1708,11 +1708,11 @@
     
     <tags>
       
-      <tag>网络</tag>
-      
       <tag>linux</tag>
       
       <tag>IO</tag>
+      
+      <tag>网络</tag>
       
       <tag>C</tag>
       
