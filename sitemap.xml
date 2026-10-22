@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://fenixc9.github.io/jev-system-one-agent-integration/</loc>
+    
+    <lastmod>2026-10-22</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/nodejs-october-2026-security-rust/</loc>
     
     <lastmod>2026-10-22</lastmod>
@@ -1266,6 +1275,13 @@
   
   <url>
     <loc>https://fenixc9.github.io/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/</loc>
+    <lastmod>2026-10-22</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/Jev/</loc>
     <lastmod>2026-10-22</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
