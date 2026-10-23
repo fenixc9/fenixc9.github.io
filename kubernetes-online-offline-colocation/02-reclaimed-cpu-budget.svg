@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
+<title id="title">动态回收：预算增加，物理 CPU 没有增加</title><desc id="desc">示例：可供工作负载使用 64 核，已扣系统预留。这里只计算 CPU。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="650" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">动态回收：预算增加，物理 CPU 没有增加</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">示例：可供工作负载使用 64 核，已扣系统预留。这里只计算 CPU。</text>
+<text x="45" y="150" font-size="24" text-anchor="start" class="title">按原生 request 计算</text>
+<rect x="45" y="175" width="1000" height="70" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="45" y="175" width="750" height="70" rx="14" fill="#c8dfd2" stroke="#b9cec5" stroke-width="2"/>
+<text x="420" y="218" font-size="24" text-anchor="middle" class="">在线 request：48 核</text>
+<text x="920" y="218" font-size="22" text-anchor="middle" class="">账面余量 16</text>
+<text x="45" y="300" font-size="24" text-anchor="start" class="title">按观测与安全余量估算批处理预算</text>
+<rect x="45" y="325" width="1000" height="85" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="45" y="325" width="312.5" height="85" rx="14" fill="#c8dfd2" stroke="#b9cec5" stroke-width="2"/>
+<rect x="357.5" y="325" width="187.5" height="85" rx="14" fill="#e4e9e5" stroke="#b9cec5" stroke-width="2"/>
+<rect x="545" y="325" width="500" height="85" rx="14" fill="#ffecd0" stroke="#ddb574" stroke-width="2"/>
+<text x="201" y="362" font-size="22" text-anchor="middle" class="">在线实际用量</text>
+<text x="201" y="393" font-size="22" text-anchor="middle" class="">20 核</text>
+<text x="451" y="362" font-size="21" text-anchor="middle" class="">安全余量</text>
+<text x="451" y="393" font-size="22" text-anchor="middle" class="">12 核</text>
+<text x="795" y="362" font-size="23" text-anchor="middle" class="title">批处理预算</text>
+<text x="795" y="393" font-size="23" text-anchor="middle" class="">64 − 20 − 12 = 32 核</text>
+<rect x="45" y="465" width="1000" height="120" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="503" font-size="23" text-anchor="start" class="title">在线升载后，批处理预算必须收缩，已运行任务也必须能退让。</text>
+<text x="70" y="540" font-size="21" text-anchor="start" class="">标准资源与 batch 资源是两种记账视图，不能相加成独立物理容量。</text>
+<text x="70" y="570" font-size="19" text-anchor="start" class="muted">这不是 Koordinator 或 Volcano 的完整计算公式。</text>
+<text x="44" y="626" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
+<title id="title">在线离线混部，有三个不同的深度</title><desc id="desc">先定义共享范围，再决定是否启用动态资源回收。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="650" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">在线离线混部，有三个不同的深度</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">先定义共享范围，再决定是否启用动态资源回收。</text>
+<rect x="45" y="130" width="300" height="115" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="165" font-size="23" text-anchor="middle" class="title">01 同集群，分节点</text>
+<text x="195.0" y="197" font-size="19" text-anchor="middle" class="muted">统一管理，物理资源仍分开</text>
+<rect x="400" y="130" width="300" height="115" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="165" font-size="23" text-anchor="middle" class="title">02 同节点，共享资源</text>
+<text x="550.0" y="197" font-size="19" text-anchor="middle" class="muted">CPU、缓存、带宽开始竞争</text>
+<rect x="755" y="130" width="300" height="115" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="165" font-size="23" text-anchor="middle" class="title">03 动态回收空闲预算</text>
+<text x="905.0" y="197" font-size="19" text-anchor="middle" class="muted">离线任务借用，在线升载时退让</text>
+<rect x="45" y="290" width="300" height="190" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="400" y="290" width="300" height="190" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="755" y="290" width="300" height="190" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195" y="330" font-size="22" text-anchor="middle" class="title">同一个集群，两个池</text>
+<rect x="65" y="352" width="115" height="80" rx="14" fill="#d1e9df" stroke="#b9cec5" stroke-width="2"/>
+<text x="122.5" y="387" font-size="23" text-anchor="middle" class="title">在线</text>
+<rect x="210" y="352" width="115" height="80" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="267.5" y="387" font-size="23" text-anchor="middle" class="title">离线</text>
+<text x="195" y="465" font-size="17" text-anchor="middle" class="">两个池仍在同一个集群</text>
+<text x="550" y="330" font-size="22" text-anchor="middle" class="title">同一物理节点</text>
+<rect x="420" y="352" width="115" height="80" rx="14" fill="#d1e9df" stroke="#b9cec5" stroke-width="2"/>
+<text x="477.5" y="387" font-size="23" text-anchor="middle" class="title">在线</text>
+<rect x="565" y="352" width="115" height="80" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="622.5" y="387" font-size="23" text-anchor="middle" class="title">离线</text>
+<text x="550" y="465" font-size="18" text-anchor="middle" class="">调度 + 节点侧隔离</text>
+<text x="905" y="330" font-size="22" text-anchor="middle" class="title">同一物理节点</text>
+<rect x="775" y="352" width="115" height="80" rx="14" fill="#d1e9df" stroke="#b9cec5" stroke-width="2"/>
+<text x="832.5" y="387" font-size="23" text-anchor="middle" class="title">在线</text>
+<rect x="920" y="352" width="115" height="80" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="977.5" y="387" font-size="23" text-anchor="middle" class="title">离线</text>
+<text x="905" y="465" font-size="17" text-anchor="middle" class="">可借用预算随负载收缩或增长</text>
+<rect x="45" y="535" width="1010" height="65" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="576" font-size="22" text-anchor="start" class="">在线优先是运行时策略；只把两个工作负载放在一起，还没有完成 SLO 保护。</text>
+<text x="44" y="626" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>

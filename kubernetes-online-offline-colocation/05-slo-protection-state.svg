@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="775" viewBox="0 0 1100 775" role="img" aria-labelledby="title desc">
+<title id="title">在线保护：快速收缩，缓慢恢复</title><desc id="desc">平台建议状态机；具体产品的触发器与实现路径需要单独配置。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="775" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">在线保护：快速收缩，缓慢恢复</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">平台建议状态机；具体产品的触发器与实现路径需要单独配置。</text>
+<rect x="45" y="145" width="290" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="190.0" y="180" font-size="23" text-anchor="middle" class="title">观测期</text>
+<text x="190.0" y="212" font-size="19" text-anchor="middle" class="muted">在线基线稳定</text>
+<text x="190.0" y="240" font-size="19" text-anchor="middle" class="muted">不投放可回收任务</text>
+<rect x="405" y="145" width="290" height="115" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="180" font-size="23" text-anchor="middle" class="title">保守借用</text>
+<text x="550.0" y="212" font-size="19" text-anchor="middle" class="muted">限制离线准入与并发</text>
+<text x="550.0" y="240" font-size="19" text-anchor="middle" class="muted">保留突发余量</text>
+<rect x="765" y="145" width="290" height="115" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="910.0" y="180" font-size="23" text-anchor="middle" class="title">保护期</text>
+<text x="910.0" y="212" font-size="19" text-anchor="middle" class="muted">减少新增离线任务</text>
+<text x="910.0" y="240" font-size="19" text-anchor="middle" class="muted">节点侧及时压制</text>
+<path d="M335,202 L405,202" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M695,202 L765,202" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="730" y="130" font-size="17" text-anchor="middle" class="">负载 / 压力上升</text>
+<rect x="765" y="410" width="290" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="910.0" y="445" font-size="23" text-anchor="middle" class="title">必要时驱逐</text>
+<text x="910.0" y="477" font-size="19" text-anchor="middle" class="muted">限流后仍不满足保护要求</text>
+<text x="910.0" y="505" font-size="19" text-anchor="middle" class="muted">终止允许重试的任务</text>
+<path d="M910,260 L910,410" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="930" y="338" font-size="18" text-anchor="start" class="">压力持续</text>
+<rect x="405" y="410" width="290" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="445" font-size="23" text-anchor="middle" class="title">冷却观察</text>
+<text x="550.0" y="477" font-size="19" text-anchor="middle" class="muted">验证在线恢复</text>
+<text x="550.0" y="505" font-size="19" text-anchor="middle" class="muted">限制快速重新投放</text>
+<path d="M765,468 L695,468" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="730" y="550" font-size="17" text-anchor="middle" class="">资源与服务恢复</text>
+<path d="M405,468 L370,468 L370,202 L405,202" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="220" y="420" font-size="20" text-anchor="middle" class="">稳定窗口后</text>
+<text x="220" y="452" font-size="20" text-anchor="middle" class="">小步恢复预算</text>
+<path d="M765,220 L735,220 L735,390 L550,390 L550,410" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<text x="550" y="370" font-size="19" text-anchor="middle" class="">压制已生效：直接进入冷却</text>
+<rect x="45" y="615" width="1010" height="95" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="653" font-size="23" text-anchor="start" class="title">内存严重压力等紧急场景可能直接进入保护或驱逐。</text>
+<text x="70" y="686" font-size="20" text-anchor="start" class="">控制器失联、指标过期或反复震荡时，应停止扩大借用并执行预设降级。</text>
+<text x="44" y="751" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>

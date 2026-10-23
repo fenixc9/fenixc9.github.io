@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="650" viewBox="0 0 1100 650" role="img" aria-labelledby="title desc">
+<title id="title">从基线到生产：逐步扩大混部范围</title><desc id="desc">每个阶段都验证在线 SLO 与离线有效产出，不能只看 CPU 平均利用率。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="650" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">从基线到生产：逐步扩大混部范围</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">每个阶段都验证在线 SLO 与离线有效产出，不能只看 CPU 平均利用率。</text>
+<rect x="45" y="145" width="300" height="125" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="180" font-size="23" text-anchor="middle" class="title">01 建立基线</text>
+<text x="195.0" y="212" font-size="19" text-anchor="middle" class="muted">隔离池测在线性能</text>
+<text x="195.0" y="240" font-size="19" text-anchor="middle" class="muted">记录批任务完成成本</text>
+<rect x="400" y="145" width="300" height="125" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="180" font-size="23" text-anchor="middle" class="title">02 影子计算</text>
+<text x="550.0" y="212" font-size="19" text-anchor="middle" class="muted">估算可回收预算</text>
+<text x="550.0" y="240" font-size="19" text-anchor="middle" class="muted">检查指标与策略正确性</text>
+<rect x="755" y="145" width="300" height="125" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="180" font-size="23" text-anchor="middle" class="title">03 小范围试点</text>
+<text x="905.0" y="212" font-size="19" text-anchor="middle" class="muted">低风险批任务先进入</text>
+<text x="905.0" y="240" font-size="19" text-anchor="middle" class="muted">压测在线突发与回收</text>
+<path d="M345,207 L400,207" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M700,207 L755,207" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="755" y="380" width="300" height="120" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="415" font-size="23" text-anchor="middle" class="title">04 扩大或退出</text>
+<text x="905.0" y="447" font-size="19" text-anchor="middle" class="muted">稳定达标后逐步扩大</text>
+<text x="905.0" y="475" font-size="19" text-anchor="middle" class="muted">不达标则撤回混部</text>
+<path d="M905,270 L905,380" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="380" width="655" height="120" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="372.5" y="415" font-size="23" text-anchor="middle" class="title">验收必须覆盖故障与恢复</text>
+<text x="372.5" y="447" font-size="19" text-anchor="middle" class="muted">批任务重试、检查点、幂等输出与终止时长</text>
+<text x="372.5" y="475" font-size="19" text-anchor="middle" class="muted">指标过期、Agent 异常、回收风暴与恢复抖动</text>
+<path d="M700,440 L755,440" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="45" y="570" font-size="23" text-anchor="start" class="title">总成本 = 在线资源成本 + 批任务成本 + 重试浪费 + 平台运维成本</text>
+<text x="44" y="626" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>

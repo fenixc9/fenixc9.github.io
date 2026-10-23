@@ -1,0 +1,1177 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/kubernetes-online-offline-colocation/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="从 request 与实际用量的差额出发，比较 Kubernetes 原生能力、Koordinator 和 Volcano 的混部路径，用六张图解释容量回收、节点压制、干扰控制与渐进落地。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="图解 Kubernetes 在线离线混部：资源回收、干扰隔离与 SLO 保护">
+<meta property="og:url" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="从 request 与实际用量的差额出发，比较 Kubernetes 原生能力、Koordinator 和 Volcano 的混部路径，用六张图解释容量回收、节点压制、干扰控制与渐进落地。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/01-colocation-levels.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/02-reclaimed-cpu-budget.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/03-colocation-control-loop.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/04-interference-dimensions.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/05-slo-protection-state.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/06-rollout-and-validation.svg">
+<meta property="article:published_time" content="2026-10-23T09:13:28.000Z">
+<meta property="article:modified_time" content="2026-10-23T09:23:01.616Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Koordinator">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="Volcano">
+<meta property="article:tag" content="云原生">
+<meta property="article:tag" content="调度">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/kubernetes-online-offline-colocation/01-colocation-levels.svg">
+  
+  
+  
+  <title>图解 Kubernetes 在线离线混部：资源回收、干扰隔离与 SLO 保护 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>图解 Kubernetes 在线离线混部：资源回收、干扰隔离与 SLO 保护</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-23 17:13" pubdate>
+          2026年10月23日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          8.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          69 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">图解 Kubernetes 在线离线混部：资源回收、干扰隔离与 SLO 保护</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>在线服务按高峰需求申请资源，实际负载却随时间变化。离线任务需要计算资源，也通常能够排队或重试。两类工作负载放在同一批机器上，可以利用部分空闲资源。在线流量恢复时，离线任务又必须及时退让。</p>
+<p>这项能力涉及调度预算、节点执行、内核隔离和业务观测。只降低 request，或者给在线服务设置一个较高的 PriorityClass，都不能独立完成整个过程。</p>
+<p>本文以 CPU 为主线，讨论内存、缓存、I&#x2F;O 和网络的边界，再比较 Koordinator 与 Volcano 的实现路径。全文配有六张 SVG 图。资料核验日期为 <strong>2026-10-23</strong>。架构图、容量数字和落地步骤用于解释与设计，没有在真实集群中部署或压测。</p>
+<span id="more"></span>
+
+<h2 id="1-先明确混部的范围与业务承诺"><a href="#1-先明确混部的范围与业务承诺" class="headerlink" title="1. 先明确混部的范围与业务承诺"></a>1. 先明确混部的范围与业务承诺</h2><p>“在线”通常指对请求时延、错误率和可用性敏感的服务，例如搜索、推荐、交易接口。“离线”通常指更关注完成时间和吞吐的批任务，例如报表、数据处理、转码和部分训练作业。</p>
+<p>这两个名字不能直接决定调度策略。流处理任务可能有严格时效要求。长时间训练任务可能无法频繁重启。一个后台服务也可能持有不能丢失的状态。</p>
+<p>先确定每种任务接受什么承诺：</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>在线服务需要回答</th>
+<th>离线任务需要回答</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>性能目标</td>
+<td>P99、错误率、可用性目标是什么？</td>
+<td>完成时限、吞吐或排队时间目标是什么？</td>
+</tr>
+<tr>
+<td>资源弹性</td>
+<td>突发需要多少资源、持续多久？</td>
+<td>最少可用资源是多少，压制后还能否产生有效进展？</td>
+</tr>
+<tr>
+<td>中断容忍</td>
+<td>多少副本能同时受影响？</td>
+<td>是否可重试、可检查点恢复、可幂等提交？</td>
+</tr>
+<tr>
+<td>退出条件</td>
+<td>哪些指标触发停止混部？</td>
+<td>多次失败后怎样停止重试或转入独立资源池？</td>
+</tr>
+</tbody></table>
+<h3 id="三种混部深度"><a href="#三种混部深度" class="headerlink" title="三种混部深度"></a>三种混部深度</h3><p><img src="/kubernetes-online-offline-colocation/01-colocation-levels.svg" srcset="/img/loading.gif" lazyload alt="同集群分节点、同节点共享资源与动态回收的三个混部层次"></p>
+<p>第一层是同集群管理，在线和离线仍使用不同节点池。第二层允许它们进入同一节点，开始共享 CPU、缓存、内存和设备。第三层进一步把在线已经申请但暂未使用的部分容量，转化为可回收的离线预算。</p>
+<p>每深入一层，都需要增加对应的观测和保护能力。极端时延敏感、无法容忍共享资源干扰的业务，可以保留独立节点池。混部范围应由业务目标与测量结果决定。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/architecture/resource-model">Koordinator Resource Model</a></p>
+<h2 id="2-Kubernetes-原生能力提供了哪些基础"><a href="#2-Kubernetes-原生能力提供了哪些基础" class="headerlink" title="2. Kubernetes 原生能力提供了哪些基础"></a>2. Kubernetes 原生能力提供了哪些基础</h2><p><a href="/kubernetes-scheduling-explained/">上一篇调度流程文章</a>解释了 request、队列和正式绑定。本篇继续讨论资源已经被请求、实际却暂未使用时的处理。</p>
+<p>Kubernetes 通过 request 进行资源适配。假设节点可供 Pod 使用的 CPU 为 64 核，在线 requests 合计为 48 核。按标准 CPU 请求计算，剩余预算为 16 核。</p>
+<p>即使在线实际只用了 20 核，默认资源过滤也不会自动把已有请求改成 20 核。要让离线任务利用这部分差额，需要额外的容量模型或调整资源声明。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">资源管理文档</a></p>
+<table>
+<thead>
+<tr>
+<th>原生能力</th>
+<th>可以做什么</th>
+<th>混部时仍需补足什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>requests &#x2F; limits</td>
+<td>参与调度预算，设置运行时资源约束</td>
+<td>动态估算和回收可借用容量</td>
+</tr>
+<tr>
+<td>PriorityClass &#x2F; 抢占</td>
+<td>影响调度顺序，必要时尝试让低优先级 Pod 让出位置</td>
+<td>已运行任务之间的持续 CPU、缓存和带宽保护</td>
+</tr>
+<tr>
+<td>Kubernetes QoS</td>
+<td>依据资源声明分类，参与资源管理与压力处理</td>
+<td>业务 P99 的直接保证、多维干扰控制</td>
+</tr>
+<tr>
+<td>node affinity &#x2F; taints</td>
+<td>限定节点池、控制工作负载进入范围</td>
+<td>同节点运行后的细粒度隔离</td>
+</tr>
+<tr>
+<td>CPU Manager &#x2F; Topology Manager</td>
+<td>在适用配置下管理核分配和拓扑对齐</td>
+<td>完整的离线容量回收与服务保护策略</td>
+</tr>
+<tr>
+<td>节点压力驱逐</td>
+<td>在内存、磁盘等压力下保护节点</td>
+<td>业务退化前的预防控制与温和退让</td>
+</tr>
+</tbody></table>
+<p>PriorityClass 不会直接改变 Linux 线程优先级。提高 Pod 优先级也不会自动给它独占 LLC 或内存带宽。调度抢占主要处理等待调度的高优先级 Pod，不能替代节点上的实时资源控制。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/">Priority and Preemption</a></p>
+<p>Guaranteed、Burstable、BestEffort 是 Kubernetes 的资源分类。Guaranteed 也不等于端到端业务时延保证。共享缓存、内存带宽和外部存储仍可能成为瓶颈。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/">Pod QoS</a></p>
+<h2 id="3-动态资源回收怎样形成调度预算"><a href="#3-动态资源回收怎样形成调度预算" class="headerlink" title="3. 动态资源回收怎样形成调度预算"></a>3. 动态资源回收怎样形成调度预算</h2><p>理解混部可以先看一个简化的 CPU 模型。假设可供工作负载使用的容量为 64 核，已经扣除了系统预留。在线实际使用 20 核，再保留 12 核应对突发与估算误差，那么当前批处理预算可以暂估为 32 核。</p>
+<p><img src="/kubernetes-online-offline-colocation/02-reclaimed-cpu-budget.svg" srcset="/img/loading.gif" lazyload alt="标准 CPU 请求预算与动态回收 CPU 预算的示例对比"></p>
+<div class="code-wrapper"><pre><code class="hljs text">批处理 CPU 预算示意
+  = 可供工作负载使用的容量
+  - 受保护工作负载的需求估计
+  - 安全余量</code></pre></div>
+
+<p>这是解释性公式。具体产品可能使用不同的历史窗口、资源分类、保留比例和容量调整规则。还需要扣除已经计入相应预算的离线请求。不能把同一批已运行离线任务重复扣算，或者遗漏它们的占用。</p>
+<p>需求估计也不应只取一个瞬时采样值。需要考虑在线峰值、采集延迟、Pod 启动、滚动发布以及突发相关性。Koordinator 的资源模型区分短期与较长期的需求保留，体现了借用规模与稳定性之间的取舍。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/architecture/resource-model">Resource Model</a></p>
+<h3 id="batch-资源是另一种记账视图"><a href="#batch-资源是另一种记账视图" class="headerlink" title="batch 资源是另一种记账视图"></a>batch 资源是另一种记账视图</h3><p>Koordinator 为批任务提供 <code>kubernetes.io/batch-cpu</code> 和 <code>kubernetes.io/batch-memory</code> 等资源类型。它们可以出现在节点的 Allocatable 中。批任务声明相应请求，调度层据此计算放置条件。</p>
+<p><strong>标准 CPU 和 batch CPU 最终使用同一套物理 CPU。</strong> 两种资源不能相加成互相独立的硬件容量。调度层允许借用的前提，是运行时有能力压制或回收离线使用量。</p>
+<p>在线升载后，容量计算可以降低 batch 预算。但降低 Allocatable 不会直接终止已经运行的 Pod。因此，容量更新与节点侧回收必须配合。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/best-practices/batch-colocation-quick-start">Batch Colocation Quick Start</a></p>
+<h3 id="内存不能直接套用-CPU-的思路"><a href="#内存不能直接套用-CPU-的思路" class="headerlink" title="内存不能直接套用 CPU 的思路"></a>内存不能直接套用 CPU 的思路</h3><p>CPU 时间通常可以通过减少配额或可用 CPU 来压制。已经分配的匿名内存不能靠暂停进程立即释放。回收文件缓存还可能引入后续 I&#x2F;O，内存压缩与交换也有成本。</p>
+<p>内存混部需要更保守的预算。平台要考虑 RSS 增长、直接回收停顿、PSI、OOM 以及任务退出时间。严重压力下可能需要直接驱逐离线任务。不能先把内存借满，再假设在线需要时总能瞬间拿回。</p>
+<h2 id="4-调度控制与节点执行要形成闭环"><a href="#4-调度控制与节点执行要形成闭环" class="headerlink" title="4. 调度控制与节点执行要形成闭环"></a>4. 调度控制与节点执行要形成闭环</h2><p><img src="/kubernetes-online-offline-colocation/03-colocation-control-loop.svg" srcset="/img/loading.gif" lazyload alt="容量估算、调度准入、节点侧压制与指标反馈组成的混部控制闭环"></p>
+<p>混部至少需要两条控制链。</p>
+<p>第一条影响后续放置。采集组件报告节点和 Pod 用量。控制逻辑计算可借用容量。调度器依据容量、配额和策略决定是否继续接收离线任务。</p>
+<p>第二条控制已经运行的任务。节点 Agent 调整相应 cgroup、CPU 集合或其他资源参数。压力持续时，系统执行允许的驱逐策略。</p>
+<table>
+<thead>
+<tr>
+<th>控制动作</th>
+<th>直接影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>下调 batch 调度预算</td>
+<td>限制后续新增任务</td>
+</tr>
+<tr>
+<td>暂停队列准入或降低并发</td>
+<td>减少后续压力增长</td>
+</tr>
+<tr>
+<td>收缩离线 CPU 集合或配额</td>
+<td>限制已运行任务使用 CPU</td>
+</tr>
+<tr>
+<td>内存保护、回收阈值与上限</td>
+<td>调整回收和压力行为，依赖内核及配置</td>
+</tr>
+<tr>
+<td>驱逐或终止离线任务</td>
+<td>释放任务占用，但存在终止、清理和重试成本</td>
+</tr>
+</tbody></table>
+<p>两条链的更新周期可能不同。在线突发时，节点侧保护不能完全等待一次全局重新调度。采集和控制也存在延迟，因此仍需要安全余量。</p>
+<p>这里还要区分资源指标与业务指标。节点 CPU 低于某个阈值，并不证明在线 P99 达标。产品提供资源保护机制后，平台仍应把真实请求时延、错误率和错误预算接入观测与决策。</p>
+<h2 id="5-干扰来自-CPU-之外的多个维度"><a href="#5-干扰来自-CPU-之外的多个维度" class="headerlink" title="5. 干扰来自 CPU 之外的多个维度"></a>5. 干扰来自 CPU 之外的多个维度</h2><p><img src="/kubernetes-online-offline-colocation/04-interference-dimensions.svg" srcset="/img/loading.gif" lazyload alt="CPU、缓存与内存带宽、内存容量、磁盘、网络和 NUMA 的干扰及控制维度"></p>
+<h3 id="CPU：权重、配额与核分配各有作用"><a href="#CPU：权重、配额与核分配各有作用" class="headerlink" title="CPU：权重、配额与核分配各有作用"></a>CPU：权重、配额与核分配各有作用</h3><p>CPU 权重影响竞争时的相对份额。CPU 配额限制一段时间内的累计运行时间。核绑定限定进程可运行的位置。</p>
+<p>它们解决不同问题。在线服务的 CPU limit 太紧，可能在短时突发时被节流。离线线程很多，也可能增加运行队列和内核路径上的竞争。核绑定如果没有考虑 SMT 同胞核与 NUMA，仍可能留下干扰。</p>
+<p>CPU Burst 可以缓解部分配额造成的突发节流，但它不能增加物理 CPU，也不能替代离线压制。是否可用需要检查内核、cgroup 以及相应组件实现。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/user-manuals/cpu-suppress">Koordinator CPU Suppress</a>、<a target="_blank" rel="noopener" href="https://volcano.sh/blog/volcano-1.14.0-release/">Volcano v1.14 混部更新</a></p>
+<h3 id="缓存与内存带宽：低-CPU-使用率也会退化"><a href="#缓存与内存带宽：低-CPU-使用率也会退化" class="headerlink" title="缓存与内存带宽：低 CPU 使用率也会退化"></a>缓存与内存带宽：低 CPU 使用率也会退化</h3><p>离线扫描、压缩或数据处理可能持续访问内存。它们可以驱逐在线热点数据，或者占满内存带宽。此时 CPU 平均利用率不一定很高，在线时延却可能明显上升。</p>
+<p>CAT、MBA 等硬件能力可用于部分缓存和带宽控制。支持范围依赖 CPU 型号、内核接口和平台适配。它们也不能隔离所有共享结构。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/user-manuals/slo-config">Koordinator SLO Configuration</a></p>
+<h3 id="磁盘与网络：节点保护覆盖不到所有外部瓶颈"><a href="#磁盘与网络：节点保护覆盖不到所有外部瓶颈" class="headerlink" title="磁盘与网络：节点保护覆盖不到所有外部瓶颈"></a>磁盘与网络：节点保护覆盖不到所有外部瓶颈</h3><p>离线任务可能同时争抢本地磁盘、网卡、对象存储、数据库或元数据服务。即使节点 CPU 已被压制，远端系统仍可能受影响。</p>
+<p>网络限速需要明确作用方向、协议和计量位置。磁盘控制需要检查块设备、文件系统与 I&#x2F;O 路径。共享存储还需要服务端配额和容量规划。不能根据一个 cgroup 参数推断端到端 I&#x2F;O 已隔离。</p>
+<p>Volcano 提供基于流量分类与限速的网络保护设计。部署时需要验证网卡和网络模式，以及配置实际覆盖的流量路径。<a target="_blank" rel="noopener" href="https://volcano.sh/docs/keyfeatures/cloudnativecolocation/">Cloud Native Colocation</a></p>
+<h2 id="6-Koordinator：资源模型、调度扩展与节点-QoS-配合"><a href="#6-Koordinator：资源模型、调度扩展与节点-QoS-配合" class="headerlink" title="6. Koordinator：资源模型、调度扩展与节点 QoS 配合"></a>6. Koordinator：资源模型、调度扩展与节点 QoS 配合</h2><p>Koordinator 围绕混部建立资源分类、动态容量和节点控制机制。常见组件分工可以概括如下：</p>
+<table>
+<thead>
+<tr>
+<th>部分</th>
+<th>职责</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>koord-manager 及相关控制器</td>
+<td>根据指标与策略维护资源视图、处理控制面逻辑</td>
+</tr>
+<tr>
+<td>koord-scheduler</td>
+<td>处理相应调度扩展与资源请求</td>
+</tr>
+<tr>
+<td>koordlet</td>
+<td>节点指标采集、资源协调、压制与适用的驱逐逻辑</td>
+</tr>
+<tr>
+<td>NodeMetric &#x2F; NodeSLO 等对象</td>
+<td>承载观测信息或节点级策略，具体字段依版本</td>
+</tr>
+</tbody></table>
+<h3 id="QoS-与优先级是两个维度"><a href="#QoS-与优先级是两个维度" class="headerlink" title="QoS 与优先级是两个维度"></a>QoS 与优先级是两个维度</h3><p>Koordinator 的 QoS 包括 SYSTEM、LSE、LSR、LS 和 BE。它们表达不同的节点运行质量要求。优先级则表达资源分配和调度顺序等要求。</p>
+<p>典型微服务可以评估 LS。需要更确定资源分配的服务可以评估 LSR 或其他隔离策略。可压制、可驱逐的批任务常使用 BE。最终分类仍需要对应业务和部署条件。</p>
+<p><strong>Koordinator 的 BE 标签与 Kubernetes 的 BestEffort 分类属于不同的定义体系。</strong> 前者表达 Koordinator 的运行策略。后者根据标准 CPU、内存等资源声明计算。即使名称接近，也需要分别检查。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/architecture/qos">Koordinator QoS</a>、<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/workloads/pods/pod-qos/">Kubernetes Pod QoS</a></p>
+<h3 id="一个批任务配置骨架"><a href="#一个批任务配置骨架" class="headerlink" title="一个批任务配置骨架"></a>一个批任务配置骨架</h3><p>下面改写自 Koordinator v1.7 的官方手动配置示例，用于说明字段关系。需要先安装兼容的 Koordinator 组件、创建 namespace 与 <code>koord-batch</code> PriorityClass、启用相应节点策略，并确认节点已经上报 batch 资源。此清单未在本地集群执行。</p>
+<div class="code-wrapper"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">batch/v1</span>
+<span class="hljs-attr">kind:</span> <span class="hljs-string">Job</span>
+<span class="hljs-attr">metadata:</span>
+  <span class="hljs-attr">name:</span> <span class="hljs-string">batch-colocation-demo</span>
+  <span class="hljs-attr">namespace:</span> <span class="hljs-string">batch-demo</span>
+<span class="hljs-attr">spec:</span>
+  <span class="hljs-attr">backoffLimit:</span> <span class="hljs-number">2</span>
+  <span class="hljs-attr">template:</span>
+    <span class="hljs-attr">metadata:</span>
+      <span class="hljs-attr">labels:</span>
+        <span class="hljs-attr">koordinator.sh/qosClass:</span> <span class="hljs-string">BE</span>
+    <span class="hljs-attr">spec:</span>
+      <span class="hljs-attr">schedulerName:</span> <span class="hljs-string">koord-scheduler</span>
+      <span class="hljs-attr">priorityClassName:</span> <span class="hljs-string">koord-batch</span>
+      <span class="hljs-attr">restartPolicy:</span> <span class="hljs-string">Never</span>
+      <span class="hljs-attr">containers:</span>
+        <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">worker</span>
+          <span class="hljs-attr">image:</span> <span class="hljs-string">busybox:1.36</span>
+          <span class="hljs-attr">command:</span> [<span class="hljs-string">&quot;sh&quot;</span>, <span class="hljs-string">&quot;-c&quot;</span>, <span class="hljs-string">&quot;echo batch-demo; sleep 30&quot;</span>]
+          <span class="hljs-attr">resources:</span>
+            <span class="hljs-attr">requests:</span>
+              <span class="hljs-attr">kubernetes.io/batch-cpu:</span> <span class="hljs-string">&quot;1000&quot;</span>
+              <span class="hljs-attr">kubernetes.io/batch-memory:</span> <span class="hljs-string">&quot;2Gi&quot;</span>
+            <span class="hljs-attr">limits:</span>
+              <span class="hljs-attr">kubernetes.io/batch-cpu:</span> <span class="hljs-string">&quot;1000&quot;</span>
+              <span class="hljs-attr">kubernetes.io/batch-memory:</span> <span class="hljs-string">&quot;2Gi&quot;</span></code></pre></div>
+
+<p>这个示例只验证配置意图，不会产生有代表性的批处理负载。<code>batch-cpu: &quot;1000&quot;</code> 在该资源模型下表示 1000 毫核，即一核 CPU 对应的批处理请求，不能按标准 <code>cpu: &quot;1000&quot;</code> 解读。</p>
+<p>使用扩展资源名也不会让普通 kubelet 自动把它变成 CPU、内存限制。Koordinator 的节点组件与策略必须正常工作。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/best-practices/batch-colocation-quick-start">官方配置示例</a></p>
+<h3 id="运行时的保护边界"><a href="#运行时的保护边界" class="headerlink" title="运行时的保护边界"></a>运行时的保护边界</h3><p>Koordinator 的 CPU Suppress 可以随在线用量变化调整 BE 可用 CPU。它还有基于 CPU 满足度的驱逐策略。后者处理大量离线任务被压缩到很少 CPU 后，几乎没有进展却仍在争抢资源的情况。</p>
+<p>SLO 配置还覆盖 Memory QoS、缓存和内存带宽等机制。部分增强 CPU QoS 接口依赖 Anolis 等适用内核，硬件资源控制也有平台前提。安装 Koordinator 不代表所有增强隔离特性都能生效。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/user-manuals/cpu-suppress">CPU Suppress</a>、<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/user-manuals/cpu-evict">CPU Eviction</a>、<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.7/user-manuals/slo-config">SLO Configuration</a></p>
+<h2 id="7-Volcano：作业调度体系与混部-Agent-配合"><a href="#7-Volcano：作业调度体系与混部-Agent-配合" class="headerlink" title="7. Volcano：作业调度体系与混部 Agent 配合"></a>7. Volcano：作业调度体系与混部 Agent 配合</h2><p>Volcano 的队列、公平分配、Gang 和抢占能力适合组织批任务。混部能力还需要 Volcano Agent 等节点侧组件参与。仅安装调度器、启用一个 overcommit 参数，不能等同于获得完整的在线运行时保护。</p>
+<p>官方混部设计包含动态资源超卖、资源分类、CPU 与内存保护，以及网络带宽控制。资源上报方式可以有不同模式。调度层的超卖、队列间资源回收与节点运行时回收也应分别理解。<a target="_blank" rel="noopener" href="https://volcano.sh/docs/keyfeatures/cloudnativecolocation/">Cloud Native Colocation</a>、<a target="_blank" rel="noopener" href="https://volcano.sh/docs/keyfeatures/queueresourcemanagement/">Queue Resource Management</a></p>
+<h3 id="操作系统限制必须按功能和版本核对"><a href="#操作系统限制必须按功能和版本核对" class="headerlink" title="操作系统限制必须按功能和版本核对"></a>操作系统限制必须按功能和版本核对</h3><p>官方旧式混部指南仍保留了 Agent 只支持 openEuler 特定版本的说明。然而，v1.14 发布说明已经明确加入 Ubuntu、CentOS 等通用操作系统支持、cgroup v2 适配、CPU 动态压制和 Memory QoS。</p>
+<p>因此，不能把“Volcano 混部只能使用 openEuler”当作当前所有版本的结论。也不能根据通用系统支持，反推旧指南中的每个增强内核接口都存在于普通发行版。</p>
+<p>落地时分别核对 Agent 版本、cgroup 模式、驱动管理方式、内核参数与目标功能。本文以发布说明作为版本变化依据，没有验证任意操作系统组合。<a target="_blank" rel="noopener" href="https://volcano.sh/blog/volcano-1.14.0-release/">Volcano v1.14 Release</a></p>
+<h3 id="同时使用多个系统要明确控制权"><a href="#同时使用多个系统要明确控制权" class="headerlink" title="同时使用多个系统要明确控制权"></a>同时使用多个系统要明确控制权</h3><p>如果平台已有 Volcano 队列，也准备引入 Koordinator 的节点治理，需要先划清调度与资源模型的所有权。不要让两个控制器同时改写同一组 batch 容量或 cgroup 参数。</p>
+<p>任务选择哪个 scheduler、谁管理队列准入、谁负责节点预留、谁驱逐、谁控制重试，都需要明确。本次调研没有验证 Volcano 与 Koordinator 的具体组合版本，不能把它们的功能列表直接拼成可部署方案。</p>
+<h2 id="8-怎样选择实施路径"><a href="#8-怎样选择实施路径" class="headerlink" title="8. 怎样选择实施路径"></a>8. 怎样选择实施路径</h2><table>
+<thead>
+<tr>
+<th>条件</th>
+<th>优先评估的路径</th>
+<th>重点验证</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在线服务多，想回收其未使用资源</td>
+<td>Koordinator 的动态资源与节点治理路径</td>
+<td>分类、指标、可回收预算与运行时控制是否一致</td>
+</tr>
+<tr>
+<td>已有大量 Volcano 批任务</td>
+<td>Volcano 调度体系配合混部 Agent</td>
+<td>节点功能支持、资源上报模式、队列与压制的协同</td>
+</tr>
+<tr>
+<td>业务极度时延敏感，无法承受共享资源干扰</td>
+<td>保留独立节点池，先优化资源声明和容量规划</td>
+<td>独立资源池的成本与 SLO 收益</td>
+</tr>
+<tr>
+<td>尚未建立可靠指标与任务恢复能力</td>
+<td>暂缓动态超卖，先建设观测和低风险共享试点</td>
+<td>出问题时能否识别、停止借用并恢复</td>
+</tr>
+</tbody></table>
+<p>这张表给出候选路径，没有给出行业成熟度排名。Koordinator 的 YARN Copilot 设计文档披露了小红书生产采用情况，说明混部可扩展到 Kubernetes 之外的作业入口。但该案例不能证明每个功能在任何集群都能达到同样收益。<a target="_blank" rel="noopener" href="https://koordinator.sh/docs/v1.6/designs/koordinator-yarn">Koordinator YARN Copilot</a></p>
+<h3 id="本次查询的版本快照"><a href="#本次查询的版本快照" class="headerlink" title="本次查询的版本快照"></a>本次查询的版本快照</h3><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>查询到的 latest Release</th>
+<th>发布日期</th>
+<th>使用时的边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Koordinator</td>
+<td>v1.8.0</td>
+<td>2026-04-16</td>
+<td>文中部分机制与清单引用 v1.7 版本化文档，应按部署版本再核对</td>
+</tr>
+<tr>
+<td>Volcano</td>
+<td>v1.16.0</td>
+<td>2026-10-14</td>
+<td>通用 OS 混部变化来自 v1.14 发布说明，后续版本仍需核对兼容性</td>
+</tr>
+</tbody></table>
+<p>这是 2026-10-23 查询 GitHub <code>releases/latest</code> 的快照，不能按版本号大小比较两个项目的成熟度。Koordinator v1.7 快速指南里的安装片段还使用了较旧 chart 版本；部署时不要机械复制成“最新安装命令”。<a target="_blank" rel="noopener" href="https://github.com/koordinator-sh/koordinator/releases/tag/v1.8.0">Koordinator Release</a>、<a target="_blank" rel="noopener" href="https://github.com/volcano-sh/volcano/releases/tag/v1.16.0">Volcano Release</a></p>
+<h2 id="9-在线保护应快速收缩、缓慢恢复"><a href="#9-在线保护应快速收缩、缓慢恢复" class="headerlink" title="9. 在线保护应快速收缩、缓慢恢复"></a>9. 在线保护应快速收缩、缓慢恢复</h2><p><img src="/kubernetes-online-offline-colocation/05-slo-protection-state.svg" srcset="/img/loading.gif" lazyload alt="建议的混部保护状态机：观测、保守借用、压制、必要时驱逐与冷却恢复"></p>
+<p>这张图是平台设计建议。它没有宣称安装任一项目后，就自动获得相同的业务 P99 控制器。</p>
+<p>在正常阶段，平台限制离线准入与并发，同时保留安全余量。在线升载时，应及时压制已经运行的离线负载，并减少新增任务。压力持续时，再按策略终止允许重试的任务。严重内存压力等紧急情况可以直接触发驱逐，不能假定总能按温和步骤完成。</p>
+<p>恢复阶段需要稳定窗口和增量限制。刚驱逐任务就全量补回，可能触发连续的创建、驱逐和重试循环。离线调度器和工作负载控制器必须一起限制恢复速度。</p>
+<table>
+<thead>
+<tr>
+<th>故障或变化</th>
+<th>建议的预设行为</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>节点指标过期</td>
+<td>停止扩大借用，不用旧低负载数据持续增加预算</td>
+</tr>
+<tr>
+<td>节点 Agent 异常</td>
+<td>验证已有 cgroup 状态与实际控制是否保留，必要时撤回离线负载</td>
+</tr>
+<tr>
+<td>在线突发超过估计</td>
+<td>优先保护在线，限制离线并发或驱逐可重试任务</td>
+</tr>
+<tr>
+<td>大规模离线任务同时失败</td>
+<td>对重试限速，避免镜像、存储和控制面出现第二轮峰值</td>
+</tr>
+<tr>
+<td>驱逐后在线仍未恢复</td>
+<td>检查共享缓存、远端存储、网络或在线自身问题，必要时退出混部</td>
+</tr>
+</tbody></table>
+<p>还有一个常见误区：PDB 不能作为所有驱逐路径的统一保护。kubelet 的节点压力驱逐不受 PDB 约束。scheduler 抢占和平台主动驱逐也有各自行为。离线任务必须从应用层支持中断与恢复。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/scheduling-eviction/node-pressure-eviction/">Node-pressure Eviction</a></p>
+<h2 id="10-用在线-SLO-与离线有效产出共同验收"><a href="#10-用在线-SLO-与离线有效产出共同验收" class="headerlink" title="10. 用在线 SLO 与离线有效产出共同验收"></a>10. 用在线 SLO 与离线有效产出共同验收</h2><p><img src="/kubernetes-online-offline-colocation/06-rollout-and-validation.svg" srcset="/img/loading.gif" lazyload alt="从隔离基线、影子容量、小范围试点到扩大或退出的混部落地流程"></p>
+<h3 id="先建立隔离基线"><a href="#先建立隔离基线" class="headerlink" title="先建立隔离基线"></a>先建立隔离基线</h3><p>固定在线流量模型，记录吞吐、P95&#x2F;P99、错误率和资源使用。再测一组代表性离线任务的完成时间、资源消耗和恢复成本。保留独立资源池作为对照。</p>
+<p>比较时应固定有效业务量。把更多请求排在应用外部，可能让服务内部 P99 看起来更好，却降低整体服务质量。</p>
+<h3 id="从影子计算进入小范围试点"><a href="#从影子计算进入小范围试点" class="headerlink" title="从影子计算进入小范围试点"></a>从影子计算进入小范围试点</h3><p>先只采集和估算可回收预算，不立即投放更多任务。检查缺失指标、异常尖峰和容量抖动。</p>
+<p>再选择少量低风险节点与可快速重试的任务。先验证 CPU 控制，谨慎加入内存和 I&#x2F;O 压力。观察结论不能自动外推到长时训练、数据库或其他硬件池。</p>
+<p>Koordinator 环境可以先使用只读命令检查对象：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">kubectl get node &lt;node&gt; -o yaml
+kubectl get nodemetric &lt;node&gt; -o yaml
+kubectl get nodeslo &lt;node&gt; -o yaml
+kubectl get pod &lt;pod&gt; -n &lt;namespace&gt; -o yaml
+kubectl describe pod &lt;pod&gt; -n &lt;namespace&gt;</code></pre></div>
+
+<p>NodeMetric、NodeSLO 等 CRD 需要对应组件已经安装。检查对象只能证明配置或观测存在，不能单独证明内核参数已经生效。还需要核对 Agent 日志与节点实际资源控制状态。</p>
+<h3 id="压测必须覆盖突发、故障与恢复"><a href="#压测必须覆盖突发、故障与恢复" class="headerlink" title="压测必须覆盖突发、故障与恢复"></a>压测必须覆盖突发、故障与恢复</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>需要覆盖的场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在线业务</td>
+<td>阶跃升载、短时突发、滚动发布、扩容和依赖变慢</td>
+</tr>
+<tr>
+<td>离线负载</td>
+<td>CPU 密集、内存带宽密集、RSS 增长、磁盘与网络压力</td>
+</tr>
+<tr>
+<td>平台故障</td>
+<td>指标延迟、Agent 重启、API 不可用、节点状态变化</td>
+</tr>
+<tr>
+<td>恢复路径</td>
+<td>任务退出耗时、检查点恢复、幂等输出、重试限速与回收震荡</td>
+</tr>
+</tbody></table>
+<h3 id="验收指标不能只有-CPU-利用率"><a href="#验收指标不能只有-CPU-利用率" class="headerlink" title="验收指标不能只有 CPU 利用率"></a>验收指标不能只有 CPU 利用率</h3><table>
+<thead>
+<tr>
+<th>目标</th>
+<th>需要观察的指标</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>在线保护</td>
+<td>同等流量下的 P99、错误率、可用性与错误预算消耗</td>
+</tr>
+<tr>
+<td>资源干扰</td>
+<td>CPU throttling、运行队列、PSI、回收停顿、OOM、I&#x2F;O 和网络压力</td>
+</tr>
+<tr>
+<td>离线有效产出</td>
+<td>完成任务数、完成时长、排队时间、重试次数与检查点损失</td>
+</tr>
+<tr>
+<td>平台稳定性</td>
+<td>指标新鲜度、预算更新与抖动、驱逐频率、恢复速度</td>
+</tr>
+<tr>
+<td>总成本</td>
+<td>在线与离线资源成本、失败重算成本、额外组件和运维成本</td>
+</tr>
+</tbody></table>
+<p>判断收益时，使用单位有效产出的总成本。CPU 利用率升高，但在线错误预算恶化、批任务不断重算，不能据此认定混部成功。</p>
+<p>本文没有给出统一的超卖比例或全行业收益百分比。可接受的借用规模需要通过业务基线、节点能力、控制延迟和任务恢复成本共同确定。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/" class="category-chain-item">云原生</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Kubernetes/" class="print-no-link">#Kubernetes</a>
+      
+        <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" class="print-no-link">#云原生</a>
+      
+        <a href="/tags/%E8%B0%83%E5%BA%A6/" class="print-no-link">#调度</a>
+      
+        <a href="/tags/Koordinator/" class="print-no-link">#Koordinator</a>
+      
+        <a href="/tags/Volcano/" class="print-no-link">#Volcano</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>图解 Kubernetes 在线离线混部：资源回收、干扰隔离与 SLO 保护</div>
+      <div>https://fenixc9.github.io/kubernetes-online-offline-colocation/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月23日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/kubernetes-scheduling-explained/" title="图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind">
+                        <span class="hidden-mobile">图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

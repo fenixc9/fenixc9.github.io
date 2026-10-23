@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="740" viewBox="0 0 1100 740" role="img" aria-labelledby="title desc">
+<title id="title">混部需要调度与节点执行两条控制链</title><desc id="desc">资源上报决定后续放置；节点侧执行负责已经运行的任务。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="740" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">混部需要调度与节点执行两条控制链</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">资源上报决定后续放置；节点侧执行负责已经运行的任务。</text>
+<rect x="45" y="140" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="175" font-size="23" text-anchor="middle" class="title">观测与策略</text>
+<text x="195.0" y="207" font-size="19" text-anchor="middle" class="muted">节点 / Pod 指标、历史用量</text>
+<text x="195.0" y="235" font-size="19" text-anchor="middle" class="muted">资源分类、安全余量</text>
+<rect x="400" y="140" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="175" font-size="23" text-anchor="middle" class="title">容量计算与上报</text>
+<text x="550.0" y="207" font-size="19" text-anchor="middle" class="muted">估算可回收预算</text>
+<text x="550.0" y="235" font-size="19" text-anchor="middle" class="muted">发布 batch 等调度视图</text>
+<rect x="755" y="140" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="175" font-size="23" text-anchor="middle" class="title">调度与准入</text>
+<text x="905.0" y="207" font-size="19" text-anchor="middle" class="muted">队列、配额、节点选择</text>
+<text x="905.0" y="235" font-size="19" text-anchor="middle" class="muted">限制新增离线任务</text>
+<path d="M345,195 L400,195" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M700,195 L755,195" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="755" y="345" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="380" font-size="23" text-anchor="middle" class="title">节点侧执行</text>
+<text x="905.0" y="412" font-size="19" text-anchor="middle" class="muted">运行在线与离线任务</text>
+<text x="905.0" y="440" font-size="19" text-anchor="middle" class="muted">CPU / 内存等资源控制</text>
+<path d="M905,250 L905,345" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="400" y="345" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="380" font-size="23" text-anchor="middle" class="title">压制或驱逐</text>
+<text x="550.0" y="412" font-size="19" text-anchor="middle" class="muted">减少离线可用 CPU</text>
+<text x="550.0" y="440" font-size="19" text-anchor="middle" class="muted">必要时终止可重试任务</text>
+<path d="M755,400 L700,400" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="345" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="380" font-size="23" text-anchor="middle" class="title">持续采集</text>
+<text x="195.0" y="412" font-size="19" text-anchor="middle" class="muted">资源竞争、压力与回收效果</text>
+<text x="195.0" y="440" font-size="19" text-anchor="middle" class="muted">把实际结果送回控制逻辑</text>
+<path d="M400,400 L345,400" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M195,345 L195,250" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="535" width="1010" height="130" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="577" font-size="24" text-anchor="start" class="title">Node Allocatable 下调不会自动终止已运行 Pod。</text>
+<text x="70" y="615" font-size="22" text-anchor="start" class="">容量收缩、节点侧压制、任务驱逐需要分别实现与验证。</text>
+<text x="70" y="646" font-size="20" text-anchor="start" class="muted">业务 P99 / 错误预算还需要接入平台观测与保护策略。</text>
+<text x="44" y="716" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>

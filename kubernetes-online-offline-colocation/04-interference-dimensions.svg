@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="735" viewBox="0 0 1100 735" role="img" aria-labelledby="title desc">
+<title id="title">CPU 利用率低，也可能有严重干扰</title><desc id="desc">CPU 时间、缓存容量、内存带宽和 I/O 是不同的共享资源。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="735" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">CPU 利用率低，也可能有严重干扰</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">CPU 时间、缓存容量、内存带宽和 I/O 是不同的共享资源。</text>
+<rect x="45" y="140" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="175" font-size="23" text-anchor="middle" class="title">CPU 与 SMT</text>
+<text x="195.0" y="207" font-size="19" text-anchor="middle" class="muted">运行队列、同核竞争</text>
+<text x="195.0" y="235" font-size="19" text-anchor="middle" class="muted">权重 / 配额 / 核绑定</text>
+<rect x="400" y="140" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="175" font-size="23" text-anchor="middle" class="title">LLC 与内存带宽</text>
+<text x="550.0" y="207" font-size="19" text-anchor="middle" class="muted">缓存驱逐、带宽饱和</text>
+<text x="550.0" y="235" font-size="19" text-anchor="middle" class="muted">CAT / MBA 等能力需硬件支持</text>
+<rect x="755" y="140" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="175" font-size="23" text-anchor="middle" class="title">内存容量</text>
+<text x="905.0" y="207" font-size="19" text-anchor="middle" class="muted">回收停顿、RSS 增长</text>
+<text x="905.0" y="235" font-size="19" text-anchor="middle" class="muted">保护 / 上限 / 压力驱逐</text>
+<rect x="45" y="355" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="390" font-size="23" text-anchor="middle" class="title">磁盘 I/O</text>
+<text x="195.0" y="422" font-size="19" text-anchor="middle" class="muted">吞吐、时延、队列深度</text>
+<text x="195.0" y="450" font-size="19" text-anchor="middle" class="muted">I/O 控制与设备适配</text>
+<rect x="400" y="355" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="390" font-size="23" text-anchor="middle" class="title">网络与共享存储</text>
+<text x="550.0" y="422" font-size="19" text-anchor="middle" class="muted">网卡、对象存储、远端热点</text>
+<text x="550.0" y="450" font-size="19" text-anchor="middle" class="muted">限速、分池与服务端保护</text>
+<rect x="755" y="355" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="390" font-size="23" text-anchor="middle" class="title">NUMA 与外设</text>
+<text x="905.0" y="422" font-size="19" text-anchor="middle" class="muted">远端访存、设备路径</text>
+<text x="905.0" y="450" font-size="19" text-anchor="middle" class="muted">亲和与拓扑约束</text>
+<rect x="45" y="565" width="1010" height="95" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="603" font-size="23" text-anchor="start" class="title">CPU、内存、缓存和带宽的控制手段不能互相替代。</text>
+<text x="70" y="637" font-size="21" text-anchor="start" class="">是否支持增强隔离，要同时检查 CPU 型号、内核、cgroup 和组件版本。</text>
+<text x="44" y="711" font-size="15" text-anchor="start" class="muted">ByteDrift · 2026-10-23 · 架构与数字均为说明示意，非实测结果</text>
+</svg>
