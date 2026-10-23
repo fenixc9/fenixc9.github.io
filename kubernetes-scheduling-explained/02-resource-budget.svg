@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="560" viewBox="0 0 1100 560" role="img" aria-labelledby="title desc">
+<title id="title">为什么节点很闲，Pod 仍然 Pending？</title><desc id="desc">NodeResourcesFit 主要依据有效 request 与 Allocatable 判断资源是否放得下。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="560" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">为什么节点很闲，Pod 仍然 Pending？</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">NodeResourcesFit 主要依据有效 request 与 Allocatable 判断资源是否放得下。</text>
+<text x="45" y="150" font-size="25" text-anchor="start" class="title">节点可分配 CPU：4 核</text>
+<rect x="45" y="180" width="1000" height="72" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="45" y="180" width="750" height="72" rx="14" fill="#c8dfd2" stroke="#b9cec5" stroke-width="2"/>
+<text x="420" y="225" font-size="24" text-anchor="middle" class="">已有 Pod requests 合计：3 核</text>
+<text x="920" y="225" font-size="23" text-anchor="middle" class="">余量：1 核</text>
+<rect x="45" y="295" width="500" height="70" rx="14" fill="#ffecd0" stroke="#ddb574" stroke-width="2"/>
+<text x="295" y="339" font-size="25" text-anchor="middle" class="">新 Pod request：2 核</text>
+<text x="595" y="340" font-size="26" text-anchor="start" class="title">3 + 2 &gt; 4，资源检查不通过</text>
+<rect x="45" y="410" width="1000" height="85" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="445" font-size="23" text-anchor="start" class="">实际 CPU 使用量即使降到 0.1 核，已有 request 仍是 3 核。</text>
+<text x="70" y="478" font-size="21" text-anchor="start" class="muted">降低实际负载不会自动释放调度预算。</text>
+<text x="44" y="536" font-size="15" text-anchor="start" class="muted">ByteDrift · Kubernetes v1.37.1 · 概念示意，省略部分异常分支</text>
+</svg>

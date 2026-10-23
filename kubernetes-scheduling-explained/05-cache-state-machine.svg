@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="680" viewBox="0 0 1100 680" role="img" aria-labelledby="title desc">
+<title id="title">Assumed 状态如何退出？</title><desc id="desc">以下是本地缓存的概念状态，不是 Pod 的 status.phase。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="680" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">Assumed 状态如何退出？</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">以下是本地缓存的概念状态，不是 Pod 的 status.phase。</text>
+<rect x="45" y="150" width="280" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="185.0" y="185" font-size="23" text-anchor="middle" class="title">尚未占位</text>
+<text x="185.0" y="217" font-size="19" text-anchor="middle" class="muted">Pod 尚未绑定</text>
+<text x="185.0" y="245" font-size="19" text-anchor="middle" class="muted">目标节点未计入本次请求</text>
+<rect x="410" y="150" width="280" height="110" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="185" font-size="23" text-anchor="middle" class="title">Assumed</text>
+<text x="550.0" y="217" font-size="19" text-anchor="middle" class="muted">本地已预占资源</text>
+<text x="550.0" y="245" font-size="19" text-anchor="middle" class="muted">正式对象尚未确认</text>
+<rect x="775" y="150" width="280" height="110" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="915.0" y="185" font-size="23" text-anchor="middle" class="title">Added</text>
+<text x="915.0" y="217" font-size="19" text-anchor="middle" class="muted">已观察到正式绑定</text>
+<text x="915.0" y="245" font-size="19" text-anchor="middle" class="muted">按正式对象维护资源账</text>
+<path d="M325,205 L410,205" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="366" y="135" font-size="17" text-anchor="middle" class="">AssumePod</text>
+<path d="M690,205 L775,205" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="731" y="135" font-size="17" text-anchor="middle" class="">Cache.AddPod</text>
+<rect x="410" y="390" width="280" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="425" font-size="23" text-anchor="middle" class="title">已回滚预占</text>
+<text x="550.0" y="457" font-size="19" text-anchor="middle" class="muted">Unreserve + ForgetPod</text>
+<text x="550.0" y="485" font-size="19" text-anchor="middle" class="muted">判断是否重新排队</text>
+<path d="M550,260 L550,390" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="570" y="332" font-size="19" text-anchor="start" class="">后续失败</text>
+<path d="M410,445 L185,445 L185,260" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="185" y="480" font-size="19" text-anchor="middle" class="">仍未绑定：重新入队</text>
+<path d="M690,445 L915,445 L915,260" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="915" y="480" font-size="18" text-anchor="middle" class="">实际绑定成功：迟到事件确认</text>
+<rect x="45" y="550" width="1010" height="70" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="593" font-size="22" text-anchor="start" class="">Assumed 期间，etcd 可能已完成绑定；只有本地确认还没有到达。</text>
+<text x="44" y="656" font-size="15" text-anchor="start" class="muted">ByteDrift · Kubernetes v1.37.1 · 概念示意，省略部分异常分支</text>
+</svg>

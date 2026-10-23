@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="710" viewBox="0 0 1100 710" role="img" aria-labelledby="title desc">
+<title id="title">从创建 Pod 到容器启动</title><desc id="desc">先完成节点选择，再提交正式绑定；节点侧继续执行。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="710" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">从创建 Pod 到容器启动</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">先完成节点选择，再提交正式绑定；节点侧继续执行。</text>
+<rect x="45" y="125" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="160" font-size="23" text-anchor="middle" class="title">01 进入调度</text>
+<text x="195.0" y="192" font-size="19" text-anchor="middle" class="muted">API 已有 Pod</text>
+<text x="195.0" y="220" font-size="19" text-anchor="middle" class="muted">spec.nodeName 为空</text>
+<rect x="400" y="125" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="160" font-size="23" text-anchor="middle" class="title">02 选择节点</text>
+<text x="550.0" y="192" font-size="19" text-anchor="middle" class="muted">PreFilter → Filter</text>
+<text x="550.0" y="220" font-size="19" text-anchor="middle" class="muted">PreScore → Score</text>
+<rect x="755" y="125" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="160" font-size="23" text-anchor="middle" class="title">03 本地预占</text>
+<text x="905.0" y="192" font-size="19" text-anchor="middle" class="muted">Assume → Reserve</text>
+<text x="905.0" y="220" font-size="19" text-anchor="middle" class="muted">Permit</text>
+<path d="M345,180 L400,180" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M700,180 L755,180" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="755" y="320" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="355" font-size="23" text-anchor="middle" class="title">04 提交绑定</text>
+<text x="905.0" y="387" font-size="19" text-anchor="middle" class="muted">PreBind → Bind</text>
+<text x="905.0" y="415" font-size="19" text-anchor="middle" class="muted">apiserver 更新 Pod</text>
+<path d="M905,235 L905,320" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="400" y="320" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="355" font-size="23" text-anchor="middle" class="title">05 写入 etcd</text>
+<text x="550.0" y="387" font-size="19" text-anchor="middle" class="muted">spec.nodeName = Node X</text>
+<text x="550.0" y="415" font-size="19" text-anchor="middle" class="muted">正式绑定关系持久化</text>
+<path d="M755,375 L700,375" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="320" width="300" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="355" font-size="23" text-anchor="middle" class="title">06 节点执行</text>
+<text x="195.0" y="387" font-size="19" text-anchor="middle" class="muted">kubelet 观察已绑定 Pod</text>
+<text x="195.0" y="415" font-size="19" text-anchor="middle" class="muted">准备卷、网络与容器</text>
+<path d="M400,375 L345,375" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="490" width="1010" height="145" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="75" y="529" font-size="24" text-anchor="start" class="title">调度周期按序推进，绑定周期可以并发。</text>
+<text x="75" y="570" font-size="21" text-anchor="start" class="">后续 Pod 会看到本地 Assume 的资源预占，无需等待前一次 Bind 响应。</text>
+<text x="75" y="605" font-size="21" text-anchor="start" class="">Bound 不等于 Running：卷、镜像和节点侧准入仍可能让 Pod 等待。</text>
+<text x="44" y="686" font-size="15" text-anchor="start" class="muted">ByteDrift · Kubernetes v1.37.1 · 概念示意，省略部分异常分支</text>
+</svg>

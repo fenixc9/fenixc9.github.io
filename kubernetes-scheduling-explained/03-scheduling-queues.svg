@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="790" viewBox="0 0 1100 790" role="img" aria-labelledby="title desc">
+<title id="title">三个队列：等待执行、限制重试、等待条件</title><desc id="desc">资源不足的普通 Pod：事件驱动重试，退避限制重试频率。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="790" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">三个队列：等待执行、限制重试、等待条件</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">资源不足的普通 Pod：事件驱动重试，退避限制重试频率。</text>
+<rect x="380" y="125" width="340" height="110" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="160" font-size="23" text-anchor="middle" class="title">activeQ</text>
+<text x="550.0" y="192" font-size="19" text-anchor="middle" class="muted">按优先级等规则排序</text>
+<text x="550.0" y="220" font-size="19" text-anchor="middle" class="muted">准备好进入本轮调度</text>
+<rect x="380" y="305" width="340" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="340" font-size="23" text-anchor="middle" class="title">执行 Filter / Score</text>
+<text x="550.0" y="372" font-size="19" text-anchor="middle" class="muted">资源不足，且补救未成功</text>
+<path d="M550,235 L550,305" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="380" y="480" width="340" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="515" font-size="23" text-anchor="middle" class="title">unschedulableQ</text>
+<text x="550.0" y="547" font-size="19" text-anchor="middle" class="muted">暂时无法调度</text>
+<text x="550.0" y="575" font-size="19" text-anchor="middle" class="muted">等待相关条件变化</text>
+<path d="M550,410 L550,480" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="480" width="270" height="110" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="180.0" y="515" font-size="23" text-anchor="middle" class="title">相关事件 / 超时</text>
+<text x="180.0" y="547" font-size="19" text-anchor="middle" class="muted">QueueingHint 评估</text>
+<text x="180.0" y="575" font-size="19" text-anchor="middle" class="muted">是否值得重新入队</text>
+<path d="M380,535 L315,535" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="125" width="270" height="110" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="180.0" y="160" font-size="23" text-anchor="middle" class="title">backoffQ</text>
+<text x="180.0" y="192" font-size="19" text-anchor="middle" class="muted">可以重试</text>
+<text x="180.0" y="220" font-size="19" text-anchor="middle" class="muted">通常等待退避完成</text>
+<path d="M180,480 L180,270 L180,235" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="195" y="382" font-size="19" text-anchor="start" class="">仍需退避</text>
+<path d="M315,180 L380,180" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="338" y="160" font-size="17" text-anchor="middle" class="">到期</text>
+<path d="M45,535 L25,535 L25,275 L350,275 L350,205 L380,205" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="22" y="315" width="145" height="36" rx="0" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="95" y="340" font-size="18" text-anchor="middle" class="">退避已结束</text>
+<rect x="45" y="645" width="1010" height="90" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="682" font-size="22" text-anchor="start" class="">典型唤醒事件：已调度 Pod 删除、新增节点、相关资源预算改善。</text>
+<text x="70" y="716" font-size="20" text-anchor="start" class="muted">优化路径：activeQ 为空时，可直接从 backoffQ 取 Pod（依功能开关）。</text>
+<text x="44" y="766" font-size="15" text-anchor="start" class="muted">ByteDrift · Kubernetes v1.37.1 · 概念示意，省略部分异常分支</text>
+</svg>

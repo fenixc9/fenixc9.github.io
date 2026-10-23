@@ -1,0 +1,1220 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/kubernetes-scheduling-explained/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="用五张图串起 Kubernetes 调度的资源检查、插件阶段、三个队列、事件唤醒、本地预占与正式绑定，解释 Pending、Bind 超时和 Gang 调度的关键边界。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind">
+<meta property="og:url" content="https://fenixc9.github.io/kubernetes-scheduling-explained/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="用五张图串起 Kubernetes 调度的资源检查、插件阶段、三个队列、事件唤醒、本地预占与正式绑定，解释 Pending、Bind 超时和 Gang 调度的关键边界。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/01-scheduling-overview.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/02-resource-budget.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/03-scheduling-queues.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/04-assume-bind-timeline.svg">
+<meta property="og:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/05-cache-state-machine.svg">
+<meta property="article:published_time" content="2026-10-23T08:52:58.000Z">
+<meta property="article:modified_time" content="2026-10-23T08:58:12.482Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="Kubernetes">
+<meta property="article:tag" content="云原生">
+<meta property="article:tag" content="调度">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://fenixc9.github.io/kubernetes-scheduling-explained/01-scheduling-overview.svg">
+  
+  
+  
+  <title>图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-23 16:52" pubdate>
+          2026年10月23日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          61 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>一个 Pod 已经创建，节点的 CPU 使用率也很低，它为什么还停在 Pending？调度器选中了节点，为什么 API 中的 <code>spec.nodeName</code> 仍然为空？Bind 请求超时后，这个 Pod 到底有没有绑定成功？</p>
+<p>这些问题分别落在资源预算、调度队列、本地预占和 API 持久化的边界上。把它们串起来，才能解释 Pod 为什么等待、什么时候重试，以及节点选择何时成为正式结果。</p>
+<p>本文用五张图说明主要流程。实现细节以 <strong>Kubernetes v1.37.1</strong> 为基准。引用来自 2026 年 10 月已核验的官方文档和对应版本源码。文中的资源数字是说明性示例，没有进行集群压测。其他版本和自定义调度器需要核对各自实现。</p>
+<span id="more"></span>
+
+<h2 id="1-调度器负责把-Pod-分配给节点"><a href="#1-调度器负责把-Pod-分配给节点" class="headerlink" title="1. 调度器负责把 Pod 分配给节点"></a>1. 调度器负责把 Pod 分配给节点</h2><p>用户向 kube-apiserver 创建 Pod。通过 Deployment 创建应用时，相关控制器会先创建 ReplicaSet 和 Pod。未绑定的 Pod 通常还没有 <code>spec.nodeName</code>。</p>
+<p>kube-scheduler 观察这些 Pod，处理由自己的调度配置负责的对象。它读取节点、已有 Pod、卷等信息。它先筛选节点，再比较候选节点，最后提交绑定请求。</p>
+<p><img src="/kubernetes-scheduling-explained/01-scheduling-overview.svg" srcset="/img/loading.gif" lazyload alt="Kubernetes 调度总流程：进入调度、选节点、本地预占、正式绑定与节点执行"></p>
+<p>正式绑定完成后，目标节点的 kubelet 继续工作。它执行节点侧准入，协调卷、网络和容器创建。因此，<strong>选出节点、绑定成功、容器运行是三个不同的时点</strong>。</p>
+<table>
+<thead>
+<tr>
+<th>时点</th>
+<th>主要执行者</th>
+<th>能确认什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>节点选择完成</td>
+<td>kube-scheduler</td>
+<td>本轮调度找到了目标节点</td>
+</tr>
+<tr>
+<td>绑定持久化完成</td>
+<td>kube-apiserver &#x2F; etcd</td>
+<td>Pod 的 <code>spec.nodeName</code> 已正式记录</td>
+</tr>
+<tr>
+<td>容器启动</td>
+<td>kubelet &#x2F; 容器运行时</td>
+<td>节点侧已经推进实际执行</td>
+</tr>
+</tbody></table>
+<p>调度器主要依据缓存进行计算。它不需要在每次过滤节点时重新请求 apiserver。普通单 Pod 路径中的调度周期按序推进，绑定周期可以并发执行。这个设计减少了远端写入对调度吞吐的影响。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/">Scheduling Framework</a>、<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/schedule_one.go">v1.37.1 调度流程源码</a></p>
+<h2 id="2-request-决定调度预算，limit-约束运行时使用"><a href="#2-request-决定调度预算，limit-约束运行时使用" class="headerlink" title="2. request 决定调度预算，limit 约束运行时使用"></a>2. request 决定调度预算，limit 约束运行时使用</h2><p>先看一个容器资源配置片段：</p>
+<div class="code-wrapper"><pre><code class="hljs yaml"><span class="hljs-attr">resources:</span>
+  <span class="hljs-attr">requests:</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;500m&quot;</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;256Mi&quot;</span>
+  <span class="hljs-attr">limits:</span>
+    <span class="hljs-attr">cpu:</span> <span class="hljs-string">&quot;2&quot;</span>
+    <span class="hljs-attr">memory:</span> <span class="hljs-string">&quot;1Gi&quot;</span></code></pre></div>
+
+<p><code>500m</code> 表示 0.5 个 CPU。调度器会把有效 request 纳入资源适配计算。CPU request 也会影响运行时竞争时的 CPU 分配权重。</p>
+<p>limit 描述运行时边界。在常见 Linux 容器中，kubelet 和容器运行时将相应配置落实到 cgroup。内核执行 CPU 节流和内存限制。内存分配触及边界且回收不足时，可能触发 OOM kill。</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>对调度和运行的影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>CPU request</td>
+<td>参与调度预算，通常还影响 CPU 竞争时的权重</td>
+</tr>
+<tr>
+<td>内存 request</td>
+<td>参与调度预算，也影响节点压力下的部分处理决策；不等于立即锁定物理内存</td>
+</tr>
+<tr>
+<td>CPU limit</td>
+<td>限制 CPU 时间使用，配额耗尽时通常节流</td>
+</tr>
+<tr>
+<td>内存 limit</td>
+<td>约束容器内存使用，回收失败时可能触发 OOM</td>
+</tr>
+</tbody></table>
+<h3 id="为什么使用率低也放不下"><a href="#为什么使用率低也放不下" class="headerlink" title="为什么使用率低也放不下"></a>为什么使用率低也放不下</h3><p>假设节点的 Allocatable 是 4 核，已有 Pod 的 CPU requests 合计为 3 核。新 Pod 请求 2 核。</p>
+<p><img src="/kubernetes-scheduling-explained/02-resource-budget.svg" srcset="/img/loading.gif" lazyload alt="CPU 资源预算示例：已有 request 为 3 核，新 Pod 需要 2 核，超过节点 4 核可分配容量"></p>
+<p>资源检查主要比较的是有效请求与可分配容量：</p>
+<div class="code-wrapper"><pre><code class="hljs text">已有有效资源请求 + 新 Pod 的有效资源请求 ≤ Node Allocatable</code></pre></div>
+
+<p>节点的实际 CPU 使用量降到 0.1 核，也不会自动把原先的 3 核 request 改成 0.1 核。<code>kubectl top</code> 展示实时使用量，调度预算则来自资源请求及相关状态。</p>
+<p>实际的 Pod 有效请求还需要考虑 init container、Pod overhead、原地资源调整和启用的功能。上面的加法只用于解释基本关系。</p>
+<p><strong>Node Allocatable 也不会随着每个 Pod 的绑定而被逐笔扣减。</strong> scheduler 在本地维护节点上已经计入的请求，再与 Allocatable 比较。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/">资源管理文档</a>、<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/framework/plugins/noderesources/fit.go">NodeResourcesFit 源码</a></p>
+<h2 id="3-Filter-判断能否放置，Score-比较候选节点"><a href="#3-Filter-判断能否放置，Score-比较候选节点" class="headerlink" title="3. Filter 判断能否放置，Score 比较候选节点"></a>3. Filter 判断能否放置，Score 比较候选节点</h2><p>一次调度由多个扩展点组成。插件可以实现其中一个或多个阶段。</p>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>要回答的问题</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>PreEnqueue</td>
+<td>Pod 是否具备进入活跃队列的条件？</td>
+</tr>
+<tr>
+<td>QueueSort</td>
+<td>多个等待的 Pod，先处理谁？</td>
+</tr>
+<tr>
+<td>PreFilter</td>
+<td>需要预先计算哪些共享数据？是否可以提前拒绝或缩小候选范围？</td>
+</tr>
+<tr>
+<td>Filter</td>
+<td>当前候选节点能否运行这个 Pod？</td>
+</tr>
+<tr>
+<td>PostFilter</td>
+<td>没有可行节点时，能否通过抢占等方式改善条件？</td>
+</tr>
+<tr>
+<td>PreScore &#x2F; Score</td>
+<td>可行节点中，哪些更符合偏好？</td>
+</tr>
+<tr>
+<td>Reserve</td>
+<td>插件是否需要预留资源或状态？</td>
+</tr>
+<tr>
+<td>Permit</td>
+<td>能否继续绑定，还是需要等待？</td>
+</tr>
+<tr>
+<td>PreBind</td>
+<td>绑定前的依赖是否准备完成？</td>
+</tr>
+<tr>
+<td>Bind &#x2F; PostBind</td>
+<td>提交绑定，执行绑定成功后的通知</td>
+</tr>
+</tbody></table>
+<p>Filter 处理硬条件。Score 表达偏好。评分插件可以先通过 NormalizeScore 处理自己的分数，再按配置权重参与汇总。高分无法抵消硬条件不满足。</p>
+<p>例如，Pod 的硬亲和要求 <code>disk=ssd</code>。某个 HDD 节点即使 CPU 余量很大，也不能靠高资源分数重新变成候选节点。</p>
+<p>调度器还会通过候选节点采样等机制控制计算成本。不能据概念流程断言每个 Pod 必然完整扫描、打分集群中的所有节点。</p>
+<h3 id="把常见插件放回具体阶段"><a href="#把常见插件放回具体阶段" class="headerlink" title="把常见插件放回具体阶段"></a>把常见插件放回具体阶段</h3><table>
+<thead>
+<tr>
+<th>插件</th>
+<th>主要阶段</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>SchedulingGates</td>
+<td>PreEnqueue</td>
+<td>gate 未解除时，暂缓进入活跃队列</td>
+</tr>
+<tr>
+<td>PrioritySort</td>
+<td>QueueSort</td>
+<td>默认按优先级与队列时间排序</td>
+</tr>
+<tr>
+<td>NodeResourcesFit</td>
+<td>PreFilter、Filter、PreScore、Score</td>
+<td>检查资源，并按资源分配策略评分</td>
+</tr>
+<tr>
+<td>NodeAffinity</td>
+<td>PreFilter、Filter、PreScore、Score</td>
+<td>实现 nodeSelector、节点硬亲和与软亲和</td>
+</tr>
+<tr>
+<td>TaintToleration</td>
+<td>PreFilter、Filter、PreScore、Score</td>
+<td>检查污点容忍，处理软性污点偏好</td>
+</tr>
+<tr>
+<td>NodePorts</td>
+<td>PreFilter、Filter</td>
+<td>检查 Pod 声明的 hostPort 冲突</td>
+</tr>
+<tr>
+<td>PodTopologySpread</td>
+<td>PreFilter、Filter、PreScore、Score</td>
+<td>控制拓扑域间的 Pod 分布</td>
+</tr>
+<tr>
+<td>InterPodAffinity</td>
+<td>PreFilter、Filter、PreScore、Score</td>
+<td>实现 Pod 亲和、反亲和</td>
+</tr>
+<tr>
+<td>NodeResourcesBalancedAllocation</td>
+<td>PreScore、Score</td>
+<td>偏好不同资源分配比例较均衡的节点</td>
+</tr>
+<tr>
+<td>ImageLocality</td>
+<td>Score</td>
+<td>考虑节点已有镜像，降低拉取成本</td>
+</tr>
+<tr>
+<td>VolumeBinding</td>
+<td>PreFilter、Filter、PreScore、Score、Reserve、PreBind</td>
+<td>协调 PVC&#x2F;PV、节点选择和卷绑定；相关阶段受配置及适用条件影响</td>
+</tr>
+<tr>
+<td>DefaultPreemption</td>
+<td>PreEnqueue、PostFilter</td>
+<td>协调异步抢占，以及没有可行节点时的抢占尝试</td>
+</tr>
+<tr>
+<td>DefaultBinder</td>
+<td>Bind</td>
+<td>通过 API 提交 Pod 到节点的绑定</td>
+</tr>
+</tbody></table>
+<p>表格列出理解主流程需要的部分插件，省略组调度扩展点。Reserve 插件还需要实现 Unreserve，用于失败清理。</p>
+<p>NodeResourcesFit 的节点评分支持 LeastAllocated、MostAllocated 和 RequestedToCapacityRatio。它们可以分别表达分散、装箱或自定义资源比例偏好。这里主要使用资源请求形成的分配比例，不能直接理解为实时负载均衡。</p>
+<p>NodePorts 检查的是 Pod 的 hostPort。Service 的 nodePort 分配不属于这个插件的职责。VolumeBinding 负责协调卷绑定，实际挂载由节点侧组件完成。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/tree/v1.37.1/pkg/scheduler/framework/plugins">插件实现目录</a>、<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/apis/config/v1/default_plugins.go">默认插件配置</a></p>
+<h2 id="4-三个队列决定什么时候再试"><a href="#4-三个队列决定什么时候再试" class="headerlink" title="4. 三个队列决定什么时候再试"></a>4. 三个队列决定什么时候再试</h2><p>资源不足后，Pod 通常需要等待条件变化。调度器用不同的数据结构管理待执行、退避和暂时不可调度的对象。</p>
+<table>
+<thead>
+<tr>
+<th>队列</th>
+<th>保存的对象</th>
+<th>主要作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>activeQ</td>
+<td>已准备好参与调度的 Pod</td>
+<td>按 QueueSort 顺序提供下一次调度任务</td>
+</tr>
+<tr>
+<td>backoffQ</td>
+<td>值得重试、但需要限制重试频率的 Pod</td>
+<td>管理指数退避</td>
+</tr>
+<tr>
+<td>unschedulableQ</td>
+<td>暂时无法调度的 Pod</td>
+<td>等待相关事件或定时兜底</td>
+</tr>
+</tbody></table>
+<p>unschedulableQ 是习惯名称，实现上更接近不可调度对象集合。它不会持续取队头、无条件重复运行调度。</p>
+<p><img src="/kubernetes-scheduling-explained/03-scheduling-queues.svg" srcset="/img/loading.gif" lazyload alt="activeQ、backoffQ 和 unschedulableQ 的典型流转及事件唤醒关系"></p>
+<p>这张图突出资源不足后的典型路径。若相关事件在 Pod 正在调度时到达，调度器会记录事件以避免错过唤醒。失败后的 Pod 因此不一定先停留在 unschedulableQ。</p>
+<h3 id="什么事件可以唤醒资源不足的-Pod"><a href="#什么事件可以唤醒资源不足的-Pod" class="headerlink" title="什么事件可以唤醒资源不足的 Pod"></a>什么事件可以唤醒资源不足的 Pod</h3><p>NodeResourcesFit 注册资源相关事件。QueueingHint 回调进一步判断变化是否可能改善条件。</p>
+<table>
+<thead>
+<tr>
+<th>事件</th>
+<th>可能产生的影响</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>已调度的其他 Pod 删除</td>
+<td>释放计入节点的资源预算</td>
+</tr>
+<tr>
+<td>新增节点</td>
+<td>增加可选容量</td>
+</tr>
+<tr>
+<td>节点 Allocatable 增加</td>
+<td>增加可供 Pod 使用的资源</td>
+</tr>
+<tr>
+<td>其他已调度 Pod 的有效请求降低</td>
+<td>可能减少该节点已有资源请求</td>
+</tr>
+<tr>
+<td>目标 Pod 自身请求降低</td>
+<td>可能降低其放置门槛</td>
+</tr>
+</tbody></table>
+<p>请求降低涉及版本、API 支持和资源状态更新，不能假定所有集群都允许任意修改 Pending 或运行中 Pod 的资源字段。</p>
+<p>事件发生后，Pod 仍需要通过相关入队检查。如果需要退避，它进入 backoffQ。如果退避已结束，它可以进入 activeQ。重新入队仅表示值得再试，其他硬条件可能仍然不满足。</p>
+<p>新增节点也不一定唤醒所有 Pod。如果新节点连目标 Pod 自身的请求都容纳不了，QueueingHint 可以跳过这次重试。删除一个没有绑定、也没有提名节点的 Pending Pod，通常不会释放节点资源预算。</p>
+<h3 id="退避与兜底是两套机制"><a href="#退避与兜底是两套机制" class="headerlink" title="退避与兜底是两套机制"></a>退避与兜底是两套机制</h3><p>默认退避时长大致按 <code>1s → 2s → 4s → 8s → 10s</code> 增长，随后封顶。初始值和最大值可以配置。</p>
+<p>v1.37.1 的等待区兜底逻辑约每 30 秒扫描一次。超过默认 5 分钟等待阈值的对象会被重新评估。<strong>30 秒是扫描周期，不能理解为所有失败 Pod 每 30 秒都重新调度。</strong></p>
+<p>退避期结束也不会单独唤醒仍留在 unschedulableQ 的 Pod。它通常还需要相关事件或兜底机制。</p>
+<p>另一个版本相关的优化是 SchedulerPopFromBackoffQ。v1.37.1 默认开启时，activeQ 为空可以直接从 backoffQ 取对象。此时不必始终等满退避时长。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/backend/queue/scheduling_queue.go">调度队列源码</a>、<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/framework/plugins/noderesources/fit.go">NodeResourcesFit 事件与回调</a></p>
+<h2 id="5-Assume-先在本地预占，后续调度才能继续"><a href="#5-Assume-先在本地预占，后续调度才能继续" class="headerlink" title="5. Assume 先在本地预占，后续调度才能继续"></a>5. Assume 先在本地预占，后续调度才能继续</h2><p>假设某节点剩余预算为 2 核，两个 Pod 各请求 2 核。第一个 Pod 已选中该节点，但远端绑定尚未完成。如果本地不记录这次分配，后续计算就可能重复使用同一份剩余预算。</p>
+<p>AssumePod 负责把这次选择计入本地缓存：</p>
+<div class="code-wrapper"><pre><code class="hljs go"><span class="hljs-comment">// 机制示意，省略实际函数签名、检查和错误处理。</span>
+assumedPod := pod.DeepCopy()
+assumedPod.Spec.NodeName = selectedNode
+err := sched.Cache.AssumePod(logger, assumedPod)</code></pre></div>
+
+<p>节点的 NodeInfo 会包含这笔资源请求。后续 Pod 的调度快照因此可以看到预占结果。</p>
+<p>在本文版本中，相关顺序是：</p>
+<div class="code-wrapper"><pre><code class="hljs text">选定节点 → Assume → Reserve → Permit
+                            ↓
+                 后续绑定周期等待许可
+                            ↓
+                       PreBind → Bind</code></pre></div>
+
+<p>Assume 更新 scheduler 的基础资源缓存。Reserve 是调度框架的扩展点，用来让插件管理卷、设备等自己的预留状态。两者的职责不同。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/schedule_one.go">assumeAndReserve 源码</a></p>
+<h2 id="6-Bind-把节点选择写成正式结果"><a href="#6-Bind-把节点选择写成正式结果" class="headerlink" title="6. Bind 把节点选择写成正式结果"></a>6. Bind 把节点选择写成正式结果</h2><p><img src="/kubernetes-scheduling-explained/04-assume-bind-timeline.svg" srcset="/img/loading.gif" lazyload alt="Assume、Bind、etcd 持久化和 Informer 确认之间的时序关系"></p>
+<p>默认绑定请求通过 Pod 的 binding 子资源提交：</p>
+<div class="code-wrapper"><pre><code class="hljs http">POST /api/v1/namespaces/&#123;namespace&#125;/pods/&#123;name&#125;/binding</code></pre></div>
+
+<p>DefaultBinder 把目标节点放进 Binding 请求。apiserver 检查 Pod 尚未绑定，再更新 Pod 的 <code>spec.nodeName</code>。存储更新成功后，正式绑定关系已经进入 etcd。</p>
+<p>这里有三个容易混淆的对象：</p>
+<ul>
+<li>Pod 在创建时已经存在于 API 存储中。</li>
+<li>Assume 只修改 scheduler 本地副本和资源账。</li>
+<li>Binding 请求推动原 Pod 更新，不会额外留下一个持久化的 Binding 对象。</li>
+</ul>
+<p>绑定前也可能有其他 API 写入，例如状态、提名节点或 PVC&#x2F;PV 更新。只有“正式节点分配关系”在这里通过 Bind 持久化，不能把它扩大为 Bind 前没有任何 etcd 写入。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/framework/plugins/defaultbinder/default_binder.go">DefaultBinder</a>、<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/registry/core/pod/storage/storage.go">BindingREST</a></p>
+<h3 id="Assumed-什么时候转成-Added"><a href="#Assumed-什么时候转成-Added" class="headerlink" title="Assumed 什么时候转成 Added"></a>Assumed 什么时候转成 Added</h3><p><img src="/kubernetes-scheduling-explained/05-cache-state-machine.svg" srcset="/img/loading.gif" lazyload alt="scheduler 缓存中的 Assumed、Added、回滚与迟到事件转换"></p>
+<p>Assumed 和 Added 是理解缓存实现的状态名称，API 中没有 <code>phase: Assumed</code>。</p>
+<table>
+<thead>
+<tr>
+<th>缓存概念状态</th>
+<th>本地资源账</th>
+<th>正式 API 关系</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>尚未预占</td>
+<td>尚未计入目标节点</td>
+<td>通常 nodeName 为空</td>
+</tr>
+<tr>
+<td>Assumed</td>
+<td>已计入目标节点</td>
+<td>可能未绑定，也可能已绑定但事件尚未到达</td>
+</tr>
+<tr>
+<td>Added</td>
+<td>按正式对象维护</td>
+<td>已观察到正式绑定</td>
+</tr>
+<tr>
+<td>预占已回滚</td>
+<td>撤销本次本地预占</td>
+<td>仍需要结合真实绑定结果判断</td>
+</tr>
+</tbody></table>
+<p>Informer 观察到已绑定 Pod 后，事件处理会调用 Cache.AddPod。缓存用正式对象更新已有预占，避免再重复累计一次请求。<strong>Assumed 只说明本地尚未通过正式对象确认，不能证明 etcd 一定还没写入。</strong></p>
+<p>在 v1.37.1 中，不能把 <code>finishBinding</code> 理解为清除 assumed 标记的入口。这个函数在成功时记录 Scheduled 事件。正式对象的观察路径负责缓存确认。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/backend/cache/cache.go">缓存实现</a></p>
+<h3 id="失败回滚与网络超时"><a href="#失败回滚与网络超时" class="headerlink" title="失败回滚与网络超时"></a>失败回滚与网络超时</h3><p>Reserve、Permit、PreBind 或 Bind 失败后，错误处理会清理插件预留。它也会尝试通过 ForgetPod 撤销仍处于 assumed 状态的预占。</p>
+<p>Bind 超时需要额外判断。请求可能尚未提交成功，也可能已经写入 etcd，只是响应丢失。</p>
+<table>
+<thead>
+<tr>
+<th>观察到的情况</th>
+<th>应如何理解</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Bind 失败，正式对象仍未绑定</td>
+<td>清理预占，按失败原因重试</td>
+</tr>
+<tr>
+<td>Watch 早于 Bind 响应</td>
+<td>可以先确认 Added，再收到请求结果</td>
+</tr>
+<tr>
+<td>超时后才观察到正式绑定</td>
+<td>可能先回滚本地预占，再由迟到事件加入正式对象</td>
+</tr>
+<tr>
+<td>Watch 已确认 Added，随后错误处理运行</td>
+<td>ForgetPod 会检查 assumed 状态，不能无条件删除正式记账</td>
+</tr>
+</tbody></table>
+<p>失败处理还会检查 Informer 中的 Pod。普通 Pod 已有 nodeName 时，不应再加入未绑定 Pod 的选节点队列。由于 Informer 也可能暂时滞后，排障应综合 API 真实对象、事件和调度器日志。</p>
+<p>Assume 只能协调本实例的预占。多个独立调度器不共享这份内存。apiserver 拒绝同一个 Pod 的重复绑定，也不等于它为不同 Pod 提供了全局节点资源锁。<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/schedule_one.go">绑定失败处理</a></p>
+<h2 id="7-Gang-和-GPU-拓扑调度增加了哪些要求"><a href="#7-Gang-和-GPU-拓扑调度增加了哪些要求" class="headerlink" title="7. Gang 和 GPU 拓扑调度增加了哪些要求"></a>7. Gang 和 GPU 拓扑调度增加了哪些要求</h2><p>普通 Pod 调度主要围绕单个 Pod 选择节点。分布式训练还需要表达整组约束，例如 8 个 worker 至少同时获得放置条件，否则已运行的一部分可能一直等待其他成员。</p>
+<p>v1.37 中，原生 Gang Scheduling 为 Beta，默认关闭。相关路径依赖 GenericWorkload 和 PodGroup API。调度器需要先检查组成员条件，再评估是否能满足 minCount。达到要求后，才允许相应成员推进绑定。</p>
+<p>它不会保证容器在物理时间上同时启动。运行中的 Pod 后续仍可能被删除或驱逐。补调度也需要按组策略重新评估。<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/scheduling-eviction/gang-scheduling/">Gang Scheduling</a></p>
+<p>GPU 作业还需要拓扑信息。整组资源数量足够，并不能保证 GPU 间通信路径合适。跨节点的网络域放置、节点内 GPU 组合、CPU&#x2F;内存&#x2F;网卡对齐，需要分别处理。Volcano HyperNode、KAI Topology 等可以表达网络域要求，具体设备分配仍需相应组件支持。</p>
+<p>如果上层还有 Karmada，多集群编排先决定资源进入哪些集群。成员集群再执行本地调度与绑定。不要把集群选择、节点选择和具体设备分配混在一起。<a target="_blank" rel="noopener" href="https://volcano.sh/docs/v1.15.0/keyfeatures/networktopologyaware/">Volcano 网络拓扑调度</a>、<a target="_blank" rel="noopener" href="https://docs.nvidia.com/nvcf/compute-plane/topology-aware-scheduling">NVIDIA 拓扑集成路径</a>、<a target="_blank" rel="noopener" href="https://karmada.io/docs/core-concepts/architecture/">Karmada 架构</a></p>
+<h2 id="8-按阶段排查一个等待中的-Pod"><a href="#8-按阶段排查一个等待中的-Pod" class="headerlink" title="8. 按阶段排查一个等待中的 Pod"></a>8. 按阶段排查一个等待中的 Pod</h2><p>先查看对象与事件：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">kubectl get pod &lt;pod&gt; -n &lt;namespace&gt; -o yaml
+kubectl describe pod &lt;pod&gt; -n &lt;namespace&gt;
+kubectl describe node &lt;node&gt;</code></pre></div>
+
+<p>然后按观察结果缩小范围：</p>
+<table>
+<thead>
+<tr>
+<th>观察</th>
+<th>优先检查</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>nodeName 为空，存在 FailedScheduling</td>
+<td>有效 request、节点约束、污点、端口和卷等拒绝原因</td>
+</tr>
+<tr>
+<td>节点使用率低，但提示 Insufficient cpu &#x2F; memory</td>
+<td>Allocatable 与已计入请求，不能只看 top</td>
+</tr>
+<tr>
+<td>工作负载等待且 gate 未解除</td>
+<td>schedulingGates 与负责解除 gate 的控制器</td>
+</tr>
+<tr>
+<td>调度器日志显示已选节点，但尚未正式绑定</td>
+<td>Permit 等待、PreBind、卷与设备准备、Bind 请求</td>
+</tr>
+<tr>
+<td>Bind 报超时</td>
+<td>API 中 nodeName 的实际值、Informer 观察进度与错误处理</td>
+</tr>
+<tr>
+<td>nodeName 已有值，Pod 仍 Pending</td>
+<td>节点侧准入、卷、网络、镜像和容器创建</td>
+</tr>
+</tbody></table>
+<p>activeQ、backoffQ、unschedulableQ 是 scheduler 内部结构，Pod YAML 不直接显示自己在哪个队列。需要结合 scheduler 日志与队列指标判断。Assumed 同样只存在于本地缓存机制中。</p>
+<p>阅读源码时，可以依次查看以下入口。固定版本有助于避免把不同版本的函数和状态混用：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/schedule_one.go">schedule_one.go</a>：选节点、Assume、Reserve、Permit 与绑定错误处理。</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/backend/queue/scheduling_queue.go">scheduling_queue.go</a>：队列、事件判断、退避和超时兜底。</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/backend/cache/cache.go">cache.go</a>：AssumePod、AddPod、ForgetPod 等缓存转换。</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/scheduler/framework/plugins/noderesources/fit.go">NodeResourcesFit</a>：资源过滤、打分与重新入队事件。</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubernetes/blob/v1.37.1/pkg/registry/core/pod/storage/storage.go">Pod BindingREST</a>：正式节点分配的存储更新。</li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/" class="category-chain-item">云原生</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/Kubernetes/" class="print-no-link">#Kubernetes</a>
+      
+        <a href="/tags/%E4%BA%91%E5%8E%9F%E7%94%9F/" class="print-no-link">#云原生</a>
+      
+        <a href="/tags/%E8%B0%83%E5%BA%A6/" class="print-no-link">#调度</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>图解 Kubernetes 调度：从资源预算、队列重试到 Assume 与 Bind</div>
+      <div>https://fenixc9.github.io/kubernetes-scheduling-explained/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月23日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/webassembly-runtime-wasi-lua-comparison/" title="WebAssembly 生态与嵌入选型：主流 Runtime、WASI 与 Lua 的取舍">
+                        <span class="hidden-mobile">WebAssembly 生态与嵌入选型：主流 Runtime、WASI 与 Lua 的取舍</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>

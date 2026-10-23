@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="790" viewBox="0 0 1100 790" role="img" aria-labelledby="title desc">
+<title id="title">Assume 与 Bind：本地预占和正式写入</title><desc id="desc">本地缓存、API 存储和事件观察之间存在时间窗口。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="790" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">Assume 与 Bind：本地预占和正式写入</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">本地缓存、API 存储和事件观察之间存在时间窗口。</text>
+<rect x="25" y="125" width="200" height="62" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="125.0" y="160" font-size="23" text-anchor="middle" class="title">Scheduler</text>
+<path d="M125,195 L125,690" stroke="#adc2b7" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="305" y="125" width="200" height="62" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="405.0" y="160" font-size="23" text-anchor="middle" class="title">本地 Cache</text>
+<path d="M405,195 L405,690" stroke="#adc2b7" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="585" y="125" width="200" height="62" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="685.0" y="160" font-size="23" text-anchor="middle" class="title">API Server</text>
+<path d="M685,195 L685,690" stroke="#adc2b7" stroke-width="2" stroke-dasharray="6 6"/>
+<rect x="865" y="125" width="200" height="62" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="965.0" y="160" font-size="23" text-anchor="middle" class="title">etcd</text>
+<path d="M965,195 L965,690" stroke="#adc2b7" stroke-width="2" stroke-dasharray="6 6"/>
+<path d="M125,255 L405,255" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="133" y="221" width="264" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="265.0" y="243" font-size="17" text-anchor="middle" class="">AssumePod：本地预占</text>
+<text x="405" y="290" font-size="17" text-anchor="middle" class="">副本 nodeName = X</text>
+<text x="125" y="350" font-size="17" text-anchor="middle" class="">Reserve / Permit</text>
+<text x="125" y="380" font-size="17" text-anchor="middle" class="">PreBind</text>
+<path d="M125,430 L685,430" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="133" y="396" width="544" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="405.0" y="418" font-size="17" text-anchor="middle" class="">Bind：提交目标节点 X</text>
+<path d="M685,500 L965,500" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="693" y="466" width="264" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="825.0" y="488" font-size="17" text-anchor="middle" class="">持久化 Pod.nodeName</text>
+<path d="M965,560 L685,560" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="693" y="526" width="264" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="825.0" y="548" font-size="17" text-anchor="middle" class="">写入成功</text>
+<path d="M685,620 L125,620" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="133" y="586" width="544" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="405.0" y="608" font-size="17" text-anchor="middle" class="">Bind 响应：可能超时</text>
+<path d="M685,680 L405,680" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)" stroke-dasharray="7 6"/>
+<rect x="413" y="646" width="264" height="29" rx="2" fill="#f5f8f6" stroke="#f5f8f6" stroke-width="2"/>
+<text x="545.0" y="668" font-size="17" text-anchor="middle" class="">Informer：正式对象确认</text>
+<text x="45" y="735" font-size="22" text-anchor="start" class="title">响应与 Watch 事件的相对顺序不固定；Bind 超时不等于写入失败。</text>
+<text x="44" y="766" font-size="15" text-anchor="start" class="muted">ByteDrift · Kubernetes v1.37.1 · 概念示意，省略部分异常分支</text>
+</svg>
