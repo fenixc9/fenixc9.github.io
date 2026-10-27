@@ -1,0 +1,1112 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/multi-agent-architecture-patterns/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="从控制权、上下文、通信和共享状态出发，解释主流多 Agent 协作模式，对比 Claude Code、Codex、Cursor、LangGraph 等实现，并拆解 DeepSeek Harness Agent Teams 的工具层与运行时。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="多 Agent 体系架构：从子任务委派到 Agent Teams">
+<meta property="og:url" content="https://fenixc9.github.io/multi-agent-architecture-patterns/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="从控制权、上下文、通信和共享状态出发，解释主流多 Agent 协作模式，对比 Claude Code、Codex、Cursor、LangGraph 等实现，并拆解 DeepSeek Harness Agent Teams 的工具层与运行时。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-27T08:55:18.000Z">
+<meta property="article:modified_time" content="2026-10-27T08:58:36.854Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="系统设计">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>多 Agent 体系架构：从子任务委派到 Agent Teams · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>多 Agent 体系架构：从子任务委派到 Agent Teams</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-27 16:55" pubdate>
+          2026年10月27日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          50 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">多 Agent 体系架构：从子任务委派到 Agent Teams</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>多 Agent 系统要回答几个具体问题：谁拆任务？谁决定下一步？每个 Agent 能看到什么？成员如何交换发现？多个成员修改同一份资源时，系统如何处理冲突？</p>
+<p>主流实现提供了子任务委派、工作流、交接、并行汇总、团队协作和群聊等机制。它们可以组合。理解这些机制时，需要同时看模型的决策接口与程序的执行规则。</p>
+<p>本文先建立一个架构视角，再比较主流产品，最后用 DeepSeek Harness（DSH）解释 Agent Teams 如何通过工具调用工作。</p>
+<span id="more"></span>
+
+<blockquote>
+<p>资料核对日期：2026 年 10 月 27 日。本文依据官方文档和官方仓库整理，未进行跨产品性能实测。产品限制以核对时的文档为准。文中的分层、示例协议和选型建议属于工程归纳，不代表所有框架采用相同实现。</p>
+</blockquote>
+<h2 id="一个-Agent-执行循环如何变成多个"><a href="#一个-Agent-执行循环如何变成多个" class="headerlink" title="一个 Agent 执行循环如何变成多个"></a>一个 Agent 执行循环如何变成多个</h2><p>单个 Agent 通常运行在一个循环中：程序组装上下文，模型返回文本或工具调用，程序执行工具，再将结果提供给模型。程序根据结束条件决定是否继续。</p>
+<p>多 Agent 在这个基础上增加了多个执行循环。每个循环可以有自己的上下文、工具集合和生命周期。协调者通过工具、消息或工作流启动这些循环，收集它们的产物。</p>
+<p>为了分析实现，可以把系统分成四层：</p>
+<table>
+<thead>
+<tr>
+<th>层次</th>
+<th>主要责任</th>
+<th>典型内容</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>决策层</td>
+<td>决定拆分、委派、交接和收敛</td>
+<td>模型、路由规则、工作流节点</td>
+</tr>
+<tr>
+<td>协作接口层</td>
+<td>表达成员可以执行的协作动作</td>
+<td>创建成员、发消息、更新任务、等待</td>
+</tr>
+<tr>
+<td>运行时层</td>
+<td>执行动作并维护状态</td>
+<td>会话、调度、收件箱、任务板、持久化</td>
+</tr>
+<tr>
+<td>资源层</td>
+<td>提供实际工作环境</td>
+<td>文件、Git 分支、终端、浏览器、外部服务</td>
+</tr>
+</tbody></table>
+<p>这四层可以部署在同一进程。它们也可以跨进程、机器或服务部署。多 Agent 描述的是多个执行者之间的协作关系，本身不保证进程隔离或分布式执行。</p>
+<h2 id="控制权决定协作模式"><a href="#控制权决定协作模式" class="headerlink" title="控制权决定协作模式"></a>控制权决定协作模式</h2><h3 id="主-Agent-委派：做完之后把结果交回来"><a href="#主-Agent-委派：做完之后把结果交回来" class="headerlink" title="主 Agent 委派：做完之后把结果交回来"></a>主 Agent 委派：做完之后把结果交回来</h3><p>主 Agent 保留对话控制权。它调用子 Agent 完成边界明确的工作，再决定如何使用结果。</p>
+<div class="code-wrapper"><pre><code class="hljs text">用户 → 主 Agent
+          ├─ 子 Agent A：分析调用链 ─┐
+          ├─ 子 Agent B：检查测试   ─┤→ 主 Agent 汇总 → 用户
+          └─ 子 Agent C：调查日志   ─┘</code></pre></div>
+
+<p>这种模式适合代码探索、文档研究和局部实现。子 Agent 返回摘要，可以减少中间日志进入主上下文的数量。主 Agent 仍需判断子任务是否覆盖目标，以及各个结论是否冲突。</p>
+<p>OpenAI Agents SDK 将这类组合称为 agents as tools。专家作为工具被调用。主 Agent 继续负责最终答复。<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/agents/orchestration">OpenAI 编排文档</a></p>
+<h3 id="交接：下一步由另一位-Agent-接管"><a href="#交接：下一步由另一位-Agent-接管" class="headerlink" title="交接：下一步由另一位 Agent 接管"></a>交接：下一步由另一位 Agent 接管</h3><p>Handoff 转移当前流程的控制权。例如，分流 Agent 识别退款问题后，将处理交给退款 Agent。</p>
+<div class="code-wrapper"><pre><code class="hljs text">用户 → 分流 Agent → 退款 Agent → 用户</code></pre></div>
+
+<p>委派和交接的区别在于返回路径。委派完成后，主 Agent 读取结果并继续处理。交接后，接收者成为当前流程的执行者。</p>
+<p>上下文传递需要单独配置。交接可以传完整历史，也可以过滤历史。不能仅凭发生了 handoff，就推断接收者看到全部信息。<a target="_blank" rel="noopener" href="https://openai.github.io/openai-agents-python/handoffs/">OpenAI Handoffs 文档</a></p>
+<h3 id="工作流：由程序约束执行顺序"><a href="#工作流：由程序约束执行顺序" class="headerlink" title="工作流：由程序约束执行顺序"></a>工作流：由程序约束执行顺序</h3><p>当业务步骤较稳定时，可以用代码或状态图定义顺序、分支和循环。</p>
+<div class="code-wrapper"><pre><code class="hljs text">解析请求 → 检索资料 → 生成草稿 → 校验
+                                  ├─ 通过 → 输出
+                                  └─ 未通过 → 修订 → 再校验</code></pre></div>
+
+<p>节点内部可以运行 Agent。节点之间的关系由程序控制。外层流程因此可以明确规定重试次数、人工介入位置和失败分支。</p>
+<p>LangGraph 可承载自定义工作流。Google ADK 同时提供图工作流、动态协调和顺序、循环、并行模板。CrewAI 的 Process 则提供 sequential 和 hierarchical 两类任务组织方式。<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/multi-agent">LangChain 多 Agent 文档</a>、<a target="_blank" rel="noopener" href="https://adk.dev/workflows/">ADK 工作流</a>、<a target="_blank" rel="noopener" href="https://docs.crewai.com/en/concepts/processes">CrewAI Processes</a></p>
+<p>工作流可以混合固定规则与模型决策。例如，程序要求检索结束后才能写报告，模型负责决定检索哪些资料。</p>
+<h3 id="并行分发与汇总：先独立工作，再合并产物"><a href="#并行分发与汇总：先独立工作，再合并产物" class="headerlink" title="并行分发与汇总：先独立工作，再合并产物"></a>并行分发与汇总：先独立工作，再合并产物</h3><p>Fan-out &#x2F; fan-in 描述的是执行结构。系统将工作分发给多个执行者，再收集结果。</p>
+<p>它可以采用两种常见拆法：</p>
+<ul>
+<li>按问题拆分：分别研究价格、架构和兼容性。</li>
+<li>按方案拆分：针对同一个问题，独立提出多个实现方案。</li>
+</ul>
+<p>第一种拆法改善覆盖范围。第二种拆法增加候选方案。汇总者需要保留分歧及其依据，不能仅按赞成人数决定正确性。同一个模型、相似上下文和相同资料可能产生相关错误。</p>
+<p>主从结构、工作流和团队协作都可以使用并行分发。它与控制权安排是两个维度。</p>
+<h3 id="Agent-Teams：成员持续存在，通过消息和任务协调"><a href="#Agent-Teams：成员持续存在，通过消息和任务协调" class="headerlink" title="Agent Teams：成员持续存在，通过消息和任务协调"></a>Agent Teams：成员持续存在，通过消息和任务协调</h3><p>团队模式通常增加具名成员、成员间通信和共享任务状态。负责人可以追加工作。成员可以在后续轮次继续执行。</p>
+<div class="code-wrapper"><pre><code class="hljs text">       Lead
+     /      \
+成员 A ←消息→ 成员 B
+     \      /
+    共享任务板</code></pre></div>
+
+<p>Claude Code Agent Teams 的官方结构包含 team lead、teammates、task list 和 mailbox。成员有独立上下文，可以直接通信。有 Task 工具时，成员还能领取共享任务。该功能在核对时仍为实验性，默认关闭。<a target="_blank" rel="noopener" href="https://code.claude.com/docs/en/agent-teams">Claude Code Agent Teams</a></p>
+<p>团队模式适合需要交换中间发现的任务。例如，后端成员先明确接口约定，前端成员再按约定完成页面。负责人需要持续处理依赖、冲突和验收。</p>
+<h3 id="群聊与评审循环：决定下一位发言者"><a href="#群聊与评审循环：决定下一位发言者" class="headerlink" title="群聊与评审循环：决定下一位发言者"></a>群聊与评审循环：决定下一位发言者</h3><p>群聊模式围绕消息序列组织协作。AutoGen 的 Selector Group Chat 由模型根据共享上下文选择下一位发言者。参与者轮流广播消息。<a target="_blank" rel="noopener" href="https://microsoft.github.io/autogen/stable/user-guide/agentchat-user-guide/selector-group-chat.html">AutoGen Selector Group Chat</a></p>
+<p>轮流发言本身是串行结构。它可以帮助角色交换观点，不能自动带来并行加速。</p>
+<p>生成者—评审者循环也是一种常用组合。生成者提交产物，评审者给出问题，生成者修订。实现时需要最大轮数和可检查的结束条件，否则双方可能持续改写，却没有增加有效信息。</p>
+<h2 id="Agent-Teams-如何成为模型可以调用的能力"><a href="#Agent-Teams-如何成为模型可以调用的能力" class="headerlink" title="Agent Teams 如何成为模型可以调用的能力"></a>Agent Teams 如何成为模型可以调用的能力</h2><p>模型驱动的团队协作通常通过工具接口实现。运行时提供工具定义和协作说明。模型据此请求创建成员、发消息或更新任务。运行时校验请求，再执行具体操作。</p>
+<div class="code-wrapper"><pre><code class="hljs text">运行时提供工具定义、角色与约束
+              ↓
+主 Agent 模型请求创建成员
+              ↓
+运行时检查权限、并发和配置
+              ↓
+创建子会话并执行成员任务
+              ↓
+工具结果、成员消息或状态进入上下文
+              ↓
+主 Agent 模型决定下一步</code></pre></div>
+
+<p>这里有三个不同的决定：</p>
+<ol>
+<li>用户和配置决定是否允许使用团队能力。</li>
+<li>模型或工作流决定何时请求协作。</li>
+<li>运行时决定请求是否有效，以及如何执行。</li>
+</ol>
+<p>因此，工具出现在模型面前，不代表模型拥有无限创建权限。并发上限、工具权限和启动条件可以由程序强制执行。成员收到“不要修改其他目录”的指令，也不等于运行时已经实现目录隔离。</p>
+<p>工具结果还需要区分生命周期。创建成功只说明成员已建立。消息发送成功也不一定说明对方已经处理。协调者必须读取任务状态或等待成员结果，才能判断工作完成。</p>
+<h2 id="DSH-的官方-Agent-Teams-实现"><a href="#DSH-的官方-Agent-Teams-实现" class="headerlink" title="DSH 的官方 Agent Teams 实现"></a>DSH 的官方 Agent Teams 实现</h2><p>DeepSeek Harness 的官方仓库提供实验性 Agent Teams。当前组合包默认关闭，可在插件页面启用。<a target="_blank" rel="noopener" href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/experimental/agent-team-profile/README.md">官方组合包说明</a></p>
+<p>它将实现拆为三部分：</p>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>责任</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dsh-experimental-agent-team-profile</code></td>
+<td>组合启用团队能力、工具和 Web UI</td>
+</tr>
+<tr>
+<td><code>dsh-experimental-tool-agent-team</code></td>
+<td>提供模型可调用的工具和协作说明</td>
+</tr>
+<tr>
+<td><code>dsh-experimental-agent-team</code></td>
+<td>维护团队成员、消息与持久化任务板</td>
+</tr>
+</tbody></table>
+<p>工具层提供九个工具：</p>
+<table>
+<thead>
+<tr>
+<th>能力</th>
+<th>工具</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>创建成员</td>
+<td><code>spawn_teammate</code></td>
+</tr>
+<tr>
+<td>发消息</td>
+<td><code>send_message</code></td>
+</tr>
+<tr>
+<td>查看与等待</td>
+<td><code>list_agents</code>、<code>wait_agent</code></td>
+</tr>
+<tr>
+<td>打断成员</td>
+<td><code>interrupt_agent</code></td>
+</tr>
+<tr>
+<td>管理任务板</td>
+<td><code>team_task_create</code>、<code>team_task_list</code>、<code>team_task_get</code>、<code>team_task_update</code></td>
+</tr>
+</tbody></table>
+<p>Lead 和成员获得同一组工具与协作说明。角色约束仍然有效：只有 Lead 可以创建或打断成员。成员可以直接互发消息。<a target="_blank" rel="noopener" href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/experimental/tool-agent-team/README.md">官方工具层文档</a></p>
+<p>团队层复用可继续执行的子 Agent。创建时可以选择 fresh 上下文，也可以 fork Lead 已完成的历史。持久化存储支持后续唤醒成员。</p>
+<p>这套实现采用单进程和共享工作目录。它不提供 worktree、代码合并或文件系统锁。成员停止执行，也不会自动释放任务所有权。任务板状态和代码资源的并发控制需要分别处理。<a target="_blank" rel="noopener" href="https://github.com/deepseek-ai/deepseek-harness/blob/master/packages/experimental/agent-team/README.md">官方团队层文档</a></p>
+<h2 id="主流实现放在同一张架构表中"><a href="#主流实现放在同一张架构表中" class="headerlink" title="主流实现放在同一张架构表中"></a>主流实现放在同一张架构表中</h2><p>产品可能同时支持多种结构。下表列出本次资料中与协作相关的主要入口，不按成熟度排名。</p>
+<table>
+<thead>
+<tr>
+<th>产品或框架</th>
+<th>协作入口</th>
+<th>架构上应重点检查什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Claude Code</td>
+<td>Subagents、Agent Teams</td>
+<td>子任务返回与团队通信的区别</td>
+</tr>
+<tr>
+<td>Codex</td>
+<td>子 Agent 工作流</td>
+<td>主线程如何收集结果和发送后续指令</td>
+</tr>
+<tr>
+<td>Cursor</td>
+<td>子 Agent、隔离项目副本</td>
+<td>默认共享 checkout 与主动隔离的区别</td>
+</tr>
+<tr>
+<td>OpenAI Agents SDK</td>
+<td>Agents as tools、Handoffs</td>
+<td>当前对话由谁负责</td>
+</tr>
+<tr>
+<td>LangChain &#x2F; LangGraph</td>
+<td>子 Agent、路由、交接、自定义工作流</td>
+<td>上下文和状态如何沿流程传递</td>
+</tr>
+<tr>
+<td>Google ADK</td>
+<td>协作工作流、图工作流、模板</td>
+<td>动态决策与固定结构的组合边界</td>
+</tr>
+<tr>
+<td>AutoGen</td>
+<td>群聊、发言者选择、交接</td>
+<td>发言顺序、消息可见性和终止规则</td>
+</tr>
+<tr>
+<td>CrewAI</td>
+<td>顺序任务、manager 管理</td>
+<td>任务输入、分配和验收责任</td>
+</tr>
+<tr>
+<td>DSH</td>
+<td>官方实验性 Agent Teams</td>
+<td>工具调用与持久化团队状态的关系</td>
+</tr>
+</tbody></table>
+<p>Codex 官方文档强调将探索、测试和日志分析分配给独立子 Agent，再向主线程返回摘要。当前本地客户端的委派也受用户请求和项目指令约束。<a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/agent-configuration/subagents">Codex Subagents</a></p>
+<p>Cursor 子 Agent 默认共享父 Agent 的 checkout。需要隔离时，可以使用独立 Git worktree 或云环境。各成员的修改保留在自己的分支，之后再由父 Agent 合并。<a target="_blank" rel="noopener" href="https://cursor.com/docs/subagents">Cursor Subagents</a></p>
+<p>这些差异说明，比较工具时，应该分别检查通信、持久化和资源隔离。一个产品显示了多个成员面板，不能据此确认它具备全部团队机制。</p>
+<h2 id="决定实际效果的五个工程问题"><a href="#决定实际效果的五个工程问题" class="headerlink" title="决定实际效果的五个工程问题"></a>决定实际效果的五个工程问题</h2><h3 id="1-给成员什么上下文"><a href="#1-给成员什么上下文" class="headerlink" title="1. 给成员什么上下文"></a>1. 给成员什么上下文</h3><p>主流做法包括从空白上下文启动、复制部分历史、传入摘要，以及按需检索共享资料。选择取决于任务对历史信息的依赖程度。</p>
+<p>复制历史减少了重新说明的工作，也可能带入无关日志和过时假设。只传一句任务描述成本较低，却容易遗漏约束。实践中可以先定义一个明确的任务输入：</p>
+<div class="code-wrapper"><pre><code class="hljs yaml"><span class="hljs-comment"># 架构示例，不对应某个产品的配置格式</span>
+<span class="hljs-attr">task_id:</span> <span class="hljs-string">review-cache-invalidation</span>
+<span class="hljs-attr">goal:</span> <span class="hljs-string">检查缓存失效逻辑是否存在并发错误</span>
+<span class="hljs-attr">inputs:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">指定提交的差异</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">当前缓存一致性约定</span>
+<span class="hljs-attr">write_scope:</span> []
+<span class="hljs-attr">deliverables:</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">问题位置与触发条件</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">支持结论的代码或测试证据</span>
+  <span class="hljs-bullet">-</span> <span class="hljs-string">未能确认的事项</span></code></pre></div>
+
+<p>子 Agent 的结果也需要包含证据位置。只有结论的摘要很难被主 Agent 复查。LangChain 将每个 Agent 应该看到哪些信息视为多 Agent 设计的核心问题。<a target="_blank" rel="noopener" href="https://docs.langchain.com/oss/python/langchain/multi-agent">上下文设计说明</a></p>
+<h3 id="2-消息到底表示什么"><a href="#2-消息到底表示什么" class="headerlink" title="2. 消息到底表示什么"></a>2. 消息到底表示什么</h3><p>成员发来的消息可能是进度、问题、结果，也可能是继续工作的请求。运行时需要规定每类消息如何影响执行。</p>
+<p>例如，某成员正在执行工具时，消息是立即注入、在步骤边界注入，还是排队到下一轮？成员已退出时，消息是否会唤醒它？发送失败后，调用方是否需要重试？</p>
+<p>持久化的任务板不能自动提供可靠消息投递。设计中应分别定义消息入队、处理确认、重复投递和恢复语义。需要可靠执行时，可以记录消息 ID 和处理状态。外部副作用还需要幂等处理。</p>
+<h3 id="3-任务状态和成员状态如何区分"><a href="#3-任务状态和成员状态如何区分" class="headerlink" title="3. 任务状态和成员状态如何区分"></a>3. 任务状态和成员状态如何区分</h3><p>一个 Agent 空闲，可能表示它已完成，也可能表示它在等待依赖。一个 Agent 被打断，也不能说明任务已经失败或可以重新领取。</p>
+<p>下面是一种可选的任务状态设计：</p>
+<div class="code-wrapper"><pre><code class="hljs text">pending → ready → running → submitted → verified
+                      ├─ failed
+                      └─ blocked → ready</code></pre></div>
+
+<p><code>submitted</code> 表示成员提交了产物。<code>verified</code> 表示验收条件已满足。这两个状态可以防止成员自报完成后，系统直接宣告整体成功。</p>
+<p>如果需要成员自动领取任务，运行时还应实现原子领取。租约与超时回收可以处理成员失联，但必须避免仍在工作的成员与接管者同时写入。具体是否支持这些机制，需要逐个核对框架，不能从“有任务板”推断。</p>
+<h3 id="4-共享目录还是隔离工作区"><a href="#4-共享目录还是隔离工作区" class="headerlink" title="4. 共享目录还是隔离工作区"></a>4. 共享目录还是隔离工作区</h3><p>共享目录让成员立即看到对方的修改。它也允许多个编辑器、终端和格式化工具同时修改同一文件。</p>
+<p>独立 worktree 将文件修改放到不同工作目录。它减少直接覆盖，却增加了集成工作。多个成员仍可能分别修改同一接口，直到合并和测试时才暴露不兼容。</p>
+<p>对于写代码的任务，可以按以下顺序组织：</p>
+<ol>
+<li>先明确共享接口和验收标准。</li>
+<li>按模块或文件划分修改范围。</li>
+<li>需要并行写入时，为成员准备独立工作区。</li>
+<li>由明确的集成者合并修改。</li>
+<li>在合并结果上运行测试。</li>
+</ol>
+<p>任务领取锁只保护任务记录。它不会自动锁住源文件、数据库或部署环境。</p>
+<h3 id="5-谁确认完成，何时停止"><a href="#5-谁确认完成，何时停止" class="headerlink" title="5. 谁确认完成，何时停止"></a>5. 谁确认完成，何时停止</h3><p>评审 Agent 可以发现遗漏。它也可能重复执行者的错误。最终验收应尽量使用可检查的证据，例如测试结果、构建产物、复现步骤或已核对的来源。</p>
+<p>系统还需要明确停止条件：必要任务是否完成？依赖是否解除？结果之间是否冲突？是否有成员仍在执行？预算耗尽后输出的是完整结果还是部分结果？</p>
+<p>运行轨迹应记录父任务、成员会话、工具调用、消息和最终产物。否则，失败发生后很难确认哪个决策导致了错误。</p>
+<h2 id="多-Agent-的成本和加速边界"><a href="#多-Agent-的成本和加速边界" class="headerlink" title="多 Agent 的成本和加速边界"></a>多 Agent 的成本和加速边界</h2><p>并行可以缩短独立工作的等待时间。它仍需要拆分和集成。</p>
+<div class="code-wrapper"><pre><code class="hljs text">总耗时 ≈ 任务拆分时间
+       + 最长依赖路径上的执行时间
+       + 协调、合并与验收时间</code></pre></div>
+
+<p>这个表达式只用于解释结构，不是性能预测公式。模型服务并发、工具限流和环境资源都会影响实际耗时。</p>
+<p>总 token 则包含主 Agent、所有成员、重复上下文和重试。对小任务，多 Agent 的启动和汇总可能超过执行本身的成本。对共享状态变化频繁的任务，协调也可能抵消并行收益。</p>
+<p>评估时应固定任务集与验收标准，比较完成率、耗时、总成本、返工次数和人工介入次数。仅看创建了多少成员，无法判断架构是否有效。</p>
+<h2 id="如何选择起点"><a href="#如何选择起点" class="headerlink" title="如何选择起点"></a>如何选择起点</h2><table>
+<thead>
+<tr>
+<th>工作特征</th>
+<th>建议起点</th>
+<th>需要先确定的约束</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>单次、短小、上下文足够</td>
+<td>单 Agent</td>
+<td>工具和完成条件</td>
+</tr>
+<tr>
+<td>多个独立调查方向</td>
+<td>主 Agent＋并行子 Agent</td>
+<td>问题边界与结果格式</td>
+</tr>
+<tr>
+<td>明确的专家接管</td>
+<td>路由＋Handoff</td>
+<td>控制权与历史过滤</td>
+</tr>
+<tr>
+<td>步骤稳定、需要恢复</td>
+<td>图工作流＋局部 Agent</td>
+<td>状态、失败分支与检查点</td>
+</tr>
+<tr>
+<td>成员需要持续交换发现</td>
+<td>Agent Teams</td>
+<td>消息、依赖和验收责任</td>
+</tr>
+<tr>
+<td>并行修改多个模块</td>
+<td>委派或团队＋独立工作区</td>
+<td>接口契约与集成者</td>
+</tr>
+<tr>
+<td>需要质疑和修订方案</td>
+<td>生成者—评审者循环</td>
+<td>证据标准与最大轮数</td>
+</tr>
+</tbody></table>
+<p>对于开发和调研，可以先从只读并行开始。让成员调查不同模块，由主 Agent 汇总证据。确认收益后，再加入并行实现、共享任务板和持久化成员。</p>
+<p>多 Agent 架构的设计重点是明确控制权、信息边界和状态语义。模型可以通过工具请求协作。运行时负责让这些请求形成可执行、可恢复、可验收的工作过程。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI/" class="print-no-link">#AI</a>
+      
+        <a href="/tags/Agent/" class="print-no-link">#Agent</a>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/" class="print-no-link">#系统设计</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>多 Agent 体系架构：从子任务委派到 Agent Teams</div>
+      <div>https://fenixc9.github.io/multi-agent-architecture-patterns/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月27日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/multimodal-and-image-generation-token-accounting/" title="多模态推理与生图：Token 怎么统计，费用怎么计算？">
+                        <span class="hidden-mobile">多模态推理与生图：Token 怎么统计，费用怎么计算？</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
