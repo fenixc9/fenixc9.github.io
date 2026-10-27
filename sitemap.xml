@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://fenixc9.github.io/llm-jailbreak-techniques-overview/</loc>
+    
+    <lastmod>2026-10-27</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/kubernetes-container-vm-runtimes/</loc>
     
     <lastmod>2026-10-27</lastmod>
@@ -1381,6 +1390,13 @@
   
   <url>
     <loc>https://fenixc9.github.io/tags/%E5%AE%B9%E5%99%A8/</loc>
+    <lastmod>2026-10-27</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E8%B6%8A%E7%8B%B1/</loc>
     <lastmod>2026-10-27</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>

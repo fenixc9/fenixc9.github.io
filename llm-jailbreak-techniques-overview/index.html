@@ -1,0 +1,965 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/llm-jailbreak-techniques-overview/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="越狱攻击利用安全对齐的两个失败模式：竞争目标和泛化不匹配。本文按攻击者需要的权限把 14 类破甲方案分成六组，逐组说明实现方式、实测成功率和对应防御。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大模型越狱技术全景：14 类破甲方案的实现与防御">
+<meta property="og:url" content="https://fenixc9.github.io/llm-jailbreak-techniques-overview/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="越狱攻击利用安全对齐的两个失败模式：竞争目标和泛化不匹配。本文按攻击者需要的权限把 14 类破甲方案分成六组，逐组说明实现方式、实测成功率和对应防御。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-10-22T04:20:00.000Z">
+<meta property="article:modified_time" content="2026-10-27T03:25:33.256Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="安全">
+<meta property="article:tag" content="越狱">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>大模型越狱技术全景：14 类破甲方案的实现与防御 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>大模型越狱技术全景：14 类破甲方案的实现与防御</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-10-22 12:20" pubdate>
+          2026年10月22日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          6.2k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          52 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">大模型越狱技术全景：14 类破甲方案的实现与防御</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>越狱攻击（jailbreak，中文常称破甲）利用安全对齐的两个失败模式。第一个是竞争目标：模型的指令跟随目标和安全目标互相冲突。第二个是泛化不匹配：模型的预训练能力覆盖很广，但安全训练覆盖很窄。</p>
+<p>Wei 等人 2023 年的论文用这两个失败模式构造攻击。这些攻击在评估集上成功率超过 96%，在其中一批精选红队 prompt 上达到 100%。这个结果说明，越狱来自当前训练方式，而不是模型的偶发缺陷。</p>
+<p>下面按攻击者需要的权限，把 14 类主流方案分成六组。每组给出实现方式、实测数据和对应防御。文中的数据来自各方案原始论文和 2026 年的综述统计，核对日期为 2026 年 10 月。</p>
+<span id="more"></span>
+
+<h2 id="一、模型级攻击：需要权重或微调权限"><a href="#一、模型级攻击：需要权重或微调权限" class="headerlink" title="一、模型级攻击：需要权重或微调权限"></a>一、模型级攻击：需要权重或微调权限</h2><p>这一组攻击直接改动模型参数。模型在接收任何 prompt 之前就没有护栏，因此它能绕过全部提示层防御。</p>
+<h3 id="1-1-权重消融（Abliteration）"><a href="#1-1-权重消融（Abliteration）" class="headerlink" title="1.1 权重消融（Abliteration）"></a>1.1 权重消融（Abliteration）</h3><p>Abliteration 由 FailSpy 命名，做法来自 Arditi 等人的发现：模型的拒绝行为由残差流中的一个方向向量介导。攻击分三步。第一步，用无害和有害两组 prompt 跑模型，记录每一层的激活值。第二步，比较两组激活值的差异，提取拒绝方向。第三步，把权重沿这个方向做正交投影。</p>
+<p>整个过程不需要重新训练。处理后的模型失去拒绝能力，但各项基准测试出现性能下降。原因是拒绝机制和模型的指令理解、推理能力有耦合。为了弥补损失，可以用 DPO 做一轮轻量偏好对齐。Maxime Labonne 用这个方法做出了 NeuralDaredevil-8B。</p>
+<p>Cracken 团队 2025 年的研究修正了「拒绝是单一方向」的假设。在万亿参数级模型上，拒绝行为按领域分开编码。他们只移除了网络安全领域的拒绝，保留了其他安全边界。</p>
+<h3 id="1-2-去审查微调"><a href="#1-2-去审查微调" class="headerlink" title="1.2 去审查微调"></a>1.2 去审查微调</h3><p>去审查微调是更直接的做法。开发者用无拒绝数据做一轮监督微调，得到 “-Uncensored” 后缀的模型。HuggingFace 上有大量这类模型。量化时使用 imatrix 可以减少权重损失。这个方案只对开放权重模型有效，对 Claude、GPT 这类闭源 API 无效。</p>
+<h3 id="1-3-微调越狱"><a href="#1-3-微调越狱" class="headerlink" title="1.3 微调越狱"></a>1.3 微调越狱</h3><p>Qi 等人 2023 年的论文（ICLR 2025）给出一个更低的门槛。只用 10 到 100 条有害样本、训练 5 个 epoch，就能让模型整体偏离对齐。偏离是全局的：模型对各种有害请求都放行，不只是对训练样本放行。</p>
+<p>论文还有一个意外发现。即使用户提交完全良性的微调数据，安全边界也会下降。这意味着提供微调 API 的厂商面临真实攻击面，而且攻击者不需要恶意意图就能触发。</p>
+<h2 id="二、提示级白盒攻击"><a href="#二、提示级白盒攻击" class="headerlink" title="二、提示级白盒攻击"></a>二、提示级白盒攻击</h2><p>这一组攻击需要模型的梯度或部分内部信息。攻击者通过搜索找到有效的 prompt。</p>
+<h3 id="2-1-GCG-对抗后缀"><a href="#2-1-GCG-对抗后缀" class="headerlink" title="2.1 GCG 对抗后缀"></a>2.1 GCG 对抗后缀</h3><p>GCG（Greedy Coordinate Gradient）由 Zou 等人在 2023 年提出。攻击者对目标回复的损失求梯度，用贪婪坐标梯度搜索一段无意义的后缀，把后缀接到有害请求后面。模型随后输出肯定式回复。</p>
+<p>这段后缀是 token 序列，不是自然语言。在开源模型上搜出的后缀可以迁移到其他模型，包括闭源 API。</p>
+<p>TACL 2025 的研究解释了迁移的原因。越通用的后缀，对模型注意力的劫持越强。这种劫持强度在不生成任何 token 的情况下就能测得。后缀劫持的是注意力分配机制，不是记忆的内容。</p>
+<p>GCG 有一个明显弱点。在统一算力轴上的对比研究（arXiv 2603.11149，2026 年 3 月）显示，GCG 的天花板最低、增长最慢。梯度优化的是 token 空间，容易触发表层违规。模型被判违规，但回复不切题，相关性得分只有 1.46。</p>
+<h3 id="2-2-AutoDAN-遗传算法"><a href="#2-2-AutoDAN-遗传算法" class="headerlink" title="2.2 AutoDAN 遗传算法"></a>2.2 AutoDAN 遗传算法</h3><p>AutoDAN（Liu 等人，2024 年）在人工越狱模板的基础上做演化。它从 DAN 系列模板出发，用分层遗传算法生成新的 prompt。名字的含义是「自动生成 DAN 系列风格的越狱 prompt」。</p>
+<p>AutoDAN 的产物保持人类可读。它解决了 GCG 的两个问题：后缀是乱码，会被困惑度过滤抓到；后缀对特定模型过拟合。在算力轴上，AutoDAN 的改善速度更平缓。</p>
+<h2 id="三、提示级黑盒攻击"><a href="#三、提示级黑盒攻击" class="headerlink" title="三、提示级黑盒攻击"></a>三、提示级黑盒攻击</h2><p>这一组攻击只需要 API 访问权。它是实际攻击中最常见的路径。</p>
+<h3 id="3-1-PAIR-与-TAP-迭代改写"><a href="#3-1-PAIR-与-TAP-迭代改写" class="headerlink" title="3.1 PAIR 与 TAP 迭代改写"></a>3.1 PAIR 与 TAP 迭代改写</h3><p>PAIR（Chao 等人，2023 年）用一个攻击 LLM 迭代改写越狱 prompt。攻击 LLM 同时扮演用户和攻击者。它读取目标模型的拒绝回复，改写出语义相同但更隐蔽的新 prompt，循环直到成功。论文的实验结果是平均不到 20 次查询攻破 GPT-4 和 Claude 级模型。</p>
+<p>TAP（Mehrotra 等人，2024 年）把迭代扩展成带剪枝的树搜索。它用 Vicuna-13B 作为攻击模型、GPT-4 作为评判，在 GPT-3.5、GPT-4、Claude-3、Gemini-Pro 等模型上评估。TAP 在多项指标上超过 PAIR 和 GCG。</p>
+<p>ACL 2026 的综述给出一个统计结果：搜索类攻击与迭代交互显著正相关（r&#x3D;0.57）。原因是并行搜索的算力开销大，还会撞上 API 限流。PAIR 的浅搜索深度加中等搜索空间是实践上的平衡点。</p>
+<h3 id="3-2-Best-of-N-采样"><a href="#3-2-Best-of-N-采样" class="headerlink" title="3.2 Best-of-N 采样"></a>3.2 Best-of-N 采样</h3><p>Best-of-N（Hughes 等人，2024 年）对同一个有害 prompt 生成多个变体。文本侧用随机大写、字符打乱，图像侧用无意义扰动。攻击者采样 N 次，直到出现一个有害输出。</p>
+<p>这个方案不针对模型的任何特定弱点。它利用输入方差和采样随机性。拒绝本身是随机的：同一语义的 prompt，有的变体被拒绝，有的放行。采样次数足够多，总有一个通过。</p>
+<p>实测数据显示它的效果不弱。在算力轴对比中，Best-of-N 的相关性得分天花板是 5.38，超过 PAIR 的 3.86。原因是它只做表面扰动，原始请求的语义完整保留，引出的回复始终切题。成功所需的样本数随 N 呈幂律分布，因此可以外推。</p>
+<h2 id="四、上下文类攻击"><a href="#四、上下文类攻击" class="headerlink" title="四、上下文类攻击"></a>四、上下文类攻击</h2><p>这一组攻击利用对话的累积性和上下文窗口。</p>
+<h3 id="4-1-Crescendo-多轮升级"><a href="#4-1-Crescendo-多轮升级" class="headerlink" title="4.1 Crescendo 多轮升级"></a>4.1 Crescendo 多轮升级</h3><p>Crescendo（Russinovich 等人，Microsoft）从无害问题开始。每一轮基于模型已经给出的内容升级提问。典型路径是：无害主题、略敏感话题、跨主题连结、临近目标、最终请求。每一步都合理延续上一步。</p>
+<p>这个方案攻破了 ChatGPT、Gemini Advanced、Anthropic 和 LLaMA-2。表征层面的研究给出解释：模型把 Crescendo 输入表征为更良性，而不是有害。多轮语境平滑地移动了向量空间。</p>
+<p>Crescendo 的底层弱点是注意力稀释和前缀依赖。长上下文稀释有害信号的注意力占比。自回归生成不回溯评估，每一轮的服从都成为下一轮的合法性来源。Crescendo 与 GCG 后缀组合后，在 GPT-4 和 Claude 上的成功率接近 100%。</p>
+<h3 id="4-2-Many-shot-长上下文"><a href="#4-2-Many-shot-长上下文" class="headerlink" title="4.2 Many-shot 长上下文"></a>4.2 Many-shot 长上下文</h3><p>Many-shot 越狱（Anthropic，2024 年）在单条 prompt 内伪造大量「用户-AI」假对话。每个假对话里，AI 都顺从地回答有害问题。最后接上真正的目标问题。实验最多用了 256 个 shot。</p>
+<p>只放少量假对话时，安全训练仍会触发。shot 数超过一定阈值后，模型转而模仿假对话，忽略安全对齐。这里利用的是 in-context learning。上下文窗口从 2023 年初的 4K token 增长到 1M 以上，直接放大了这类攻击。</p>
+<p>Many-shot 与多轮攻击同属上下文累积类，但它不依赖真实交互。多轮审核类防御对它无效。</p>
+<h2 id="五、表征变换类攻击"><a href="#五、表征变换类攻击" class="headerlink" title="五、表征变换类攻击"></a>五、表征变换类攻击</h2><p>这一组攻击把有害请求换成另一种表征，绕开文本侧的安全训练。</p>
+<h3 id="5-1-Base64-与编码混淆"><a href="#5-1-Base64-与编码混淆" class="headerlink" title="5.1 Base64 与编码混淆"></a>5.1 Base64 与编码混淆</h3><p>Base64 越狱是「泛化不匹配」最尖锐的例子。攻击者用 Base64 编码有害请求。模型在预训练中学会了跟随 Base64 指令（能力泛化广），但安全训练数据里没有这种形态（安全泛化窄）。输入远超出分布，拒绝机制不激活。</p>
+<p>消融实验发现两点。编码输入比编码输出更重要。两者的组合最强。编码输出有效是因为部分解码的前缀引导了拒绝行为，这个性质与前缀注入共享。</p>
+<p>原论文的数据：Base64 单独在 GPT-4 上成功率 0.34，在 Claude v1.3 上 0.38。组合攻击达到 0.94。JailbreakRadar 的跨模型评估显示，Base64 单用对现代模型平均成功率只有 0.16，组合后才是主力。</p>
+<p>同一谱系还有 ROT13、leetspeak、摩斯码、Hex、payload splitting 等方案。USENIX Security 2026 的论文给出结论：密码类 prompt 无法被通用封锁。混淆方案的空间无法枚举。</p>
+<h3 id="5-2-多模态视觉越狱"><a href="#5-2-多模态视觉越狱" class="headerlink" title="5.2 多模态视觉越狱"></a>5.2 多模态视觉越狱</h3><p>FigStep（清华，AAAI 2025）把违禁指令转成排版渲染的图片。文本侧只附带一个无害问题。模型的视觉通道读出图片里的文字并执行，但拒绝训练从未覆盖「图像内文字携带违禁指令」的形态。</p>
+<p>在 6 个主流开源视觉语言模型上，FigStep 的平均成功率是 82.5%。它还能引出模型在后续文本回复中生成有害内容。</p>
+<p>这个结果说明安全对齐在模态之间不泛化。Best-of-N 的跨模态实验也证明视觉模态的安全对齐弱于文本。</p>
+<h2 id="六、格式与人格类攻击"><a href="#六、格式与人格类攻击" class="headerlink" title="六、格式与人格类攻击"></a>六、格式与人格类攻击</h2><p>这一组攻击利用模型的指令跟随倾向。</p>
+<h3 id="6-1-DAN-与角色扮演"><a href="#6-1-DAN-与角色扮演" class="headerlink" title="6.1 DAN 与角色扮演"></a>6.1 DAN 与角色扮演</h3><p>DAN（Do Anything Now）出现于 2022 年 12 月，是 ChatGPT 发布数周后的最早越狱。它用冗长的角色描述让模型扮演一个没有限制的助手。同族还有 AIM、dev_mode_v2、奶奶绕过等。</p>
+<p>这一组利用竞争目标。模型被训练成乐于服从指令的助手，角色扮演把这个训练成果变成攻击向量。</p>
+<p>人工 prompt 的有效性高度依赖模型。Wei 等人的数据显示，AIM 在 GPT-4 上成功率 0.75，在 Claude v1.3 上为 0.00。这个差异是人工方法被自动化方法取代的原因之一。今天这些 prompt 主要作为组合攻击的组件和 AutoDAN 的初始化模板。</p>
+<h3 id="6-2-Policy-Puppetry-与-Skeleton-Key"><a href="#6-2-Policy-Puppetry-与-Skeleton-Key" class="headerlink" title="6.2 Policy Puppetry 与 Skeleton Key"></a>6.2 Policy Puppetry 与 Skeleton Key</h3><p>Policy Puppetry（HiddenLayer，2025 年）把有害请求伪装成高信任的格式：系统策略文件、开发者指令、交互配置。它用 <code>&lt;interaction-config&gt;</code>、<code>&lt;Blocked-string&gt;</code> 这类 XML 标记模仿内部过滤器，制造「拒绝才违反策略」的错觉。这个方案在 GPT-4、Claude、Gemini 和开源模型上通用。</p>
+<p>Skeleton Key（Microsoft，2024 年）用多轮方式实现同类效果。它先让模型承认自己的系统指令存在，再要求模型把用户指令设为最高优先级。之后模型对所有请求放行。Microsoft 在 Meta Llama 等多个模型上验证了该攻击。</p>
+<p>这一类攻击的弱点是模型无法可靠区分真系统指令和「长得像系统指令」的用户输入。</p>
+<h2 id="七、相邻攻击面：间接提示注入"><a href="#七、相邻攻击面：间接提示注入" class="headerlink" title="七、相邻攻击面：间接提示注入"></a>七、相邻攻击面：间接提示注入</h2><p>间接提示注入攻击的目标是系统的检索和指令通道。攻击者把隐藏指令种在外部语料中：网页、邮件、工单、帮助文档。AI 系统检索到它时执行指令，全程不需要直接交互。</p>
+<p>实证数据说明它很普遍。GPT-4 在一天 CVE 利用基准上达到 87%。HPTSA 多智能体框架把这个结果扩展到零日漏洞。有独立研究者对六个真实 AI 系统跑了约 1 万次注入攻击，结论是「把一行秘密指令塞进 AI 稍后读取的文档，它经常会直接执行」。</p>
+<p>真实案例是 EchoLeak（CVE-2025-32711，严重等级 9.3）。受害者让 Microsoft 365 Copilot 总结邮件，检索到的邮件含隐藏指令，Copilot 执行指令并通过图片 markdown 把数据外传。</p>
+<p>下面这张表对比越狱和间接提示注入。</p>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>越狱</th>
+<th>间接提示注入</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>攻击对象</td>
+<td>模型的拒绝机制</td>
+<td>系统的检索和指令通道</td>
+</tr>
+<tr>
+<td>交互方式</td>
+<td>直接对话</td>
+<td>经外部数据源，无需交互</td>
+</tr>
+<tr>
+<td>攻击者位置</td>
+<td>对话方</td>
+<td>语料提供方</td>
+</tr>
+<tr>
+<td>典型后果</td>
+<td>生成有害内容</td>
+<td>执行指令、外传数据</td>
+</tr>
+</tbody></table>
+<p>两者在实战中经常组合。注入的内容本身可以是一条越狱 prompt。</p>
+<h2 id="八、防御的对应关系"><a href="#八、防御的对应关系" class="headerlink" title="八、防御的对应关系"></a>八、防御的对应关系</h2><p>不同的攻击类别对应不同的防御责任。</p>
+<table>
+<thead>
+<tr>
+<th>攻击类别</th>
+<th>防御责任</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>模型级（消融、微调越狱）</td>
+<td>发布链路审计、微调输出回归测试</td>
+</tr>
+<tr>
+<td>白盒搜索（GCG）</td>
+<td>困惑度过滤、输入规范化、输出分类</td>
+</tr>
+<tr>
+<td>遗传搜索（AutoDAN）</td>
+<td>语义层和意图层检测，困惑度过滤无效</td>
+</tr>
+<tr>
+<td>语义迭代（PAIR&#x2F;TAP）</td>
+<td>会话内迭代探测的行为分析</td>
+</tr>
+<tr>
+<td>采样（Best-of-N）</td>
+<td>限流、异常请求检测、输出审核</td>
+</tr>
+<tr>
+<td>多轮升级（Crescendo）</td>
+<td>整个会话历史的升级轨迹分析</td>
+</tr>
+<tr>
+<td>长上下文（Many-shot）</td>
+<td>假对话模式检测、上下文清洗</td>
+</tr>
+<tr>
+<td>编码变换（Base64）</td>
+<td>解码后审核、拦截编码输出</td>
+</tr>
+<tr>
+<td>多模态（FigStep）</td>
+<td>图像 OCR 加安全分类、跨模态对齐</td>
+</tr>
+<tr>
+<td>格式人格（DAN、Policy Puppetry）</td>
+<td>指令与用户输入分层、结构化输入校验</td>
+</tr>
+<tr>
+<td>间接注入</td>
+<td>检索层权限门控、指令与数据边界隔离</td>
+</tr>
+</tbody></table>
+<p>有两条规律贯穿全部方案。第一，多数攻击利用的都是「安全训练覆盖窄于能力训练」这个缺口。逐个修补缺口永远落后。第二，2026 年的独立红队测试显示，前沿模型拒约 88% 到 94% 的攻击意图，剩下 6% 到 12% 被攻破。这部分就是实际攻击面。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2307.02483">Jailbroken: How Does LLM Safety Training Fail?（Wei et al., 2023）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2307.15043">Universal and Transferable Adversarial Attacks on Aligned Language Models（Zou et al., 2023）</a></li>
+<li><a target="_blank" rel="noopener" href="https://direct.mit.edu/tacl/article/doi/10.1162/TACL.a.695/137193/">Universal Jailbreak Suffixes Are Strong Attention Hijackers（TACL 2025）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2310.04451">AutoDAN: Generating Stealthy Jailbreak Prompts（Liu et al., 2024）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2310.08419">Jailbreaking Black Box Large Language Models in Twenty Queries（Chao et al.）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2312.02119">TAP: Tree of Attacks with Pruning（Mehrotra et al., 2024）</a></li>
+<li><a target="_blank" rel="noopener" href="https://neurips.cc/virtual/2025/loc/san-diego/poster/119576">Best-of-N Jailbreaking（Hughes et al., NeurIPS 2025）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/html/2603.11149">Systematic Scaling Analysis of Jailbreak Attacks（arXiv, 2026-03）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2404.01833">Great, Now Write an Article About That: The Crescendo Multi-Turn LLM Jailbreak Attack（Russinovich et al.）</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.anthropic.com/research/many-shot-jailbreaking">Many-shot jailbreaking（Anthropic, 2024）</a></li>
+<li><a target="_blank" rel="noopener" href="https://ojs.aaai.org/index.php/AAAI/article/view/34568">FigStep: Jailbreaking Large Vision-Language Models via Typographic Visual Prompts（AAAI 2025）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2310.03693">Fine-tuning Aligned Language Models Compromises Safety（Qi et al., ICLR）</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.usenix.org/system/files/usenixsecurity26-fairoze.pdf">Why cipher prompts cannot be universally blocked（USENIX Security 2026）</a></li>
+<li><a target="_blank" rel="noopener" href="https://arxiv.org/abs/2601.07072">Overcoming the Retrieval Barrier: Indirect Prompt Injection in the Wild（USENIX Security 2026）</a></li>
+<li><a target="_blank" rel="noopener" href="https://aclanthology.org/2026.findings-acl.929.pdf">From Attack Surfaces to Actual Operations: A Survey of Modern LLM Jailbreaks（ACL 2026 Findings）</a></li>
+</ul>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI/" class="print-no-link">#AI</a>
+      
+        <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/" class="print-no-link">#大模型</a>
+      
+        <a href="/tags/%E5%AE%89%E5%85%A8/" class="print-no-link">#安全</a>
+      
+        <a href="/tags/%E8%B6%8A%E7%8B%B1/" class="print-no-link">#越狱</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>大模型越狱技术全景：14 类破甲方案的实现与防御</div>
+      <div>https://fenixc9.github.io/llm-jailbreak-techniques-overview/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年10月22日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/jev-system-one-agent-integration/" title="Jev 决策模型怎么用：评测、国产替代与 Agent 集成">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Jev 决策模型怎么用：评测、国产替代与 Agent 集成</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/nodejs-october-2026-security-rust/" title="Node.js 十月安全发布剖析：C 的内存不安全、JS 的校验裸奔，为什么该把关键组件交给 Rust">
+                        <span class="hidden-mobile">Node.js 十月安全发布剖析：C 的内存不安全、JS 的校验裸奔，为什么该把关键组件交给 Rust</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
