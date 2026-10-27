@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="785" viewBox="0 0 1100 785" role="img" aria-labelledby="title desc">
+<title id="title">GPU 支持要追到实际设备访问路径</title><desc id="desc">同样运行 CUDA，宿主驱动、guest 驱动与代理边界可能不同。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="785" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">GPU 支持要追到实际设备访问路径</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">同样运行 CUDA，宿主驱动、guest 驱动与代理边界可能不同。</text>
+<rect x="45" y="145" width="300" height="120" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="180" font-size="23" text-anchor="middle" class="title">普通容器</text>
+<text x="195.0" y="212" font-size="19" text-anchor="middle" class="muted">应用 / CUDA</text>
+<text x="195.0" y="240" font-size="19" text-anchor="middle" class="muted">设备注入或 CDI</text>
+<rect x="400" y="145" width="300" height="120" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="180" font-size="23" text-anchor="middle" class="title">gVisor</text>
+<text x="550.0" y="212" font-size="19" text-anchor="middle" class="muted">应用 / CUDA</text>
+<text x="550.0" y="240" font-size="19" text-anchor="middle" class="muted">nvproxy 代理</text>
+<rect x="755" y="145" width="300" height="120" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="180" font-size="23" text-anchor="middle" class="title">Kata 适用直通路径</text>
+<text x="905.0" y="212" font-size="19" text-anchor="middle" class="muted">guest 内应用 / CUDA</text>
+<text x="905.0" y="240" font-size="19" text-anchor="middle" class="muted">guest GPU 驱动</text>
+<rect x="45" y="345" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="380" font-size="23" text-anchor="middle" class="title">宿主 NVIDIA 驱动</text>
+<text x="195.0" y="412" font-size="19" text-anchor="middle" class="muted">容器直接使用节点设备</text>
+<rect x="400" y="345" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="380" font-size="23" text-anchor="middle" class="title">宿主 NVIDIA 驱动</text>
+<text x="550.0" y="412" font-size="19" text-anchor="middle" class="muted">代理转发适用 ioctl</text>
+<rect x="755" y="345" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="380" font-size="23" text-anchor="middle" class="title">设备直通 / VFIO 等</text>
+<text x="905.0" y="412" font-size="19" text-anchor="middle" class="muted">需要适用的硬件与 VMM</text>
+<path d="M195,265 L195,345" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M195,450 L195,525" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M550,265 L550,345" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M550,450 L550,525" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M905,265 L905,345" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M905,450 L905,525" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="525" width="1010" height="70" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="560" font-size="23" text-anchor="middle" class="title">物理 GPU 与相关设备</text>
+<rect x="45" y="645" width="1010" height="80" rx="14" fill="#ffecd0" stroke="#ddb574" stroke-width="2"/>
+<text x="70" y="679" font-size="22" text-anchor="start" class="title">GPU 型号、驱动 ABI、CDI、NCCL、RDMA 与拓扑需要一起验证。</text>
+<text x="70" y="710" font-size="20" text-anchor="start" class="">gVisor 的代理能力和某个云产品的支持范围不能互相直接替代。</text>
+<text x="44" y="761" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>

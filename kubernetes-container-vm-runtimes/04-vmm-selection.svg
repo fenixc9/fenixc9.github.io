@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="675" viewBox="0 0 1100 675" role="img" aria-labelledby="title desc">
+<title id="title">VMM 选择：通用设备、现代云 VM 或精简 microVM</title><desc id="desc">先检查所需功能，再比较冷启动、内存与运维成本。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="675" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">VMM 选择：通用设备、现代云 VM 或精简 microVM</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">先检查所需功能，再比较冷启动、内存与运维成本。</text>
+<rect x="45" y="155" width="300" height="170" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="190" font-size="23" text-anchor="middle" class="title">QEMU + KVM</text>
+<text x="195.0" y="222" font-size="19" text-anchor="middle" class="muted">通用设备与虚拟化生态</text>
+<text x="195.0" y="250" font-size="19" text-anchor="middle" class="muted">KubeVirt 常见执行路径</text>
+<text x="195.0" y="278" font-size="19" text-anchor="middle" class="muted">Kata GPU / 机密计算集成</text>
+<rect x="400" y="155" width="300" height="170" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="190" font-size="23" text-anchor="middle" class="title">Cloud Hypervisor</text>
+<text x="550.0" y="222" font-size="19" text-anchor="middle" class="muted">面向现代云工作负载</text>
+<text x="550.0" y="250" font-size="19" text-anchor="middle" class="muted">Rust 与精简硬件模拟</text>
+<text x="550.0" y="278" font-size="19" text-anchor="middle" class="muted">直通与迁移需核对组合</text>
+<rect x="755" y="155" width="300" height="170" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="190" font-size="23" text-anchor="middle" class="title">Firecracker</text>
+<text x="905.0" y="222" font-size="19" text-anchor="middle" class="muted">精简 microVM 与设备模型</text>
+<text x="905.0" y="250" font-size="19" text-anchor="middle" class="muted">Serverless / 短生命周期平台</text>
+<text x="905.0" y="278" font-size="19" text-anchor="middle" class="muted">网络、存储与镜像另行集成</text>
+<rect x="45" y="400" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="435" font-size="23" text-anchor="middle" class="title">检查设备覆盖</text>
+<text x="195.0" y="467" font-size="19" text-anchor="middle" class="muted">设备模型、架构、guest 支持</text>
+<path d="M195,325 L195,400" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="400" y="400" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="435" font-size="23" text-anchor="middle" class="title">检查生命周期</text>
+<text x="550.0" y="467" font-size="19" text-anchor="middle" class="muted">快照、热插拔、迁移与升级</text>
+<path d="M550,325 L550,400" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="755" y="400" width="300" height="105" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="435" font-size="23" text-anchor="middle" class="title">检查上层集成</text>
+<text x="905.0" y="467" font-size="19" text-anchor="middle" class="muted">CRI / shim / guest / 平台</text>
+<path d="M905,325 L905,400" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="555" width="1010" height="60" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="594" font-size="22" text-anchor="start" class="">VMM 是底层组件。单独安装 VMM 不等于已经具备 Kubernetes 容器运行时。</text>
+<text x="44" y="651" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>

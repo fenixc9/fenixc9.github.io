@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="800" viewBox="0 0 1100 800" role="img" aria-labelledby="title desc">
+<title id="title">Kata 与 KubeVirt：管理对象决定路线</title><desc id="desc">一个以容器为入口，一个以虚拟机为管理对象。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="800" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">Kata 与 KubeVirt：管理对象决定路线</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">一个以容器为入口，一个以虚拟机为管理对象。</text>
+<rect x="45" y="135" width="470" height="90" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="280.0" y="170" font-size="23" text-anchor="middle" class="title">Kata</text>
+<text x="280.0" y="202" font-size="19" text-anchor="middle" class="muted">提交 Pod / Deployment</text>
+<rect x="585" y="135" width="470" height="90" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="820.0" y="170" font-size="23" text-anchor="middle" class="title">KubeVirt</text>
+<text x="820.0" y="202" font-size="19" text-anchor="middle" class="muted">提交 VirtualMachine / VMI</text>
+<rect x="45" y="285" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="280.0" y="320" font-size="23" text-anchor="middle" class="title">Pod 运行时选择</text>
+<text x="280.0" y="352" font-size="19" text-anchor="middle" class="muted">CRI handler + Kata shim</text>
+<path d="M280,225 L280,285" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="430" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="280.0" y="465" font-size="23" text-anchor="middle" class="title">轻量 Pod VM</text>
+<text x="280.0" y="497" font-size="19" text-anchor="middle" class="muted">VMM + guest kernel + kata-agent</text>
+<path d="M280,370 L280,430" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="575" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="280.0" y="610" font-size="23" text-anchor="middle" class="title">容器工作负载</text>
+<text x="280.0" y="642" font-size="19" text-anchor="middle" class="muted">继续使用容器镜像与 Pod 入口</text>
+<path d="M280,515 L280,575" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="585" y="285" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="820.0" y="320" font-size="23" text-anchor="middle" class="title">KubeVirt 控制器</text>
+<text x="820.0" y="352" font-size="19" text-anchor="middle" class="muted">创建和管理 virt-launcher Pod</text>
+<path d="M820,225 L820,285" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="585" y="430" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="820.0" y="465" font-size="23" text-anchor="middle" class="title">VM 执行组件</text>
+<text x="820.0" y="497" font-size="19" text-anchor="middle" class="muted">常见路径为 QEMU / KVM</text>
+<path d="M820,370 L820,430" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="585" y="575" width="470" height="90" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="820.0" y="610" font-size="23" text-anchor="middle" class="title">完整 guest 工作负载</text>
+<text x="820.0" y="642" font-size="19" text-anchor="middle" class="muted">操作系统、虚拟磁盘与设备</text>
+<path d="M820,515 L820,575" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<text x="45" y="755" font-size="22" text-anchor="start" class="title">两条路径都需要节点资源管理；KubeVirt 不替代节点已有的 CRI 服务。</text>
+<text x="44" y="776" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>

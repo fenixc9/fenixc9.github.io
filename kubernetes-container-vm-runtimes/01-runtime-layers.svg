@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="850" viewBox="0 0 1100 850" role="img" aria-labelledby="title desc">
+<title id="title">运行时选型，先分清管理层与执行层</title><desc id="desc">containerd、runc、Kata、VMM 和 KubeVirt 承担不同职责。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="850" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">运行时选型，先分清管理层与执行层</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">containerd、runc、Kata、VMM 和 KubeVirt 承担不同职责。</text>
+<rect x="400" y="125" width="300" height="85" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="160" font-size="23" text-anchor="middle" class="title">kubelet</text>
+<text x="550.0" y="192" font-size="19" text-anchor="middle" class="muted">通过 CRI 管理 Pod</text>
+<rect x="400" y="265" width="300" height="90" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="300" font-size="23" text-anchor="middle" class="title">containerd / CRI-O</text>
+<text x="550.0" y="332" font-size="19" text-anchor="middle" class="muted">镜像、sandbox 与生命周期</text>
+<path d="M550,210 L550,265" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="435" width="300" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="470" font-size="23" text-anchor="middle" class="title">runc / crun</text>
+<text x="195.0" y="502" font-size="19" text-anchor="middle" class="muted">创建进程隔离环境</text>
+<text x="195.0" y="530" font-size="19" text-anchor="middle" class="muted">运行共享内核容器</text>
+<rect x="400" y="435" width="300" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="470" font-size="23" text-anchor="middle" class="title">gVisor / runsc</text>
+<text x="550.0" y="502" font-size="19" text-anchor="middle" class="muted">Sentry 用户态应用内核</text>
+<text x="550.0" y="530" font-size="19" text-anchor="middle" class="muted">受限访问宿主系统接口</text>
+<rect x="755" y="435" width="300" height="115" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="470" font-size="23" text-anchor="middle" class="title">Kata runtime / shim</text>
+<text x="905.0" y="502" font-size="19" text-anchor="middle" class="muted">为 Pod 建立轻量 VM</text>
+<text x="905.0" y="530" font-size="19" text-anchor="middle" class="muted">guest 内运行容器</text>
+<path d="M550,355 L550,390 L195,390 L195,435" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M550,355 L550,435" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<path d="M550,355 L550,390 L905,390 L905,435" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="755" y="620" width="300" height="100" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="655" font-size="23" text-anchor="middle" class="title">适用的 VMM</text>
+<text x="905.0" y="687" font-size="19" text-anchor="middle" class="muted">QEMU / Cloud Hypervisor</text>
+<text x="905.0" y="715" font-size="19" text-anchor="middle" class="muted">Firecracker 等</text>
+<path d="M905,550 L905,620" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="45" y="620" width="655" height="100" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="657" font-size="24" text-anchor="start" class="title">KubeVirt 位于 VM 管理层。</text>
+<text x="70" y="695" font-size="21" text-anchor="start" class="">它使用 virt-launcher Pod 承载 VM 执行组件。</text>
+<text x="45" y="785" font-size="21" text-anchor="start" class="muted">图示不代表所有 CRI、shim、VMM 组合都受某个发行版支持。</text>
+<text x="44" y="826" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>

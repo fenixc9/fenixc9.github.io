@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="740" viewBox="0 0 1100 740" role="img" aria-labelledby="title desc">
+<title id="title">选型从工作负载入口和约束开始</title><desc id="desc">以下是优先评估路径，不是统一性能或成熟度排名。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="740" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">选型从工作负载入口和约束开始</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">以下是优先评估路径，不是统一性能或成熟度排名。</text>
+<rect x="45" y="145" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="180" font-size="23" text-anchor="middle" class="title">可信容器业务</text>
+<text x="195.0" y="212" font-size="19" text-anchor="middle" class="muted">containerd + runc</text>
+<text x="195.0" y="240" font-size="19" text-anchor="middle" class="muted">也可采用 CRI-O + crun</text>
+<rect x="400" y="145" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="180" font-size="23" text-anchor="middle" class="title">用户代码 / 插件 / Agent</text>
+<text x="550.0" y="212" font-size="19" text-anchor="middle" class="muted">评估 gVisor 与 Kata</text>
+<text x="550.0" y="240" font-size="19" text-anchor="middle" class="muted">验证 ABI、I/O 与完整任务链路</text>
+<rect x="755" y="145" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="180" font-size="23" text-anchor="middle" class="title">Pod 需要独立内核</text>
+<text x="905.0" y="212" font-size="19" text-anchor="middle" class="muted">评估 Kata</text>
+<text x="905.0" y="240" font-size="19" text-anchor="middle" class="muted">先核对设备、VMM 与宿主条件</text>
+<rect x="45" y="385" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="420" font-size="23" text-anchor="middle" class="title">完整 VM / Windows guest</text>
+<text x="195.0" y="452" font-size="19" text-anchor="middle" class="muted">评估 KubeVirt + QEMU/KVM</text>
+<text x="195.0" y="480" font-size="19" text-anchor="middle" class="muted">验证磁盘、网络和迁移前提</text>
+<rect x="400" y="385" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="420" font-size="23" text-anchor="middle" class="title">自建 microVM 平台</text>
+<text x="550.0" y="452" font-size="19" text-anchor="middle" class="muted">评估 Firecracker / CH</text>
+<text x="550.0" y="480" font-size="19" text-anchor="middle" class="muted">平台集成与恢复能力要单独建设</text>
+<rect x="755" y="385" width="300" height="145" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="420" font-size="23" text-anchor="middle" class="title">GPU 训练与推理</text>
+<text x="905.0" y="452" font-size="19" text-anchor="middle" class="muted">普通容器建立基线</text>
+<text x="905.0" y="480" font-size="19" text-anchor="middle" class="muted">按隔离需求验证沙箱设备路径</text>
+<rect x="45" y="595" width="1010" height="85" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="630" font-size="23" text-anchor="start" class="title">验收：冷启动、实际内存、I/O、P99、恢复、诊断与升级成本。</text>
+<text x="70" y="664" font-size="21" text-anchor="start" class="">一个容器能启动，仅证明基本执行路径可用。</text>
+<text x="44" y="716" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>

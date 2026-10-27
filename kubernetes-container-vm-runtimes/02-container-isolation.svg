@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="735" viewBox="0 0 1100 735" role="img" aria-labelledby="title desc">
+<title id="title">三种容器执行路径，隔离边界不同</title><desc id="desc">普通容器共享节点内核；gVisor 实现系统接口；Kata 使用 guest kernel。</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52746b"/></marker></defs>
+<rect width="1100" height="735" rx="20" fill="#f5f8f6"/>
+<style>text{font-family:"Noto Sans CJK SC","Microsoft YaHei",sans-serif;fill:#213a35} .title{font-weight:700} .muted{fill:#536d65}</style>
+<text x="44" y="55" font-size="32" text-anchor="start" class="title">三种容器执行路径，隔离边界不同</text>
+<text x="44" y="90" font-size="18" text-anchor="start" class="muted">普通容器共享节点内核；gVisor 实现系统接口；Kata 使用 guest kernel。</text>
+<rect x="45" y="140" width="300" height="65" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="175" font-size="23" text-anchor="middle" class="title">普通容器</text>
+<rect x="400" y="140" width="300" height="65" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="175" font-size="23" text-anchor="middle" class="title">gVisor</text>
+<rect x="755" y="140" width="300" height="65" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="175" font-size="23" text-anchor="middle" class="title">Kata</text>
+<rect x="45" y="245" width="300" height="310" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="400" y="245" width="300" height="310" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="755" y="245" width="300" height="310" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<rect x="65" y="265" width="260" height="75" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="300" font-size="23" text-anchor="middle" class="title">应用进程</text>
+<rect x="420" y="265" width="260" height="75" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="300" font-size="23" text-anchor="middle" class="title">应用进程</text>
+<rect x="775" y="265" width="260" height="75" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="300" font-size="23" text-anchor="middle" class="title">容器进程</text>
+<path d="M195,340 L195,450" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="65" y="450" width="260" height="80" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="195.0" y="485" font-size="23" text-anchor="middle" class="title">节点 Linux 内核</text>
+<path d="M550,340 L550,365" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="420" y="365" width="260" height="70" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="400" font-size="23" text-anchor="middle" class="title">Sentry</text>
+<path d="M550,435 L550,450" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="420" y="450" width="260" height="80" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="550.0" y="485" font-size="23" text-anchor="middle" class="title">宿主受限接口</text>
+<path d="M905,340 L905,365" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="775" y="365" width="260" height="70" rx="14" fill="#ffecd0" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="400" font-size="23" text-anchor="middle" class="title">guest kernel</text>
+<path d="M905,435 L905,450" fill="none" stroke="#52746b" stroke-width="2.5" marker-end="url(#arrow)"/>
+<rect x="775" y="450" width="260" height="80" rx="14" fill="#ffffff" stroke="#b9cec5" stroke-width="2"/>
+<text x="905.0" y="485" font-size="23" text-anchor="middle" class="title">VMM / 虚拟化接口</text>
+<rect x="45" y="605" width="1010" height="75" rx="14" fill="#e7f1eb" stroke="#b9cec5" stroke-width="2"/>
+<text x="70" y="637" font-size="22" text-anchor="start" class="title">更换隔离路径后，需要重新验证 ABI、I/O、设备支持与诊断方式。</text>
+<text x="70" y="666" font-size="20" text-anchor="start" class="">安全边界与性能成本必须按实际配置分析，不能只按项目名称排序。</text>
+<text x="44" y="711" font-size="15" text-anchor="start" class="muted">ByteDrift · 资料截至 2026-10-26 · 概念示意，省略部分集成组件</text>
+</svg>
