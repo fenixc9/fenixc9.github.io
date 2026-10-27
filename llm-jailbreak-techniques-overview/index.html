@@ -28,8 +28,8 @@
 <meta property="og:site_name" content="ByteDrift">
 <meta property="og:description" content="越狱攻击利用安全对齐的两个失败模式：竞争目标和泛化不匹配。本文按攻击者需要的权限把 14 类破甲方案分成六组，逐组说明实现方式、实测成功率和对应防御。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2026-10-22T04:20:00.000Z">
-<meta property="article:modified_time" content="2026-10-27T03:25:33.256Z">
+<meta property="article:published_time" content="2026-10-27T03:35:00.000Z">
+<meta property="article:modified_time" content="2026-10-27T03:32:47.692Z">
 <meta property="article:author" content="fenix">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="大模型">
@@ -311,8 +311,8 @@
     
       <span class="post-meta">
         <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-        <time datetime="2026-10-22 12:20" pubdate>
-          2026年10月22日
+        <time datetime="2026-10-27 11:35" pubdate>
+          2026年10月27日
         </time>
       </span>
     
@@ -394,7 +394,7 @@
 <p>TAP（Mehrotra 等人，2024 年）把迭代扩展成带剪枝的树搜索。它用 Vicuna-13B 作为攻击模型、GPT-4 作为评判，在 GPT-3.5、GPT-4、Claude-3、Gemini-Pro 等模型上评估。TAP 在多项指标上超过 PAIR 和 GCG。</p>
 <p>ACL 2026 的综述给出一个统计结果：搜索类攻击与迭代交互显著正相关（r&#x3D;0.57）。原因是并行搜索的算力开销大，还会撞上 API 限流。PAIR 的浅搜索深度加中等搜索空间是实践上的平衡点。</p>
 <h3 id="3-2-Best-of-N-采样"><a href="#3-2-Best-of-N-采样" class="headerlink" title="3.2 Best-of-N 采样"></a>3.2 Best-of-N 采样</h3><p>Best-of-N（Hughes 等人，2024 年）对同一个有害 prompt 生成多个变体。文本侧用随机大写、字符打乱，图像侧用无意义扰动。攻击者采样 N 次，直到出现一个有害输出。</p>
-<p>这个方案不针对模型的任何特定弱点。它利用输入方差和采样随机性。拒绝本身是随机的：同一语义的 prompt，有的变体被拒绝，有的放行。采样次数足够多，总有一个通过。</p>
+<p>这个方案利用输入方差和采样随机性，与模型的具体弱点无关。拒绝本身是随机的：同一语义的 prompt，有的变体被拒绝，有的放行。采样次数足够多，总有一个通过。</p>
 <p>实测数据显示它的效果不弱。在算力轴对比中，Best-of-N 的相关性得分天花板是 5.38，超过 PAIR 的 3.86。原因是它只做表面扰动，原始请求的语义完整保留，引出的回复始终切题。成功所需的样本数随 N 呈幂律分布，因此可以外推。</p>
 <h2 id="四、上下文类攻击"><a href="#四、上下文类攻击" class="headerlink" title="四、上下文类攻击"></a>四、上下文类攻击</h2><p>这一组攻击利用对话的累积性和上下文窗口。</p>
 <h3 id="4-1-Crescendo-多轮升级"><a href="#4-1-Crescendo-多轮升级" class="headerlink" title="4.1 Crescendo 多轮升级"></a>4.1 Crescendo 多轮升级</h3><p>Crescendo（Russinovich 等人，Microsoft）从无害问题开始。每一轮基于模型已经给出的内容升级提问。典型路径是：无害主题、略敏感话题、跨主题连结、临近目标、最终请求。每一步都合理延续上一步。</p>
@@ -587,7 +587,7 @@
       
         <div class="license-meta-item license-meta-date">
           <div>发布于</div>
-          <div>2026年10月22日</div>
+          <div>2026年10月27日</div>
         </div>
       
       
@@ -631,18 +631,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/jev-system-one-agent-integration/" title="Jev 决策模型怎么用：评测、国产替代与 Agent 集成">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">Jev 决策模型怎么用：评测、国产替代与 Agent 集成</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/nodejs-october-2026-security-rust/" title="Node.js 十月安全发布剖析：C 的内存不安全、JS 的校验裸奔，为什么该把关键组件交给 Rust">
-                        <span class="hidden-mobile">Node.js 十月安全发布剖析：C 的内存不安全、JS 的校验裸奔，为什么该把关键组件交给 Rust</span>
+                      <a href="/kubernetes-container-vm-runtimes/" title="图解 Kubernetes 容器与虚拟机运行时：containerd、Kata、gVisor 与 KubeVirt 怎么选">
+                        <span class="hidden-mobile">图解 Kubernetes 容器与虚拟机运行时：containerd、Kata、gVisor 与 KubeVirt 怎么选</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
