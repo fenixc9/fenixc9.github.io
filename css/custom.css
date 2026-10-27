@@ -1,3 +1,4 @@
+@import url('../vendor/katex/katex.min.css');
 /* ByteDrift — quiet typography, generous space, a single green accent. */
 :root { --site-width: 1000px; --reading-width: 760px; }
 html { scroll-padding-top: 96px; }
@@ -52,6 +53,7 @@ main > .container { max-width: var(--site-width); padding: 0 28px; }
 .markdown-body h2 { font-size: 25px; margin-top: 2.5em; padding-bottom: .55em; border-bottom: 1px solid var(--line-color); }
 .markdown-body h3 { font-size: 20px; margin-top: 2em; }
 .markdown-body p { margin-bottom: 1.4em; }
+.markdown-body .katex-display { overflow-x: auto; overflow-y: hidden; padding: .3em 0; }
 .markdown-body a { text-decoration: underline; text-decoration-color: var(--line-color); text-underline-offset: 4px; }
 .markdown-body pre { border: 1px solid var(--line-color); border-radius: 6px; font-size: 13px; line-height: 1.75; }
 .markdown-body blockquote { border-left: 2px solid var(--post-link-color); padding: 4px 20px; color: var(--sec-text-color); }
