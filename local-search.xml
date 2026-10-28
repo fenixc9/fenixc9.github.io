@@ -4,6 +4,35 @@
   
   
   <entry>
+    <title>大规模 Kubernetes 集群：控制面、调度与 DNS 的扩展经验</title>
+    <link href="/kubernetes-large-cluster-lessons/"/>
+    <url>/kubernetes-large-cluster-lessons/</url>
+    
+    <content type="html"><![CDATA[<p>Kubernetes 集群规模增长时，瓶颈不只来自节点数量。节点心跳、对象变更、Watch 扇出、调度计算和 DNS 请求都会累积。容量规划需要同时考虑稳态负载、突发流量和故障恢复。</p><p>本文整理大规模集群的调研笔记，并结合 <a href="https://github.com/bchess/k8s-1m">k8s-1m 百万节点实验</a>讨论扩展边界。实验采用了模拟节点和定制组件；文中的方案建议需要在自己的工作负载上验证。</p><span id="more"></span><h2 id="先建立负载模型"><a href="#先建立负载模型" class="headerlink" title="先建立负载模型"></a>先建立负载模型</h2><p>节点数是一个容易理解的指标，但不能单独决定集群容量。一个集群的压力还取决于每个节点的 Pod 数量、对象变化频率、控制器数量，以及每次故障引发的重试和重建。</p><table><thead><tr><th>维度</th><th>需要估算或测量的指标</th><th>可能受影响的组件</th></tr></thead><tbody><tr><td>节点心跳</td><td>Lease 更新速率、延迟、失败率</td><td>API Server、etcd</td></tr><tr><td>对象变化</td><td>Pod 创建和删除速率、状态更新速率</td><td>API Server、etcd、控制器</td></tr><tr><td>事件分发</td><td>Watch 数量、事件速率、重连和重新 List</td><td>API Server、客户端缓存、网络</td></tr><tr><td>调度</td><td>待调度队列长度、吞吐量、调度延迟</td><td>Scheduler、API Server</td></tr><tr><td>服务发现</td><td>DNS QPS、缓存命中率、错误率和延迟</td><td>NodeLocal DNSCache、CoreDNS、上游 DNS</td></tr><tr><td>故障恢复</td><td>节点重连、Pod 重建和控制器追赶速率</td><td>上述所有组件</td></tr></tbody></table><p>举例来说，如果 100 万个节点每 10 秒更新一次 Lease，仅心跳就平均产生约 10 万次更新&#x2F;秒。这只是算术估算。它没有包含重试、Pod 状态、Event 和其他写入，也没有描述突发峰值。具体间隔与实现要以实际集群配置为准。</p><p><strong>规划时要同时给出对象数量、变化速率和延迟目标。</strong> 稳态吞吐满足要求后，还需要测试批量扩容、滚动升级和故障恢复。</p><h2 id="API-Server-与存储：关注写入和-Watch-扇出"><a href="#API-Server-与存储：关注写入和-Watch-扇出" class="headerlink" title="API Server 与存储：关注写入和 Watch 扇出"></a>API Server 与存储：关注写入和 Watch 扇出</h2><p>API Server 接收 Kubernetes API 请求，并维护供客户端读取和监听的资源状态。etcd 保存集群状态。水平扩展 API Server 可以分摊客户端请求，但新增副本也需要获取和维护状态。它不能自动消除后端写入、网络和缓存压力。</p><p>一个对象更新可能产生多个成本：写入存储、传播到 API Server 缓存，再向匹配的 Watch 客户端发送事件。不同资源类型、过滤条件和版本的实现会影响实际开销。不能简单地把每个客户端 Watch 等同于一个独立的 etcd Watch，但大量客户端仍会增加 API Server 的连接、内存和事件分发成本。</p><p>实践中建议分资源类型观察：</p><ol><li>测量请求量、错误率和延迟，区分读取、写入及长连接。</li><li>观察 etcd 的提交延迟、磁盘同步延迟、数据库大小和网络流量。</li><li>统计控制器和节点组件的 Watch 数量、重连和重新 List。</li><li>在真实对象规模下压测，避免只用少量小对象推算容量。</li><li>模拟 API Server 重启与网络抖动，观察客户端是否集中重连。</li></ol><p>限流和重试需要一起设计。客户端退避可以减轻故障期间的重试风暴；过低的限流又可能让关键控制器无法及时追上变化。调整前应建立各客户端和优先级的基线。</p><h3 id="百万节点实验的边界"><a href="#百万节点实验的边界" class="headerlink" title="百万节点实验的边界"></a>百万节点实验的边界</h3><p><a href="https://github.com/bchess/k8s-1m">k8s-1m</a> 的百万节点实验使用 KWOK 模拟节点，使用自定义内存存储替代标准 etcd，并使用自定义分布式调度器。作者还用较小规模的 kubelet 实验比较了负载。模拟节点不能覆盖真实节点上的全部网络、容器运行时和工作负载行为。</p><p>该实验帮助定位了心跳写入、Watch 缓存和事件分发等扩展问题。它没有证明默认配置可以生产运行百万节点。项目作者也明确表示该实现不适合直接用于关键生产负载。内存存储、减少副本或降低持久性都会改变故障和数据丢失边界，不能作为通用生产建议。</p><h2 id="调度：控制搜索范围，也要处理长尾"><a href="#调度：控制搜索范围，也要处理长尾" class="headerlink" title="调度：控制搜索范围，也要处理长尾"></a>调度：控制搜索范围，也要处理长尾</h2><p>节点和待调度 Pod 增多时，调度器需要处理更多过滤、评分和状态更新。实际开销取决于调度策略、节点采样、Pod 约束及缓存状态，不能只用节点数推算。</p><p>首先检查调度延迟和待调度队列。再根据具体插件判断 CPU 时间花在哪些过滤和评分步骤。复杂的 Pod 亲和性、反亲和性和拓扑约束需要结合工作负载压测。减少不必要的约束可以降低计算成本，但不能为了吞吐破坏业务隔离与可用性要求。</p><p>k8s-1m 使用节点分片：多个调度器分别计算候选节点，再由协调组件汇总结果。并行可以缩短计算时间，但也引入额外网络流量、状态一致性和长尾问题。该实验中的分布式调度器没有实现完整的抢占能力；放弃慢响应也会影响候选集合。这是一种实验设计，需要结合约束和正确性单独评估。</p><p>排查调度时应同时区分两类等待：调度器处理不过来，与集群没有符合资源或约束的节点。两者都会导致 Pod Pending，解决方法却不同。查看 Pod 事件、资源余量与调度器指标，可以避免把容量不足误判成调度器性能问题。</p><h2 id="网络：地址、连接和故障域都要算"><a href="#网络：地址、连接和故障域都要算" class="headerlink" title="网络：地址、连接和故障域都要算"></a>网络：地址、连接和故障域都要算</h2><p>大规模集群需要提前规划节点和 Pod 地址空间。按节点预留 CIDR 会产生地址碎片；每节点的最大 Pod 数、节点扩容余量和集群数量都会影响规划。IPv6 能缓解地址空间压力，但仍需验证云网络、路由、DNS、镜像仓库和仅支持 IPv4 的外部依赖。双栈或转换网关也会带来运维复杂度。</p><p>控制面还需要承受大量长连接和连接重建。应检查 API Server 的文件描述符、负载均衡器连接容量、网络带宽，以及故障后新连接的建立速率。地址数量充足不代表安全策略可以省略；生产环境仍需设计访问控制、身份认证和网络隔离。</p><p>单集群扩大故障域，也会放大升级和故障恢复的影响。多集群能缩小故障域，但会增加跨集群服务发现、流量治理和运维成本。选择边界时，应从工作负载隔离、容量需求和团队运维能力出发。</p><h2 id="DNS：分层缓存与控制面成本"><a href="#DNS：分层缓存与控制面成本" class="headerlink" title="DNS：分层缓存与控制面成本"></a>DNS：分层缓存与控制面成本</h2><p>大规模集群里的 DNS 容量不能只按 Pod 数估算。需要测量实际请求频率、缓存命中、请求类型和高峰分布。一个常见的分层方式是：</p><div class="code-wrapper"><pre><code class="hljs text">Pod  ↓NodeLocal DNSCache  ↓ 缓存未命中CoreDNS  ├─ 集群域名 → Kubernetes 服务发现数据  └─ 外部域名 → 上游 DNS 解析器</code></pre></div><p><a href="https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/">NodeLocal DNSCache</a> 在节点侧提供缓存，可以减少重复请求到中心 DNS 的流量。它也增加了节点级组件，需要监控其健康、缓存和资源占用。缓存 TTL 与故障行为必须按业务对记录新鲜度的要求验证。</p><p>CoreDNS 的 Kubernetes 插件需要维护集群对象信息。增加副本可以增加处理 DNS 请求的能力，但每个副本也会增加对象缓存和 API Server 的 Watch 负担。<a href="https://coredns.io/plugins/kubernetes/">CoreDNS 文档</a>指出，<code>pods verified</code> 需要维护 Pod 信息；不依赖该功能时应避免无目的地开启。</p><p>应用的 DNS 查询方式同样重要。搜索域和 <code>ndots</code> 可能使一个查询产生多个带后缀的请求。应先观察 NXDOMAIN 和查询分布，再针对应用调整。对外部域名使用完整域名、调整 resolver 配置或优化上游缓存都需要在实际环境验证。</p><h3 id="副本数量与容量测算"><a href="#副本数量与容量测算" class="headerlink" title="副本数量与容量测算"></a>副本数量与容量测算</h3><p><a href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler">Cluster Proportional Autoscaler</a> 可以根据节点或核心数设置基线副本数。节点数只是 DNS 流量的代理指标。应使用真实请求分布压测单副本的安全吞吐，再加入故障和突发余量。不要让两个自动扩缩容器同时争抢同一个 Deployment 的副本数。</p><p>例如，假设压测表明单副本在目标 p99 延迟下可稳定处理 6000 QPS，中心 CoreDNS 高峰为 40000 QPS，则处理流量至少需要向上取整到 7 个副本。之后还要按可用区故障、滚动升级、缓存失效和负载不均增加余量。这是计算示例，不是通用容量指标。</p><p>建议持续观察 DNS QPS、p95&#x2F;p99 延迟、SERVFAIL、NXDOMAIN、缓存命中率、上游转发延迟、CPU、内存和 Watch 错误。把 CoreDNS 分散到不同节点与可用区，并为系统组件预留足够资源。对外部解析流量，可评估独立的上游解析器池。</p><h2 id="推荐实施顺序"><a href="#推荐实施顺序" class="headerlink" title="推荐实施顺序"></a>推荐实施顺序</h2><ol><li>建立节点、Pod、对象数量与变化速率的基线，明确可用性和延迟目标。</li><li>为 API Server、etcd、调度器和 DNS 建立请求、延迟、错误及资源监控。</li><li>用接近真实对象规模和约束的负载测试稳态与峰值。</li><li>评估 NodeLocal DNSCache，按实际 DNS 流量校准 CoreDNS 容量。</li><li>演练节点批量重连、控制面重启、可用区故障和升级，检查恢复时间。</li><li>根据故障域、配额和运维成本，决定单集群扩容或拆分多集群。</li></ol><p>每次改变只记录可验证的效果：输入负载、版本和配置、资源消耗、延迟分位数、错误以及恢复时间。容量结论应附带这些条件，避免把实验数据当作所有集群的固定上限。</p><h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul><li><a href="https://kubernetes.io/docs/setup/best-practices/cluster-large/">Kubernetes：大规模集群注意事项</a></li><li><a href="https://github.com/bchess/k8s-1m">k8s-1m：百万节点实验与实现</a></li><li><a href="https://kubernetes.io/docs/tasks/administer-cluster/nodelocaldns/">Kubernetes：NodeLocal DNSCache</a></li><li><a href="https://coredns.io/plugins/kubernetes/">CoreDNS Kubernetes 插件</a></li><li><a href="https://coredns.io/plugins/cache/">CoreDNS 缓存插件</a></li><li><a href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler">Cluster Proportional Autoscaler</a></li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>云原生</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Kubernetes</tag>
+      
+      <tag>云原生</tag>
+      
+      <tag>调度</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>MinIO 与 RustFS 对比：架构、容量利用率、容错与迁移</title>
     <link href="/minio-rustfs-comparison/"/>
     <url>/minio-rustfs-comparison/</url>
