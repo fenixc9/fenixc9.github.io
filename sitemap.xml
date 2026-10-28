@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://fenixc9.github.io/btc-eth-post-quantum-upgrade-2026/</loc>
+    
+    <lastmod>2026-10-28</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/kubernetes-large-cluster-lessons/</loc>
     
     <lastmod>2026-10-28</lastmod>
@@ -218,7 +227,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/</loc>
+    <loc>https://fenixc9.github.io/web-like-poem/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -227,7 +236,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/web-like-poem/</loc>
+    <loc>https://fenixc9.github.io/why-do-you-need-istio-when-you-already-have-kubernetes/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -299,7 +308,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/smart-pointer/</loc>
+    <loc>https://fenixc9.github.io/rust_lock_free/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -308,7 +317,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/rust_lock_free/</loc>
+    <loc>https://fenixc9.github.io/smart-pointer/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -326,7 +335,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/rust-mod-detail/</loc>
+    <loc>https://fenixc9.github.io/rust-mini-blockchain/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -335,7 +344,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/rust-mini-blockchain/</loc>
+    <loc>https://fenixc9.github.io/rust-mod-detail/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -425,7 +434,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/rust-how-to-use-future-3/</loc>
+    <loc>https://fenixc9.github.io/rust-how-to-use-future-2/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -434,7 +443,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/rust-how-to-use-future-2/</loc>
+    <loc>https://fenixc9.github.io/rust-how-to-use-future-3/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -479,15 +488,6 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/py-sci-05/</loc>
-    
-    <lastmod>2026-10-09</lastmod>
-    
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
     <loc>https://fenixc9.github.io/py-sci-04/</loc>
     
     <lastmod>2026-10-09</lastmod>
@@ -497,7 +497,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/py-sci-03/</loc>
+    <loc>https://fenixc9.github.io/py-sci-05/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -507,6 +507,15 @@
   
   <url>
     <loc>https://fenixc9.github.io/py-sci-02/</loc>
+    
+    <lastmod>2026-10-09</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/py-sci-03/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -605,7 +614,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/how-tcp-socket-work/</loc>
+    <loc>https://fenixc9.github.io/impl-trait/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -614,7 +623,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/impl-trait/</loc>
+    <loc>https://fenixc9.github.io/how-tcp-socket-work/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -632,7 +641,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/ebpf-in-rust-1/</loc>
+    <loc>https://fenixc9.github.io/ebpf-in-rust-2/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -641,7 +650,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/ebpf-in-rust-2/</loc>
+    <loc>https://fenixc9.github.io/ebpf-in-rust-1/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -704,7 +713,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/consistency-in-zookeeper/</loc>
+    <loc>https://fenixc9.github.io/course-schedule-problem/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -713,7 +722,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/course-schedule-problem/</loc>
+    <loc>https://fenixc9.github.io/consistency-in-zookeeper/</loc>
     
     <lastmod>2026-10-09</lastmod>
     
@@ -785,6 +794,34 @@
 
   
   <url>
+    <loc>https://fenixc9.github.io/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E6%AF%94%E7%89%B9%E5%B8%81/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E4%BB%A5%E5%A4%AA%E5%9D%8A/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E6%8A%97%E9%87%8F%E5%AD%90/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/tags/AI/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -848,21 +885,14 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E4%B8%AD%E9%97%B4%E4%BB%B6/</loc>
+    <loc>https://fenixc9.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/Zookeeper/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E4%B8%80%E8%87%B4%E6%80%A7/</loc>
+    <loc>https://fenixc9.github.io/tags/%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -904,6 +934,27 @@
   </url>
   
   <url>
+    <loc>https://fenixc9.github.io/tags/%E4%B8%AD%E9%97%B4%E4%BB%B6/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/Zookeeper/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E4%B8%80%E8%87%B4%E6%80%A7/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/tags/%E5%93%88%E5%B8%8C%C2%B8/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -918,7 +969,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/</loc>
+    <loc>https://fenixc9.github.io/tags/%E7%AB%A5%E5%B9%B4/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -947,13 +998,6 @@
   
   <url>
     <loc>https://fenixc9.github.io/tags/Qwen/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E7%AB%A5%E5%B9%B4/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1044,13 +1088,6 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/C/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://fenixc9.github.io/tags/trait/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -1059,6 +1096,27 @@
   
   <url>
     <loc>https://fenixc9.github.io/tags/%E6%8A%BD%E8%B1%A1/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/C/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/Jev/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E8%B4%AA%E5%BF%83/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1079,7 +1137,49 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E8%B4%AA%E5%BF%83/</loc>
+    <loc>https://fenixc9.github.io/tags/%E5%AE%B9%E5%99%A8/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E8%B0%83%E5%BA%A6/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/Koordinator/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/Volcano/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E8%B6%8A%E7%8B%B1/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E5%AE%89%E5%85%A8/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1114,7 +1214,35 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
+    <loc>https://fenixc9.github.io/tags/MinIO/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/RustFS/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E7%BA%A0%E5%88%A0%E7%A0%81/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1135,21 +1263,14 @@
   </url>
   
   <url>
+    <loc>https://fenixc9.github.io/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/tags/%E6%B7%B1%E5%BA%A6%E4%BC%98%E5%85%88%E6%90%9C%E7%B4%A2/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/python/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/jupyter/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1170,7 +1291,14 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%AE%89%E5%85%A8/</loc>
+    <loc>https://fenixc9.github.io/tags/python/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/jupyter/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1247,13 +1375,6 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://fenixc9.github.io/tags/p2p/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -1310,77 +1431,7 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E8%99%9A%E6%8B%9F%E5%8C%96/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/windows/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/hyper-v/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/istio/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://fenixc9.github.io/tags/web/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/TornadoCash/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/cloudflare/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/Jev/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1422,83 +1473,69 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E8%B0%83%E5%BA%A6/</loc>
+    <loc>https://fenixc9.github.io/tags/istio/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/Koordinator/</loc>
+    <loc>https://fenixc9.github.io/tags/windows/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/Volcano/</loc>
+    <loc>https://fenixc9.github.io/tags/hyper-v/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%AE%B9%E5%99%A8/</loc>
+    <loc>https://fenixc9.github.io/tags/cloudflare/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E8%B6%8A%E7%8B%B1/</loc>
+    <loc>https://fenixc9.github.io/tags/%E4%BA%91%E8%AE%A1%E7%AE%97/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%A4%9A%E6%A8%A1%E6%80%81/</loc>
+    <loc>https://fenixc9.github.io/tags/%E5%AF%86%E7%A0%81%E5%AD%A6/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/</loc>
+    <loc>https://fenixc9.github.io/tags/%E9%9B%B6%E7%9F%A5%E8%AF%86%E8%AF%81%E6%98%8E/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/tags/%E5%BC%BA%E5%8C%96%E5%AD%A6%E4%B9%A0/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/MinIO/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/RustFS/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
-    <loc>https://fenixc9.github.io/tags/%E7%BA%A0%E5%88%A0%E7%A0%81/</loc>
+    <loc>https://fenixc9.github.io/tags/TornadoCash/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
 
+  
+  <url>
+    <loc>https://fenixc9.github.io/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <lastmod>2026-10-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
   
   <url>
     <loc>https://fenixc9.github.io/categories/AI/</loc>
@@ -1522,14 +1559,14 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/</loc>
+    <loc>https://fenixc9.github.io/categories/%E7%AE%97%E6%B3%95/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/categories/%E7%AE%97%E6%B3%95/</loc>
+    <loc>https://fenixc9.github.io/categories/%E4%B8%AD%E9%97%B4%E4%BB%B6/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
@@ -1606,13 +1643,6 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/categories/%E5%9B%BE/</loc>
-    <lastmod>2026-10-28</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.2</priority>
-  </url>
-  
-  <url>
     <loc>https://fenixc9.github.io/categories/mysql/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
@@ -1620,14 +1650,14 @@
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/categories/python/</loc>
+    <loc>https://fenixc9.github.io/categories/%E5%9B%BE/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
   </url>
   
   <url>
-    <loc>https://fenixc9.github.io/categories/%E5%8C%BA%E5%9D%97%E9%93%BE/</loc>
+    <loc>https://fenixc9.github.io/categories/python/</loc>
     <lastmod>2026-10-28</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
