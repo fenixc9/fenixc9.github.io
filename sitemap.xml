@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://fenixc9.github.io/opensandbox-agent-runtime-research/</loc>
+    
+    <lastmod>2026-10-28</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/deepseek-v41-flash-architecture/</loc>
     
     <lastmod>2026-10-28</lastmod>
