@@ -29,7 +29,7 @@
 <meta property="og:description" content="MIT CSAIL 让 GPT-6 Astra 直接读写 Qwen3.5-0.8B 的权重，MATH-500 从 7.9% 升到 48.1%。本文拆解实验步骤、对照结果和社区质疑，并给出这条路线当前的适用范围。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-11-03T15:40:00.000Z">
-<meta property="article:modified_time" content="2026-11-03T15:33:51.976Z">
+<meta property="article:modified_time" content="2026-11-03T15:36:42.892Z">
 <meta property="article:author" content="fenix">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="可解释性">
@@ -371,11 +371,11 @@
               <div class="markdown-body">
                 
                 <p>2026 年 11 月 2 日，MIT CSAIL 的四位研究者发布博客《Sparks of Weight-Space Programming》，报告 GPT-6 Astra 可以直接读写另一个神经网络的权重。它没有使用梯度下降，也没有写训练循环，只改动了 Qwen3.5-0.8B 约 0.016% 的参数，把 MATH-500 从 7.9% 提升到 48.1%。</p>
-<p>这个结果本身经得起检查：日志完整开源，有人从日志重建模型后独立复跑，作者也报告了对自己不利的对照组。但”大模型直接改权重”这句话在传播中变成了”模型可以自己训练自己”。本文拆开实验步骤、对照数据和公开质疑，说明它证明了什么，以及目前还不能证明什么。</p>
+<p>这个结果本身经得起检查：日志完整开源，有人从日志重建模型后独立复跑，作者也报告了对自己不利的对照组。但“大模型直接改权重”这句话在传播中变成了“模型可以自己训练自己”。本文拆开实验步骤、对照数据和公开质疑，说明它证明了什么，以及目前还不能证明什么。</p>
 <p>原文标注为未发表、无 DOI，属于博客级成果，未经同行评审。</p>
 <span id="more"></span>
 
-<h2 id="实验怎么做"><a href="#实验怎么做" class="headerlink" title="实验怎么做"></a>实验怎么做</h2><p>作者是 Rikiya Takehi、Jayden Teoh、Alex Zhang 和 Omar Khattab。他们把目标网络的权重以文本形式交给 Astra，同时提供 Python 环境和有限次数的前向计算。规则禁止 Astra 编写训练循环，禁止反向传播，也禁止用”提前结束思考”这类捷径来改善指标。</p>
+<h2 id="实验怎么做"><a href="#实验怎么做" class="headerlink" title="实验怎么做"></a>实验怎么做</h2><p>作者是 Rikiya Takehi、Jayden Teoh、Alex Zhang 和 Omar Khattab。他们把目标网络的权重以文本形式交给 Astra，同时提供 Python 环境和有限次数的前向计算。规则禁止 Astra 编写训练循环，禁止反向传播，也禁止用“提前结束思考”这类捷径来改善指标。</p>
 <p>Qwen 实验使用 50 次前向计算作为预算，评测时开启 thinking，生成长度上限为 32768 token。</p>
 <table>
 <thead>
@@ -424,10 +424,10 @@
 <li><strong>从零写权重</strong>：为三个 MinAtar 游戏手写约两万参数的策略网络，得分超过用 PPO 训练一亿步的网络；为一个 9×9 围棋网络手写 148 万参数。</li>
 <li><strong>修控制任务</strong>：一个无法通过障碍物的物理控制网络，Astra 一次性改动 3.5% 权重，成功率从 0% 变成 100%。</li>
 </ul>
-<h2 id="6-倍提升的来源"><a href="#6-倍提升的来源" class="headerlink" title="6 倍提升的来源"></a>6 倍提升的来源</h2><h3 id="增益集中在一种失败模式上"><a href="#增益集中在一种失败模式上" class="headerlink" title="增益集中在一种失败模式上"></a>增益集中在一种失败模式上</h3><p>579 次”救回”里有 576 次原本是因为写不完而拿到零分。对原本能写完的题，编辑前后的正确率没有变化。Qwen 的模型卡本身就提醒过，0.8B 这类极小模型开启 thinking 容易陷入重复，官方默认关闭该模式。MIT 在这个已知缺陷上做了一次定向修复。</p>
+<h2 id="6-倍提升的来源"><a href="#6-倍提升的来源" class="headerlink" title="6 倍提升的来源"></a>6 倍提升的来源</h2><h3 id="增益集中在一种失败模式上"><a href="#增益集中在一种失败模式上" class="headerlink" title="增益集中在一种失败模式上"></a>增益集中在一种失败模式上</h3><p>579 次“救回”里有 576 次原本是因为写不完而拿到零分。对原本能写完的题，编辑前后的正确率没有变化。Qwen 的模型卡本身就提醒过，0.8B 这类极小模型开启 thinking 容易陷入重复，官方默认关闭该模式。MIT 在这个已知缺陷上做了一次定向修复。</p>
 <h3 id="换一个模型就没有提升"><a href="#换一个模型就没有提升" class="headerlink" title="换一个模型就没有提升"></a>换一个模型就没有提升</h3><p>对照模型 Gemma 3 270M 很少触发循环，触及长度上限的比例只有 8.5%。Astra 同样反复修改它的权重，MATH-500 始终在 6.8% 到 7.7% 之间波动，作者自己判定这些变化不成立。博客原文的表述是，编辑权重可以移除遮蔽某项能力的障碍，但不能给模型增加它本来没有的能力。</p>
 <h3 id="基线分数被配置放大"><a href="#基线分数被配置放大" class="headerlink" title="基线分数被配置放大"></a>基线分数被配置放大</h3><p>给 0.8B 模型开启 thinking 并把上下文扩到 32k，结果 93% 的题被循环卡住。这个 7.9% 是模型被自身循环拖死时的分数。日常配置下不会这样使用 0.8B 模型，所以 6 倍里的基数是被人为放大的。</p>
-<h3 id="提示词给出了定向引导"><a href="#提示词给出了定向引导" class="headerlink" title="提示词给出了定向引导"></a>提示词给出了定向引导</h3><p>Meta 研究员 Lucas Beyer 指出博客附带的系统提示词已经明确要求 Astra 排查”是否因为死循环而被截断”，并禁止用提前终止的手段取巧。研究者 Yunfan Zhang 翻完日志后的评价是，实际过程更接近一组 thinking 开关对照加一次特征消融，与”准确率提升 7 倍”的叙事有距离。</p>
+<h3 id="提示词给出了定向引导"><a href="#提示词给出了定向引导" class="headerlink" title="提示词给出了定向引导"></a>提示词给出了定向引导</h3><p>Meta 研究员 Lucas Beyer 指出博客附带的系统提示词已经明确要求 Astra 排查“是否因为死循环而被截断”，并禁止用提前终止的手段取巧。研究者 Yunfan Zhang 翻完日志后的评价是，实际过程更接近一组 thinking 开关对照加一次特征消融，与“准确率提升 7 倍”的叙事有距离。</p>
 <h3 id="操作本身是成熟方法"><a href="#操作本身是成熟方法" class="headerlink" title="操作本身是成熟方法"></a>操作本身是成熟方法</h3><p>从权重里减掉一个方向来消掉某种行为，就是 abliteration 的常规做法。Arditi 等人的工作表明，模型对有害请求的拒绝行为由残差流中的单一方向介导，沿该方向做正交投影就能移除这种拒绝。这次的新意在于让通用前沿模型自己找到这个方向并写回权重。那个线性代数操作本身是成熟的。</p>
 <h2 id="可信度分层"><a href="#可信度分层" class="headerlink" title="可信度分层"></a>可信度分层</h2><p>把结论拆成三条，可信度差别很大。以下是笔者的判断，不是原作者的观点。</p>
 <table>
@@ -443,22 +443,22 @@
 </tr>
 <tr>
 <td>Astra 自己读懂了权重</td>
-<td>无法确定。小网络上”只给文本权重”的任务，可能依靠行范数、符号模式、列间共变这类廉价统计特征完成。0.8B 实验作者自己写明是 “weights with tools”，即给了 Python 环境，等价于自动跑一遍机制可解释性研究</td>
+<td>无法确定。小网络上“只给文本权重”的任务，可能依靠行范数、符号模式、列间共变这类廉价统计特征完成。0.8B 实验作者自己写明是 <code>weights with tools</code>，即给了 Python 环境，等价于自动跑一遍机制可解释性研究</td>
 </tr>
 <tr>
 <td>取代梯度下降、开启递归自我改进</td>
-<td>过度解读。作者只写了 “very early results”</td>
+<td>过度解读。作者只写了 <code>very early results</code></td>
 </tr>
 </tbody></table>
-<p>这里有一个容易被忽略的区别：<strong>结果可复现，不等于能力可复现</strong>。公开的材料包含那次具体的编辑、那个方向和那组数字。它不包含一个能重跑出同样诊断的过程。要验证能力，需要另一家机构拿一个水平相当的前沿模型、在不给提示的情况下复现同类诊断。目前没人做过，短期内也做不了，因为 Astra 不对外开放。所以”模型具备权重读写能力”仍然是单一来源的结论。</p>
+<p>这里有一个容易被忽略的区别：<strong>结果可复现，不等于能力可复现</strong>。公开的材料包含那次具体的编辑、那个方向和那组数字。它不包含一个能重跑出同样诊断的过程。要验证能力，需要另一家机构拿一个水平相当的前沿模型、在不给提示的情况下复现同类诊断。目前没人做过，短期内也做不了，因为 Astra 不对外开放。所以“模型具备权重读写能力”仍然是单一来源的结论。</p>
 <h2 id="值得关注的部分"><a href="#值得关注的部分" class="headerlink" title="值得关注的部分"></a>值得关注的部分</h2><p>作者列出的后续方向都还没有验证，但对做模型工程的人有参考价值：</p>
 <ul>
 <li><strong>不跑评测就审计</strong>：直接从权重判断后门或隐藏能力，不必等测试集覆盖到。</li>
 <li><strong>零数据的能力编辑与遗忘</strong>：只改 0.016% 的参数，天然避开全参微调常见的灾难性遗忘。</li>
 <li><strong>跨架构模块移植</strong>：把一个模型里的推理模块移植到结构不同的模型中，而不只做同构的权重平均。</li>
-<li><strong>更原生的自我改进</strong>：相比”模型写代码去启动训练任务”，直接检查和修改权重是更短的路径。</li>
+<li><strong>更原生的自我改进</strong>：相比“模型写代码去启动训练任务”，直接检查和修改权重是更短的路径。</li>
 </ul>
-<p>落到当下可做的事只有一条：当小模型出现一个明确、可复现的行为缺陷时（循环、截断、拒绝回答、输出格式崩坏），可以让强模型读权重并做局部编辑，成本远低于重训或微调，失败就回滚。反过来，别据此认为”以后不用微调了”，这个结论目前没有证据。</p>
+<p>落到当下可做的事只有一条：当小模型出现一个明确、可复现的行为缺陷时（循环、截断、拒绝回答、输出格式崩坏），可以让强模型读权重并做局部编辑，成本远低于重训或微调，失败就回滚。反过来，别据此认为“以后不用微调了”，这个结论目前没有证据。</p>
 <h2 id="来源"><a href="#来源" class="headerlink" title="来源"></a>来源</h2><ul>
 <li>原始博客（2026-11-02）：Rikiya Takehi, Jayden Teoh, Alex Zhang, Omar Khattab，<em>Sparks of Weight-Space Programming: LLMs can natively read &amp; write neural network weights</em>，<a target="_blank" rel="noopener" href="https://rikiyat.github.io/blog/weight-space-programming/">https://rikiyat.github.io/blog/weight-space-programming/</a></li>
 <li>完整实验日志：<a target="_blank" rel="noopener" href="https://github.com/RikiyaT/lm_understand-logs">https://github.com/RikiyaT/lm_understand-logs</a></li>
