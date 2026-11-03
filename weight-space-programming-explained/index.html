@@ -1,0 +1,904 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/weight-space-programming-explained/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="MIT CSAIL 让 GPT-6 Astra 直接读写 Qwen3.5-0.8B 的权重，MATH-500 从 7.9% 升到 48.1%。本文拆解实验步骤、对照结果和社区质疑，并给出这条路线当前的适用范围。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="大模型能直接改写权重吗：MIT 权重空间编程实验与边界">
+<meta property="og:url" content="https://fenixc9.github.io/weight-space-programming-explained/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="MIT CSAIL 让 GPT-6 Astra 直接读写 Qwen3.5-0.8B 的权重，MATH-500 从 7.9% 升到 48.1%。本文拆解实验步骤、对照结果和社区质疑，并给出这条路线当前的适用范围。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-11-03T15:40:00.000Z">
+<meta property="article:modified_time" content="2026-11-03T15:33:51.976Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="可解释性">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="训练范式">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>大模型能直接改写权重吗：MIT 权重空间编程实验与边界 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>大模型能直接改写权重吗：MIT 权重空间编程实验与边界</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-03 23:40" pubdate>
+          2026年11月3日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          29 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">大模型能直接改写权重吗：MIT 权重空间编程实验与边界</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>2026 年 11 月 2 日，MIT CSAIL 的四位研究者发布博客《Sparks of Weight-Space Programming》，报告 GPT-6 Astra 可以直接读写另一个神经网络的权重。它没有使用梯度下降，也没有写训练循环，只改动了 Qwen3.5-0.8B 约 0.016% 的参数，把 MATH-500 从 7.9% 提升到 48.1%。</p>
+<p>这个结果本身经得起检查：日志完整开源，有人从日志重建模型后独立复跑，作者也报告了对自己不利的对照组。但”大模型直接改权重”这句话在传播中变成了”模型可以自己训练自己”。本文拆开实验步骤、对照数据和公开质疑，说明它证明了什么，以及目前还不能证明什么。</p>
+<p>原文标注为未发表、无 DOI，属于博客级成果，未经同行评审。</p>
+<span id="more"></span>
+
+<h2 id="实验怎么做"><a href="#实验怎么做" class="headerlink" title="实验怎么做"></a>实验怎么做</h2><p>作者是 Rikiya Takehi、Jayden Teoh、Alex Zhang 和 Omar Khattab。他们把目标网络的权重以文本形式交给 Astra，同时提供 Python 环境和有限次数的前向计算。规则禁止 Astra 编写训练循环，禁止反向传播，也禁止用”提前结束思考”这类捷径来改善指标。</p>
+<p>Qwen 实验使用 50 次前向计算作为预算，评测时开启 thinking，生成长度上限为 32768 token。</p>
+<table>
+<thead>
+<tr>
+<th>Qwen3.5-0.8B</th>
+<th>MATH-500</th>
+<th>GSM8K</th>
+<th>IFEval</th>
+<th>触发长度上限的比例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>原始模型</td>
+<td>7.9%</td>
+<td>13.8%</td>
+<td>21.0%</td>
+<td>93.0%</td>
+</tr>
+<tr>
+<td>编辑后，10 次前向</td>
+<td>12.3%</td>
+<td>25.7%</td>
+<td>49.0%</td>
+<td>87.2%</td>
+</tr>
+<tr>
+<td>编辑后，25 次前向</td>
+<td>14.1%</td>
+<td>25.1%</td>
+<td>39.9%</td>
+<td>86.4%</td>
+</tr>
+<tr>
+<td>编辑后，50 次前向</td>
+<td>48.1%</td>
+<td>67.1%</td>
+<td>62.3%</td>
+<td>33.1%</td>
+</tr>
+</tbody></table>
+<h2 id="Astra-具体改了什么"><a href="#Astra-具体改了什么" class="headerlink" title="Astra 具体改了什么"></a>Astra 具体改了什么</h2><p>Astra 先在练习集上跑前向计算，发现模型反复生成相同内容：96 次回答中有 85 次一直写到 32768 token 的上限。它把这些循环样本和正常样本的激活值做对比，定位到第 15 层和第 19 层 MLP 写入的一个方向，然后从这两层各 64 个输出列里减掉这个方向，共修改 131,072 个权重。</p>
+<p>作者给出的统计是增益 49.8 个百分点、标准误 1.5、579 次原本失败的回答变成正确、5 次原本正确的回答变成错误。他们还做了三组对照：改变编辑强度的剂量响应、逐层隔离验证、用范数相同的随机方向做替代编辑。编辑后正确回答的中位长度是 9172 token，用来说明模型没有靠提前停止来避免循环。</p>
+<h2 id="同一篇博客里的其他实验"><a href="#同一篇博客里的其他实验" class="headerlink" title="同一篇博客里的其他实验"></a>同一篇博客里的其他实验</h2><p>规模更小，但方向更激进：</p>
+<ul>
+<li><strong>只读权重判断行为</strong>：仅凭权重猜出网络在训练哪款游戏，四个网络结构完全相同、输入输出一致，Astra 全部猜对；还能判断扩散模型画的是圆形还是三角形，判断小语言模型的训练语料语言。</li>
+<li><strong>从零写权重</strong>：为三个 MinAtar 游戏手写约两万参数的策略网络，得分超过用 PPO 训练一亿步的网络；为一个 9×9 围棋网络手写 148 万参数。</li>
+<li><strong>修控制任务</strong>：一个无法通过障碍物的物理控制网络，Astra 一次性改动 3.5% 权重，成功率从 0% 变成 100%。</li>
+</ul>
+<h2 id="6-倍提升的来源"><a href="#6-倍提升的来源" class="headerlink" title="6 倍提升的来源"></a>6 倍提升的来源</h2><h3 id="增益集中在一种失败模式上"><a href="#增益集中在一种失败模式上" class="headerlink" title="增益集中在一种失败模式上"></a>增益集中在一种失败模式上</h3><p>579 次”救回”里有 576 次原本是因为写不完而拿到零分。对原本能写完的题，编辑前后的正确率没有变化。Qwen 的模型卡本身就提醒过，0.8B 这类极小模型开启 thinking 容易陷入重复，官方默认关闭该模式。MIT 在这个已知缺陷上做了一次定向修复。</p>
+<h3 id="换一个模型就没有提升"><a href="#换一个模型就没有提升" class="headerlink" title="换一个模型就没有提升"></a>换一个模型就没有提升</h3><p>对照模型 Gemma 3 270M 很少触发循环，触及长度上限的比例只有 8.5%。Astra 同样反复修改它的权重，MATH-500 始终在 6.8% 到 7.7% 之间波动，作者自己判定这些变化不成立。博客原文的表述是，编辑权重可以移除遮蔽某项能力的障碍，但不能给模型增加它本来没有的能力。</p>
+<h3 id="基线分数被配置放大"><a href="#基线分数被配置放大" class="headerlink" title="基线分数被配置放大"></a>基线分数被配置放大</h3><p>给 0.8B 模型开启 thinking 并把上下文扩到 32k，结果 93% 的题被循环卡住。这个 7.9% 是模型被自身循环拖死时的分数。日常配置下不会这样使用 0.8B 模型，所以 6 倍里的基数是被人为放大的。</p>
+<h3 id="提示词给出了定向引导"><a href="#提示词给出了定向引导" class="headerlink" title="提示词给出了定向引导"></a>提示词给出了定向引导</h3><p>Meta 研究员 Lucas Beyer 指出博客附带的系统提示词已经明确要求 Astra 排查”是否因为死循环而被截断”，并禁止用提前终止的手段取巧。研究者 Yunfan Zhang 翻完日志后的评价是，实际过程更接近一组 thinking 开关对照加一次特征消融，与”准确率提升 7 倍”的叙事有距离。</p>
+<h3 id="操作本身是成熟方法"><a href="#操作本身是成熟方法" class="headerlink" title="操作本身是成熟方法"></a>操作本身是成熟方法</h3><p>从权重里减掉一个方向来消掉某种行为，就是 abliteration 的常规做法。Arditi 等人的工作表明，模型对有害请求的拒绝行为由残差流中的单一方向介导，沿该方向做正交投影就能移除这种拒绝。这次的新意在于让通用前沿模型自己找到这个方向并写回权重。那个线性代数操作本身是成熟的。</p>
+<h2 id="可信度分层"><a href="#可信度分层" class="headerlink" title="可信度分层"></a>可信度分层</h2><p>把结论拆成三条，可信度差别很大。以下是笔者的判断，不是原作者的观点。</p>
+<table>
+<thead>
+<tr>
+<th>命题</th>
+<th>判断与依据</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>编辑确实发生，指标提升真实</td>
+<td>大概率成立。完整日志开源；Hugging Face 上有人从日志重建模型后复跑，得到 MATH-500 51.0%，与原文 48.1% 的差距在采样噪声量级；作者主动报告了 Gemma 上的阴性结果和随机方向对照</td>
+</tr>
+<tr>
+<td>Astra 自己读懂了权重</td>
+<td>无法确定。小网络上”只给文本权重”的任务，可能依靠行范数、符号模式、列间共变这类廉价统计特征完成。0.8B 实验作者自己写明是 “weights with tools”，即给了 Python 环境，等价于自动跑一遍机制可解释性研究</td>
+</tr>
+<tr>
+<td>取代梯度下降、开启递归自我改进</td>
+<td>过度解读。作者只写了 “very early results”</td>
+</tr>
+</tbody></table>
+<p>这里有一个容易被忽略的区别：<strong>结果可复现，不等于能力可复现</strong>。公开的材料包含那次具体的编辑、那个方向和那组数字。它不包含一个能重跑出同样诊断的过程。要验证能力，需要另一家机构拿一个水平相当的前沿模型、在不给提示的情况下复现同类诊断。目前没人做过，短期内也做不了，因为 Astra 不对外开放。所以”模型具备权重读写能力”仍然是单一来源的结论。</p>
+<h2 id="值得关注的部分"><a href="#值得关注的部分" class="headerlink" title="值得关注的部分"></a>值得关注的部分</h2><p>作者列出的后续方向都还没有验证，但对做模型工程的人有参考价值：</p>
+<ul>
+<li><strong>不跑评测就审计</strong>：直接从权重判断后门或隐藏能力，不必等测试集覆盖到。</li>
+<li><strong>零数据的能力编辑与遗忘</strong>：只改 0.016% 的参数，天然避开全参微调常见的灾难性遗忘。</li>
+<li><strong>跨架构模块移植</strong>：把一个模型里的推理模块移植到结构不同的模型中，而不只做同构的权重平均。</li>
+<li><strong>更原生的自我改进</strong>：相比”模型写代码去启动训练任务”，直接检查和修改权重是更短的路径。</li>
+</ul>
+<p>落到当下可做的事只有一条：当小模型出现一个明确、可复现的行为缺陷时（循环、截断、拒绝回答、输出格式崩坏），可以让强模型读权重并做局部编辑，成本远低于重训或微调，失败就回滚。反过来，别据此认为”以后不用微调了”，这个结论目前没有证据。</p>
+<h2 id="来源"><a href="#来源" class="headerlink" title="来源"></a>来源</h2><ul>
+<li>原始博客（2026-11-02）：Rikiya Takehi, Jayden Teoh, Alex Zhang, Omar Khattab，<em>Sparks of Weight-Space Programming: LLMs can natively read &amp; write neural network weights</em>，<a target="_blank" rel="noopener" href="https://rikiyat.github.io/blog/weight-space-programming/">https://rikiyat.github.io/blog/weight-space-programming/</a></li>
+<li>完整实验日志：<a target="_blank" rel="noopener" href="https://github.com/RikiyaT/lm_understand-logs">https://github.com/RikiyaT/lm_understand-logs</a></li>
+<li>编辑后的模型与 Hugging Face 侧复跑：<a target="_blank" rel="noopener" href="https://huggingface.co/RikiyaT/Qwen3.5-0.8B-weight-space-programming">https://huggingface.co/RikiyaT/Qwen3.5-0.8B-weight-space-programming</a></li>
+<li>批评与反驳汇总：<a target="_blank" rel="noopener" href="https://36kr.com/p/4053956984411269">https://36kr.com/p/4053956984411269</a></li>
+<li>英文报道：<a target="_blank" rel="noopener" href="https://venturebeat.com/technology/like-gene-editing-for-neural-networks-mit-researchers-used-gpt-6-astra-to-edit-qwens-open-weights-directly-boosting-math-performance">https://venturebeat.com/technology/like-gene-editing-for-neural-networks-mit-researchers-used-gpt-6-astra-to-edit-qwens-open-weights-directly-boosting-math-performance</a></li>
+<li>拒绝方向的前置工作：Arditi 等，<em>Refusal in Language Models Is Mediated by a Single Direction</em>，<a target="_blank" rel="noopener" href="https://arxiv.org/abs/2406.11717">https://arxiv.org/abs/2406.11717</a></li>
+</ul>
+<p>Beyer 关于系统提示词的指控目前只见于媒体转述，笔者未核对日志仓库里相应实验的提示词原文。引用这条批评前应先查原始日志。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI/" class="print-no-link">#AI</a>
+      
+        <a href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/" class="print-no-link">#大模型</a>
+      
+        <a href="/tags/%E5%8F%AF%E8%A7%A3%E9%87%8A%E6%80%A7/" class="print-no-link">#可解释性</a>
+      
+        <a href="/tags/%E8%AE%AD%E7%BB%83%E8%8C%83%E5%BC%8F/" class="print-no-link">#训练范式</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>大模型能直接改写权重吗：MIT 权重空间编程实验与边界</div>
+      <div>https://fenixc9.github.io/weight-space-programming-explained/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月3日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/binance-63b-hack-eip7702-forensics/" title="币安 63 亿美元被盗事件复盘：EIP-7702 签名劫持与冻结赛跑">
+                        <span class="hidden-mobile">币安 63 亿美元被盗事件复盘：EIP-7702 签名劫持与冻结赛跑</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
