@@ -310,8 +310,24 @@
             <div class="row">
               <div class="col-12 col-md-10 m-auto">
                 
-<div class="section-heading"><h2>最新文章</h2><span>92 篇记录</span></div>
+<div class="section-heading"><h2>最新文章</h2><span>93 篇记录</span></div>
 <div class="journal-list">
+
+  <article class="journal-entry">
+    <div class="journal-meta">
+      <time datetime="2026-11-05">2026.11.05</time>
+      
+        <a href="/categories/Linux/">Linux</a>
+      
+      
+    </div>
+    <div class="journal-content">
+      <h2><a href="/linux-tcp-handshake-uaf-cve-2026-98432/">TCP 握手里被提前释放的 IP 选项</a></h2>
+      
+      <p class="journal-excerpt">2026 年 10 月 15 日，Linux 内核 CVE 团队公开 CVE-2026-98432。这是 IPv4 TCP 握手阶段的释放后使用竞态，CVSS 9.8。攻击者不需要账号，只要目标有监听的 TCP 端口，就可能用携带 IP 选项的 SYN 反复触发。本文拆开这条路径，说明它为什么危险、哪些系统已经修复，以</p>
+    </div>
+    <a class="journal-arrow" href="/linux-tcp-handshake-uaf-cve-2026-98432/" aria-label="阅读：TCP 握手里被提前释放的 IP 选项"><span aria-hidden="true">↗︎</span></a>
+  </article>
 
   <article class="journal-entry">
     <div class="journal-meta">
@@ -455,22 +471,6 @@
       <p class="journal-excerpt">基于 MinIO 社区归档源码与 RustFS 1.0.4，对比存储池和纠删组架构、容量利用率、读写 quorum、小对象开销、S3 兼容边界与迁移限制。</p>
     </div>
     <a class="journal-arrow" href="/minio-rustfs-comparison/" aria-label="阅读：MinIO 与 RustFS 对比：架构、容量利用率、容错与迁移"><span aria-hidden="true">↗︎</span></a>
-  </article>
-
-  <article class="journal-entry">
-    <div class="journal-meta">
-      <time datetime="2026-10-28">2026.10.28</time>
-      
-        <a href="/categories/%E4%BA%91%E5%8E%9F%E7%94%9F/">云原生</a>
-      
-      
-    </div>
-    <div class="journal-content">
-      <h2><a href="/volcano-core-features/">Volcano 核心功能：从 Gang 调度到队列资源管理</a></h2>
-      
-      <p class="journal-excerpt">分布式训练、MPI 和批处理作业往往由多个相互依赖的 Pod 组成。它们需要协调启动，也需要与其他团队共享有限的 GPU 和 CPU。Volcano 为 Kubernetes 提供面向批处理和高性能计算的调度能力，核心包括作业管理、Gang 调度、队列资源管理和可扩展的调度策略。</p>
-    </div>
-    <a class="journal-arrow" href="/volcano-core-features/" aria-label="阅读：Volcano 核心功能：从 Gang 调度到队列资源管理"><span aria-hidden="true">↗︎</span></a>
   </article>
 
 </div>
