@@ -1,0 +1,1051 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/ssh-beyond-port-forwarding/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="SSH 的用途不止 -L、-R、-D 三种端口转发。本文按通道、身份和执行入口三类需求，整理连接复用、tun 与 sshuttle、文件传输、跳板穿透、SSH CA、签名、受限命令和批量运维的可用做法与边界。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口">
+<meta property="og:url" content="https://fenixc9.github.io/ssh-beyond-port-forwarding/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="SSH 的用途不止 -L、-R、-D 三种端口转发。本文按通道、身份和执行入口三类需求，整理连接复用、tun 与 sshuttle、文件传输、跳板穿透、SSH CA、签名、受限命令和批量运维的可用做法与边界。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-11-04T18:05:00.000Z">
+<meta property="article:modified_time" content="2026-11-04T18:03:13.957Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="SSH">
+<meta property="article:tag" content="网络">
+<meta property="article:tag" content="运维">
+<meta property="article:tag" content="隧道">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-05 02:05" pubdate>
+          2026年11月5日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.3k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          61 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p><code>ssh -L</code>、<code>ssh -R</code> 和 <code>ssh -D</code> 解决的是同一个问题：把一个端口接到另一端。SSH 还能复用已经建立的连接，承载三层网络，充当身份与签名系统，把登录入口收缩成只允许固定动作的 API。</p>
+<p>这些能力适合不同场景。先判断需求属于哪一类，再选命令，比记住一堆参数更有用。</p>
+<p>本文以 OpenSSH 8.9p1 的命令行为基准。除特别说明外，命令没有逐条实测。不同发行版和旧版本的行为可能不同。</p>
+<span id="more"></span>
+
+<h2 id="1-三类需求与对应手段"><a href="#1-三类需求与对应手段" class="headerlink" title="1. 三类需求与对应手段"></a>1. 三类需求与对应手段</h2><table>
+<thead>
+<tr>
+<th>需求</th>
+<th>主要手段</th>
+<th>主要代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>减少重复握手</td>
+<td><code>ControlMaster</code>、<code>ControlPersist</code></td>
+<td>多条客户端复用一条 TCP，master 异常时要重连</td>
+</tr>
+<tr>
+<td>运行时增删转发</td>
+<td><code>~C</code>、<code>ssh -O forward/cancel</code></td>
+<td>需要已有 master 连接</td>
+</tr>
+<tr>
+<td>全量网络接入</td>
+<td><code>-w</code> tun、<code>sshuttle</code></td>
+<td>tun 需要两端 root，sshuttle 只覆盖 TCP 与 DNS</td>
+</tr>
+<tr>
+<td>远程文件系统</td>
+<td><code>sshfs</code></td>
+<td>弱网要配重连与 keepalive</td>
+</tr>
+<tr>
+<td>跳板与代理嵌套</td>
+<td><code>-J</code>、<code>-W</code>、<code>ProxyCommand</code></td>
+<td>受中间跳的转发策略限制</td>
+</tr>
+<tr>
+<td>NAT 穿透</td>
+<td><code>-R</code> 加 <code>autossh</code> 或 systemd</td>
+<td>暴露面由 <code>GatewayPorts</code> 决定</td>
+</tr>
+<tr>
+<td>身份与签名</td>
+<td>SSH CA、<code>ssh-keygen -Y</code>、FIDO2</td>
+<td>需要额外的信任根和吊销策略</td>
+</tr>
+<tr>
+<td>受限入口</td>
+<td><code>authorized_keys</code> 选项、<code>ForceCommand</code>、chroot SFTP</td>
+<td>配置错误会让限制失效</td>
+</tr>
+</tbody></table>
+<p>后面按“通道、身份、执行入口”的顺序展开。文件传输和批量运维单独列出。</p>
+<h2 id="2-复用连接，减少重复握手"><a href="#2-复用连接，减少重复握手" class="headerlink" title="2. 复用连接，减少重复握手"></a>2. 复用连接，减少重复握手</h2><p>SSH 每次登录都要完成 TCP 握手、密钥交换和认证。对 git、scp、kubectl 这类高频短连接，开销主要在这里。连接复用让后续客户端直接走已有的 master 连接。</p>
+<div class="code-wrapper"><pre><code class="hljs ini">Host *
+  ControlMaster auto
+  ControlPath ~/.ssh/cm-%r@%h:%p
+  ControlPersist 10m</code></pre></div>
+
+<p>第一个连接成为 master。最后一个客户端退出后，master 再保留 10 分钟。<code>ControlPath</code> 的 socket 权限等价于私钥，应放在权限为 <code>700</code> 的目录中，不要放 <code>/tmp</code>。</p>
+<p>master 存在时，可以在不重新登录的情况下管理转发：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh -O check  host
+ssh -O forward -L 8080:localhost:80 host
+ssh -O cancel -L 8080:localhost:80 host
+ssh -O <span class="hljs-built_in">exit</span>   host</code></pre></div>
+
+<p><code>-O forward</code> 配合 <code>-R 0:localhost:80</code> 时，服务端动态分配端口，并把端口号打印到标准输出。这个行为适合脚本建立临时反穿。</p>
+<p>已经处在交互会话里时，在行首输入 <code>~C</code> 会进入 <code>ssh&gt;</code> 提示符。此时可以直接追加 <code>-L</code>、<code>-R</code>、<code>-D</code> 转发，不必断开重连。其他常用转义如下：</p>
+<ul>
+<li><code>~#</code> 列出当前转发；</li>
+<li><code>~&amp;</code> 把会话放到后台；</li>
+<li><code>~^Z</code> 挂起；</li>
+<li><code>~.</code> 断开；</li>
+<li><code>~R</code> 请求 rekey。</li>
+</ul>
+<h2 id="3-用-SSH-承载三层网络"><a href="#3-用-SSH-承载三层网络" class="headerlink" title="3. 用 SSH 承载三层网络"></a>3. 用 SSH 承载三层网络</h2><h3 id="tun-模式"><a href="#tun-模式" class="headerlink" title="tun 模式"></a>tun 模式</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh -w 0:0 -o Tunnel=point-to-point user@host</code></pre></div>
+
+<p>两端都需要 root。服务端要开 <code>PermitTunnel yes</code>。隧道建立后，还要在两端配置 tun 地址和路由。SSH 只负责把三层包送过去，不负责地址规划。这条命令能建立最小可用的三层隧道，但没有成熟 VPN 的密钥轮换、重放防护和运维能力。</p>
+<h3 id="sshuttle"><a href="#sshuttle" class="headerlink" title="sshuttle"></a>sshuttle</h3><div class="code-wrapper"><pre><code class="hljs bash">sshuttle -r user@host 0/0 --dns</code></pre></div>
+
+<p>本地需要 sudo。远端只需要 Python，不要求 root，也不需要在远端创建 tun。sshuttle 接管本机的 TCP 连接和 DNS 请求，再经 SSH 转发。它适合临时把一台机器的流量带到远端网络。</p>
+<p>限制是只处理 TCP 与 DNS。UDP 业务不会被代理，包括 QUIC、部分游戏和语音。</p>
+<h3 id="反向动态-SOCKS"><a href="#反向动态-SOCKS" class="headerlink" title="反向动态 SOCKS"></a>反向动态 SOCKS</h3><p><code>-R</code> 不带目标地址时，远端会变成一个 SOCKS 4&#x2F;5 服务，把连接反向往本地发起：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh -R 1080 -N vps</code></pre></div>
+
+<p>这个命令需要较新的 OpenSSH，8.9 可用。它让 VPS 的 1080 端口成为进入你本地网络的入口。默认只监听回环。一旦服务端开启 <code>GatewayPorts</code> 并绑定公网地址，任何能访问该端口的人都能借你的机器出网。只应在可信环境短期使用，并用 <code>PermitListen</code>、防火墙和认证收口。</p>
+<h3 id="443-端口复用"><a href="#443-端口复用" class="headerlink" title="443 端口复用"></a>443 端口复用</h3><p>只放行 443 的网络里，可以用 <code>sslh</code> 让 SSH 与 HTTPS 共用 443。sslh 按首包特征分流。这个做法用于绕过网络策略，是否合规取决于所在环境。</p>
+<h2 id="4-传输文件与挂载目录"><a href="#4-传输文件与挂载目录" class="headerlink" title="4. 传输文件与挂载目录"></a>4. 传输文件与挂载目录</h2><div class="code-wrapper"><pre><code class="hljs bash"><span class="hljs-comment"># 挂载远端目录；弱网要加重连和 keepalive</span>
+sshfs user@host:/data /mnt -o reconnect,ServerAliveInterval=15
+
+<span class="hljs-comment"># 保留权限搬运目录，不落中间文件</span>
+tar czf - <span class="hljs-built_in">dir</span> | ssh host <span class="hljs-string">&#x27;tar xzf - -C /dest&#x27;</span>
+
+<span class="hljs-comment"># 远端磁盘镜像，本地压缩</span>
+ssh host <span class="hljs-string">&#x27;dd if=/dev/sda bs=4M&#x27;</span> | pv | gzip &gt; disk.img.gz
+
+<span class="hljs-comment"># 增量同步；远端需要 sudo 时指定 rsync 路径</span>
+rsync -avz -e ssh src/ host:/dest/
+rsync -avz --rsync-path=<span class="hljs-string">&quot;sudo rsync&quot;</span> src/ host:/dest/
+
+<span class="hljs-comment"># 两台互不相通的机器借本机中转</span>
+scp -3 host1:/path host2:/path</code></pre></div>
+
+<p><code>dd</code> 对正在挂载并写入的磁盘做镜像，可能得到不一致的数据。生产环境应先做快照，或在只读、停机状态下操作。<code>scp -3</code> 的数据会经过本机，两台远端之间并不会直连。</p>
+<p>数据库备份也常直接借 SSH 的 stdout：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh host <span class="hljs-string">&#x27;mysqldump --single-transaction db&#x27;</span> &gt; dump.sql</code></pre></div>
+
+<p>这类用法不需要在远端安装 agent。注意把 stderr 与 stdout 分开，避免日志污染数据。</p>
+<h2 id="5-跳板、穿透与协议嵌套"><a href="#5-跳板、穿透与协议嵌套" class="headerlink" title="5. 跳板、穿透与协议嵌套"></a>5. 跳板、穿透与协议嵌套</h2><h3 id="跳板链"><a href="#跳板链" class="headerlink" title="跳板链"></a>跳板链</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh -J user@bastion1,user@bastion2 target</code></pre></div>
+
+<p><code>-J</code> 等价于自动生成 <code>ProxyCommand ssh -W %h:%p ...</code>。它不把 agent 暴露给跳板机，通常比 <code>-A</code> 转发 agent 更安全。配置里可以用 <code>ProxyJump none</code> 覆盖默认跳板。</p>
+<h3 id="把-stdio-接到任意-TCP"><a href="#把-stdio-接到任意-TCP" class="headerlink" title="把 stdio 接到任意 TCP"></a>把 stdio 接到任意 TCP</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh -W db.internal:5432 bastion</code></pre></div>
+
+<p><code>-W</code> 把标准输入输出直接接到目标 TCP。它可以当通用连接器，也是 <code>ProxyCommand</code> 的常用写法。<code>-W</code> 隐含 <code>-N -T</code>，不执行远程命令。</p>
+<h3 id="ProxyCommand-组合"><a href="#ProxyCommand-组合" class="headerlink" title="ProxyCommand 组合"></a>ProxyCommand 组合</h3><div class="code-wrapper"><pre><code class="hljs ini"><span class="hljs-comment"># SSH 先走 HTTP 代理</span>
+ProxyCommand nc -X connect -x 127.0.0.1:8080 %h %p
+
+<span class="hljs-comment"># 通过 Tor 访问 .onion 主机</span>
+ProxyCommand nc -X 5 -x 127.0.0.1:9050 %h %p
+
+<span class="hljs-comment"># 通过 Cloudflare Tunnel 暴露的 SSH 入口</span>
+ProxyCommand cloudflared access ssh --hostname %h</code></pre></div>
+
+<p>macOS 自带的 <code>nc</code> 不支持 <code>-X</code>，可以改用 <code>ncat</code>。这套组合的价值在于：只要有一层承载网络能出网，SSH 就能被带出去。<code>wstunnel</code>、<code>chisel</code> 属于同一类工具。</p>
+<h3 id="反向隧道与自动重连"><a href="#反向隧道与自动重连" class="headerlink" title="反向隧道与自动重连"></a>反向隧道与自动重连</h3><div class="code-wrapper"><pre><code class="hljs bash">autossh -M 0 -N \
+  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
+  -o ExitOnForwardFailure=<span class="hljs-built_in">yes</span> \
+  -R 2222:localhost:22 vps</code></pre></div>
+
+<p><code>-M 0</code> 关闭 autossh 自己的 echo 端口，改用 SSH keepalive 判断存活。<code>ExitOnForwardFailure</code> 保证端口绑定失败时直接退出，交给 systemd 重启。没有这个选项时，进程可能保持连接，却没有建立转发。</p>
+<p>生产环境应配合 <code>Restart=always</code>、<code>RestartSec</code> 和日志告警。</p>
+<h3 id="Unix-socket-转发"><a href="#Unix-socket-转发" class="headerlink" title="Unix socket 转发"></a>Unix socket 转发</h3><p><code>-L</code> 和 <code>-R</code> 的目标可以是 Unix socket。这个能力适合容器和本地守护进程：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh -L /tmp/docker.sock:/var/run/docker.sock host
+DOCKER_HOST=unix:///tmp/docker.sock docker ps
+
+<span class="hljs-comment"># Docker CLI 原生支持把 SSH 当传输层</span>
+DOCKER_HOST=ssh://user@host docker ps</code></pre></div>
+
+<p>本地 socket 已存在时，绑定会失败。加 <code>-o StreamLocalBindUnlink=yes</code> 让 SSH 先删除旧 socket。同一方法可以转发 MySQL socket 和 gpg-agent。</p>
+<h3 id="子系统"><a href="#子系统" class="headerlink" title="子系统"></a>子系统</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh -s host netconf</code></pre></div>
+
+<p><code>-s</code> 请求的是 SSH 子系统，不是 shell。NETCONF（RFC 6242）规定用 SSH 子系统承载。SFTP 也走子系统。自定义子系统需要在服务端 <code>Subsystem</code> 中声明。</p>
+<h2 id="6-用-SSH-管理身份"><a href="#6-用-SSH-管理身份" class="headerlink" title="6. 用 SSH 管理身份"></a>6. 用 SSH 管理身份</h2><h3 id="自建-SSH-CA"><a href="#自建-SSH-CA" class="headerlink" title="自建 SSH CA"></a>自建 SSH CA</h3><p>不再把公钥分发到每台机器，而是让服务端信任一个 CA，由 CA 签发短时效证书：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh-keygen -t ed25519 -f ca
+ssh-keygen -s ca -I alice -n alice,deploy -V +8h alice.pub</code></pre></div>
+
+<p>服务端配置 <code>TrustedUserCAKeys /etc/ssh/ca.pub</code>。客户端可以在 <code>known_hosts</code> 写 <code>@cert-authority *.example.com ssh-ed25519 AAAA...</code>，用同一套机制信任主机证书。</p>
+<p><code>-n</code> 是 principals，需要与登录用户名或 <code>AuthorizedPrincipalsFile</code> 匹配。证书自带有效期，适合临时授权。吊销依赖 <code>RevokedKeys</code> 或短 TTL，不要靠删除 <code>authorized_keys</code>。</p>
+<h3 id="用-SSH-key-签名"><a href="#用-SSH-key-签名" class="headerlink" title="用 SSH key 签名"></a>用 SSH key 签名</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh-keygen -Y sign -f ~/.ssh/id_ed25519 -n file doc.txt
+ssh-keygen -Y verify -f allowed_signers -I me -n file -s doc.txt.sig &lt; doc.txt</code></pre></div>
+
+<p>Git 2.34 及以后可以直接用 SSH key 签名提交，省去 GPG 的密钥管理：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">git config gpg.format ssh
+git config user.signingkey ~/.ssh/id_ed25519.pub
+git commit -S</code></pre></div>
+
+<p>FIDO2 硬件密钥用 <code>ssh-keygen -t ed25519-sk</code>。私钥留在硬件内，适合高价值环境。</p>
+<h3 id="agent-转发的风险"><a href="#agent-转发的风险" class="headerlink" title="agent 转发的风险"></a>agent 转发的风险</h3><p><code>-A</code> 把 agent 转发到远端。会话期间，远端 root 可以使用你的私钥。远端被攻破时，攻击者能通过 agent socket 以你的身份登录其他机器。</p>
+<p>优先用 <code>-J</code> 跳板。必须转发时，用 <code>ssh-add -c</code> 要求逐次确认。不需要时用 <code>ssh -a</code> 显式关闭。</p>
+<h2 id="7-把登录入口收缩成受限-API"><a href="#7-把登录入口收缩成受限-API" class="headerlink" title="7. 把登录入口收缩成受限 API"></a>7. 把登录入口收缩成受限 API</h2><p><code>authorized_keys</code> 的前缀选项可以把一个 key 限制成只能做一件事：</p>
+<div class="code-wrapper"><pre><code class="hljs text">from=&quot;10.0.0.0/8&quot;,command=&quot;/usr/local/bin/deploy.sh&quot;,no-pty,no-agent-forwarding,no-port-forwarding,expiry-time=&quot;20261231&quot; ssh-ed25519 AAAA...</code></pre></div>
+
+<ul>
+<li><code>from=</code> 限制来源地址，支持 CIDR 与通配；</li>
+<li><code>command=</code> 强制命令，原命令放在 <code>$SSH_ORIGINAL_COMMAND</code>；</li>
+<li><code>no-pty</code>、<code>no-agent-forwarding</code>、<code>no-port-forwarding</code> 关闭不需要的能力；</li>
+<li><code>expiry-time</code> 给 key 设置过期时间。</li>
+</ul>
+<p>如果需要保留转发，不要写 <code>no-port-forwarding</code>。改用 <code>permitopen</code> 只允许指定的 <code>-L</code> 目标，用 <code>permitlisten</code> 限制 <code>-R</code> 的监听地址。两者是替代关系。同时写 <code>no-port-forwarding</code> 和 <code>permitopen</code> 会让转发全部失效。</p>
+<p>配合一个只认白名单命令的脚本，就得到一个用 SSH 传输的极简 RPC：</p>
+<div class="code-wrapper"><pre><code class="hljs bash"><span class="hljs-meta">#!/bin/sh</span>
+<span class="hljs-keyword">case</span> <span class="hljs-string">&quot;<span class="hljs-variable">$SSH_ORIGINAL_COMMAND</span>&quot;</span> <span class="hljs-keyword">in</span>
+  backup) /usr/local/bin/backup.sh ;;
+  *) <span class="hljs-built_in">echo</span> <span class="hljs-string">&quot;denied&quot;</span> &gt;&amp;2; <span class="hljs-built_in">exit</span> 1 ;;
+<span class="hljs-keyword">esac</span></code></pre></div>
+
+<p>调用方执行 <code>ssh -i deploy_key host backup</code>。这个 key 拿不到 shell，也无法开隧道。</p>
+<h3 id="SFTP-投递箱"><a href="#SFTP-投递箱" class="headerlink" title="SFTP 投递箱"></a>SFTP 投递箱</h3><div class="code-wrapper"><pre><code class="hljs text">Match Group sftponly
+  ChrootDirectory /srv/sftp/%u
+  ForceCommand internal-sftp
+  AllowTcpForwarding no
+  X11Forwarding no</code></pre></div>
+
+<p><code>ChrootDirectory</code> 及其上级必须由 root 所有，组和其他用户不可写。否则 sshd 会拒绝登录。这是“只收文件、不给 shell”的标准做法。</p>
+<h3 id="从外部系统拉公钥与强制双因子"><a href="#从外部系统拉公钥与强制双因子" class="headerlink" title="从外部系统拉公钥与强制双因子"></a>从外部系统拉公钥与强制双因子</h3><div class="code-wrapper"><pre><code class="hljs text">AuthorizedKeysCommand /usr/local/bin/fetch-keys %u
+AuthorizedKeysCommandUser nobody
+
+# 公钥之后再走一次键盘交互，通常是 TOTP
+AuthenticationMethods publickey,keyboard-interactive</code></pre></div>
+
+<p><code>AuthorizedKeysCommand</code> 适合从 GitHub、LDAP 或内部 IAM 同步公钥。它指向的脚本必须由 root 所有，普通用户不可改写。</p>
+<p><code>AuthenticationMethods</code> 要求公钥认证之后再走一次键盘交互。单把私钥泄露不足以登录。这个配置需要服务端已经接好 TOTP 或 PAM。</p>
+<h2 id="8-批量运维与排障"><a href="#8-批量运维与排障" class="headerlink" title="8. 批量运维与排障"></a>8. 批量运维与排障</h2><h3 id="把-config-当主机清单"><a href="#把-config-当主机清单" class="headerlink" title="把 config 当主机清单"></a>把 config 当主机清单</h3><div class="code-wrapper"><pre><code class="hljs ini">Host *.internal
+  User ops
+  ProxyJump bastion
+
+Host app-*
+  RemoteCommand tmux new -A -s main
+  RequestTTY yes</code></pre></div>
+
+<p><code>Match exec</code> 可以做条件匹配。下面的配置只在直连 22 端口失败时走跳板：</p>
+<div class="code-wrapper"><pre><code class="hljs ini">Match host *.internal exec &quot;! nc -z -w1 %h 22&quot;
+  ProxyJump bastion</code></pre></div>
+
+<p><code>exec</code> 在每次连接时本地执行。条件复杂会拖慢所有连接。不要把有副作用的命令放进去。</p>
+<h3 id="查看实际生效配置"><a href="#查看实际生效配置" class="headerlink" title="查看实际生效配置"></a>查看实际生效配置</h3><div class="code-wrapper"><pre><code class="hljs bash">ssh -G host | grep -E <span class="hljs-string">&#x27;proxyjump|user|port|identityfile&#x27;</span>
+ssh -Q key
+ssh -Q cipher
+sshd -T | grep -i forward</code></pre></div>
+
+<p><code>ssh -G</code> 输出合并默认值、系统配置和用户配置后的结果。排查“为什么没走跳板”或“为什么用了错 key”时，它比 <code>-v</code> 更快。</p>
+<p><code>ssh -Q key</code> 和 <code>ssh -Q cipher</code> 列出本机支持的算法。<code>sshd -T</code> 输出服务端实际配置，需要 root。<code>ssh-audit host</code> 可以检查服务端算法和已知弱配置。</p>
+<h3 id="脚本与批量"><a href="#脚本与批量" class="headerlink" title="脚本与批量"></a>脚本与批量</h3><div class="code-wrapper"><pre><code class="hljs bash"><span class="hljs-comment"># -n 防止 ssh 吃掉 while 循环的 stdin</span>
+<span class="hljs-keyword">while</span> <span class="hljs-built_in">read</span> -r h; <span class="hljs-keyword">do</span>
+  ssh -n -o BatchMode=<span class="hljs-built_in">yes</span> -o ConnectTimeout=5 <span class="hljs-string">&quot;<span class="hljs-variable">$h</span>&quot;</span> <span class="hljs-string">&#x27;uptime&#x27;</span> &amp;
+<span class="hljs-keyword">done</span> &lt; hosts.txt
+<span class="hljs-built_in">wait</span>
+
+<span class="hljs-comment"># 远程执行本地脚本；参数会经远端 shell 拼接</span>
+ssh host bash -s -- <span class="hljs-string">&quot;<span class="hljs-variable">$arg1</span>&quot;</span> <span class="hljs-string">&quot;<span class="hljs-variable">$arg2</span>&quot;</span> &lt; local.sh</code></pre></div>
+
+<p>脚本里建议同时设置 <code>BatchMode=yes</code>、<code>ConnectTimeout</code>、<code>ServerAliveInterval</code> 和 <code>StrictHostKeyChecking=accept-new</code>。</p>
+<p>批量主机交给 <code>pdsh</code>、<code>clush</code>、<code>ansible</code> 或 <code>parallel -S ssh</code>。不要手写没有超时和并发控制的循环。</p>
+<p>远程端口连通性可以用 bash 的 <code>/dev/tcp</code> 判断：</p>
+<div class="code-wrapper"><pre><code class="hljs bash">ssh host <span class="hljs-string">&#x27;timeout 3 bash -c &quot;&lt;/dev/tcp/db.internal/5432&quot; &amp;&amp; echo ok&#x27;</span></code></pre></div>
+
+<p>这个命令验证的是“从远端看目标是否可达”。它和从本机执行 <code>nc</code> 的结果可能不同，适合定位网络策略问题。</p>
+<h2 id="9-边界与安全清单"><a href="#9-边界与安全清单" class="headerlink" title="9. 边界与安全清单"></a>9. 边界与安全清单</h2><ul>
+<li><strong>不转发 UDP</strong>：<code>-D</code> 的 SOCKS5 不支持 UDP ASSOCIATE。<code>-L</code> 和 <code>-R</code> 只做 TCP 与 Unix socket。UDP 只能走 <code>-w</code> 的 tun 隧道，或改用 WireGuard 之类的方案。</li>
+<li><strong>吞吐受限</strong>：单条 TCP 加加密开销，大流量和弱网表现一般。交互式远程可以用 <code>mosh</code> 改善 roaming 与延迟。</li>
+<li><strong>反穿端口是暴露面</strong>：<code>-R</code> 加 <code>GatewayPorts</code> 会把内网服务放到公网。服务端用 <code>PermitOpen</code>、<code>PermitListen</code>、<code>AllowTcpForwarding no</code> 做白名单，并监控异常监听。</li>
+<li><strong>不要长期关闭主机密钥校验</strong>：<code>StrictHostKeyChecking=no</code> 和 <code>UserKnownHostsFile=/dev/null</code> 只适合一次性环境。</li>
+<li><strong>旧算法只对老设备开口子</strong>：<code>ssh-rsa</code>、<code>diffie-hellman-group1-sha1</code> 等应在 <code>Host</code> 级别局部启用，不要写进全局配置。</li>
+<li><strong>隧道也是外传通道</strong>：反向隧道既能做 NAT 穿透，也能做后门。生产环境需要证书、白名单、会话审计和流量监控，不能只靠一把共享私钥。</li>
+</ul>
+<h2 id="10-选择顺序"><a href="#10-选择顺序" class="headerlink" title="10. 选择顺序"></a>10. 选择顺序</h2><ol>
+<li>只需要执行一个固定动作：用 <code>command=</code> 或 <code>ForceCommand</code>，不要给 shell。</li>
+<li>需要一个 TCP 端口：用 <code>-L</code> 或 <code>-R</code>。跨多跳时加 <code>-J</code> 或 <code>ProxyCommand</code>。</li>
+<li>需要整个网络：先试 <code>sshuttle</code>。需要 UDP 或稳定长期组网时，改用 WireGuard。</li>
+<li>需要管理大量主机和人员：上 SSH CA 和短期证书，再配 <code>AuthorizedKeysCommand</code> 与双因子。</li>
+<li>需要审计和最小权限：限制来源、命令、转发目标和有效期。把 key 当成一次性凭据，不要当永久凭证。</li>
+</ol>
+<p>SSH 的扩展能力大多来自同一个基础：一条经过认证的加密连接。连接复用、转发、子系统、证书和受限命令都建立在这条连接上。理解这一点，比收集命令片段更有用。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/%E7%BD%91%E7%BB%9C/" class="category-chain-item">网络</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/%E7%BD%91%E7%BB%9C/" class="print-no-link">#网络</a>
+      
+        <a href="/tags/SSH/" class="print-no-link">#SSH</a>
+      
+        <a href="/tags/%E9%9A%A7%E9%81%93/" class="print-no-link">#隧道</a>
+      
+        <a href="/tags/%E8%BF%90%E7%BB%B4/" class="print-no-link">#运维</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口</div>
+      <div>https://fenixc9.github.io/ssh-beyond-port-forwarding/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月5日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/linux-tcp-handshake-uaf-cve-2026-98432/" title="TCP 握手里被提前释放的 IP 选项">
+                        <span class="hidden-mobile">TCP 握手里被提前释放的 IP 选项</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
