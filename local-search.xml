@@ -4,6 +4,35 @@
   
   
   <entry>
+    <title>太抽象了</title>
+    <link href="/alpine-openssh-password-bypass/"/>
+    <url>/alpine-openssh-password-bypass/</url>
+    
+    <content type="html"><![CDATA[<p>2026 年 11 月 5 日，Alpine Linux 发布了一则 OpenSSH 密码认证绕过公告。符合条件的机器上，攻击者只需知道一个用户名，就可能用一段很长的密码登录本来只允许密钥登录的账号。</p><span id="more"></span><h2 id="一个星号引发的认证绕过"><a href="#一个星号引发的认证绕过" class="headerlink" title="一个星号引发的认证绕过"></a>一个星号引发的认证绕过</h2><p>Alpine 默认使用 musl libc。未启用 PAM 的 sshd 会调用 <code>crypt()</code> 计算密码哈希，再和账号的密码字段比较。</p><p>问题出在错误值和账号字段发生了碰撞：musl 的 <code>crypt()</code> 在输入密码超过 256 字节时返回 <code>*</code> 表示错误。而一些没有设置密码的账号，密码字段恰好也是 <code>*</code>。在特定账号配置下，sshd 把这个错误值当成了匹配结果，接受了密码认证。</p><p>根据 <a href="https://alpinelinux.org/posts/2026-11-05-openssh-password-authentication-bypass/">Alpine 官方公告</a>，可触发的密码长度为 257 到 1024 字节。这里计算的是字节，不一定等于字符数。攻击者还需要能够访问 SSH 端口，并知道目标用户名。</p><h2 id="哪些机器受影响"><a href="#哪些机器受影响" class="headerlink" title="哪些机器受影响"></a>哪些机器受影响</h2><p>以下条件同时满足时，机器可能受到影响：</p><ul><li>使用 Alpine 的 <code>openssh-server</code>，或使用 <code>openssh-server-pam</code> 且设置 <code>UsePAM no</code>。</li><li><code>PasswordAuthentication</code> 为 <code>yes</code>。这是 OpenSSH 的默认值。</li><li>存在密码字段为 <code>*</code> 的可登录账号，例如没有设置密码的密钥登录账号。</li><li>至少有另一个本地账号使用 <code>$5$</code> 或 <code>$6$</code> 密码哈希。</li></ul><p>默认的 <code>PermitRootLogin prohibit-password</code> 阻止使用密码直接登录 root。但如果受影响的普通账号能够免密提权，攻击者仍可能取得 root 权限。官方 tiny-cloud 镜像中的 <code>alpine</code> 用户就是需要关注的例子：它配置了免密 <code>doas</code>，当机器满足公告中的密码哈希条件后可能受到攻击。</p><p>没有运行 sshd 的容器不受这个 SSH 漏洞影响。使用 PAM 且 <code>UsePAM yes</code>，或者关闭密码认证的系统，也不满足上述触发条件。</p><h2 id="更新并重启"><a href="#更新并重启" class="headerlink" title="更新并重启"></a>更新并重启</h2><p>Alpine 为 3.16 至 3.24 以及 edge 提供了修复包。稳定分支通过补丁回移修复，因此不能只根据上游版本号判断是否安全。以下版本信息以 2026 年 11 月 6 日查阅的官方公告为准：</p><table><thead><tr><th>Alpine 分支</th><th>已修复的 openssh 包版本</th></tr></thead><tbody><tr><td>edge</td><td>10.6_p2-r0</td></tr><tr><td>3.24</td><td>10.3_p1-r2</td></tr><tr><td>3.23</td><td>10.2_p1-r1</td></tr><tr><td>3.22</td><td>10.0_p1-r11</td></tr><tr><td>3.21</td><td>9.9_p2-r1</td></tr><tr><td>3.20</td><td>9.7_p1-r6</td></tr><tr><td>3.19</td><td>9.6_p1-r3</td></tr><tr><td>3.18</td><td>9.3_p2-r4</td></tr><tr><td>3.17</td><td>9.1_p1-r7</td></tr><tr><td>3.16</td><td>9.0_p1-r6</td></tr></tbody></table><p>官方建议更新软件包，然后重启 sshd：</p><div class="code-wrapper"><pre><code class="hljs sh">apk upgrade -U -arc-service sshd restart</code></pre></div><p>仅升级包不会替换正在运行的 sshd。较旧的 Alpine 分支虽然获得了此次修复包，仍应计划迁移到受支持的版本。</p><p>如果暂时无法升级，可以在 sshd 配置中设置 <code>PasswordAuthentication no</code>，检查配置后重启服务。操作前确认密钥登录可用，并保留当前会话。使用 <code>sshd -t</code> 检查语法，使用 <code>sshd -T</code> 检查生效配置；存在 <code>Match</code> 规则时，还需要针对相应连接条件检查。</p><h2 id="排查历史登录"><a href="#排查历史登录" class="headerlink" title="排查历史登录"></a>排查历史登录</h2><p>对于曾经暴露 SSH 端口的受影响机器，Alpine 建议检查 <code>/var/log/messages</code> 中无密码账号出现的 <code>Accepted password for</code> 记录。同时检查 <code>doas</code> 使用记录、新建用户、文件和 SSH 授权密钥。如果无法排除异常登录，应按机器可能已被入侵处理。</p><p>上游 <a href="https://www.openssh.org/releasenotes.html#10.6p2">OpenSSH 10.6p2 发布说明</a>确认了这个影响使用 musl 且禁用 PAM 的 Linux 系统的认证绕过问题。</p>]]></content>
+    
+    
+    <categories>
+      
+      <category>Linux</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>Linux</tag>
+      
+      <tag>漏洞</tag>
+      
+      <tag>OpenSSH</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>SSH 除了端口转发还能做什么：连接复用、VPN、证书与受限入口</title>
     <link href="/ssh-beyond-port-forwarding/"/>
     <url>/ssh-beyond-port-forwarding/</url>
