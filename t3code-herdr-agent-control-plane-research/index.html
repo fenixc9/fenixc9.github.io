@@ -1,0 +1,1155 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  
+    <link rel="canonical" href="https://fenixc9.github.io/t3code-herdr-agent-control-plane-research/"/>
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#faf9f6">
+  <meta name="author" content="fenix">
+  <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
+  
+    <meta name="description" content="对比 T3 Code、herdr-core 与 herdr-app 的执行架构、协作接口和社区活跃度，核查移动端、中继、Clerk 认证与自建路径的信任边界。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界">
+<meta property="og:url" content="https://fenixc9.github.io/t3code-herdr-agent-control-plane-research/index.html">
+<meta property="og:site_name" content="ByteDrift">
+<meta property="og:description" content="对比 T3 Code、herdr-core 与 herdr-app 的执行架构、协作接口和社区活跃度，核查移动端、中继、Clerk 认证与自建路径的信任边界。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2026-11-08T06:18:51.000Z">
+<meta property="article:modified_time" content="2026-11-08T06:22:13.851Z">
+<meta property="article:author" content="fenix">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="安全">
+<meta property="article:tag" content="开源">
+<meta property="article:tag" content="系统设计">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界 · ByteDrift</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+  
+<link rel="stylesheet" href="/css/custom.css">
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"fenixc9.github.io","root":"/","version":"1.9.9","typing":{"enable":false,"typeSpeed":70,"cursorChar":"_","loop":true,"scope":["home"]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":2,"color":"#397264","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"expand_all":false,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":2},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"openkounter":{"server_url":"https://open-kounter.mintimate.cn","path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 8.1.2"></head>
+
+
+<body>
+  
+
+  <header>
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>ByteDrift</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content (desktop) -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>首页</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>归档</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>分类</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>标签</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>关于</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Mobile grid menu overlay -->
+<div id="mobile-grid-menu" class="d-lg-none">
+  <div class="mobile-grid-menu-inner">
+    <div class="container">
+      <div class="row">
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-home-fill"></i>
+                  <span>首页</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/archives/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-archive-fill"></i>
+                  <span>归档</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/categories/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-category-fill"></i>
+                  <span>分类</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/tags/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-tags-fill"></i>
+                  <span>标签</span>
+                </div>
+              </a>
+            </div>
+          
+        
+          
+          
+          
+          
+            <div class="col-4 mobile-grid-cell">
+              <a href="/about/" target="_self">
+                <div class="mobile-grid-item">
+                  <i class="iconfont icon-user-fill"></i>
+                  <span>关于</span>
+                </div>
+              </a>
+            </div>
+          
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-search-btn">
+            <a href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-search"></i>
+                <span>搜索</span>
+              </div>
+            </a>
+          </div>
+        
+        
+          <div class="col-4 mobile-grid-cell" id="mobile-color-toggle-btn"
+               data-label-light="开灯"
+               data-label-dark="关灯">
+            <a href="javascript:;" aria-label="Color Toggle">
+              <div class="mobile-grid-item">
+                <i class="iconfont icon-dark" id="mobile-color-toggle-icon"></i>
+                <span id="mobile-color-toggle-label">关灯</span>
+              </div>
+            </a>
+          </div>
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="site-heading ">
+  
+    <p class="eyebrow">技术笔记</p>
+    <h1>T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界</h1>
+    
+      <div class="reading-meta">
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2026-11-08 14:18" pubdate>
+          2026年11月8日
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7.4k 字
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          63 分钟
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+</div>
+    
+  
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <p>T3 Code 适合希望统一使用多家编程 Agent，并通过电脑、浏览器和手机接管任务的开发者。新版 Herdr 将终端运行时 herdr-core 与桌面应用 herdr-app 分开，更适合保留原生 CLI、组织 Agent 协作和定制工作台。</p>
+<p>隐私要求会改变选型结果。T3 Code 支持不登录 T3 云账号的本地使用和直接配对。官方 T3 Connect 则引入云端身份服务、授权中介和托管隧道。相关代码公开，但这不能证明运营方在技术上无法访问环境。</p>
+<span id="more"></span>
+
+<blockquote>
+<p>核查日期：2026 年 11 月 8 日。本文依据官方仓库、GitHub API、项目文档及部分认证源码整理。未安装实测，未验证商店安装包与公开源码的一致性，未测试线上服务。性能、连接稳定性和任务成功率不在本次结论范围内。</p>
+</blockquote>
+<h2 id="T3-Code-提供什么"><a href="#T3-Code-提供什么" class="headerlink" title="T3 Code 提供什么"></a>T3 Code 提供什么</h2><p>T3 Code 自称 agent harness control surface。底层的 Agent 执行机制仍由 Claude Code、Codex、Cursor 等工具提供。T3 Code 统一展示项目、线程、消息、工具调用、审批和开发结果。用户继续使用自己的订阅或 Provider 凭据。</p>
+<p>它采用客户端与服务器分离的结构：</p>
+<div class="code-wrapper"><pre><code class="hljs text">桌面客户端 / Web 客户端 / 手机客户端
+                  ↓ 认证 RPC
+             T3 Code Server
+                  ↓ Provider 适配器
+       编程 Agent、终端、Git 与项目文件</code></pre></div>
+
+<p>项目文件、Provider 进程和凭据归执行服务器所有。客户端切换设备，不会把执行环境切换到手机上。手机承担远程操作功能，服务器必须保持运行。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code">项目说明</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/internals/overview.md">架构文档</a></p>
+<h3 id="主要卖点与代价"><a href="#主要卖点与代价" class="headerlink" title="主要卖点与代价"></a>主要卖点与代价</h3><table>
+<thead>
+<tr>
+<th>能力</th>
+<th>实际价值</th>
+<th>需要接受的代价</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>多 Provider 统一交互</td>
+<td>减少切换不同 Agent 界面的成本</td>
+<td>功能完整度取决于适配层</td>
+</tr>
+<tr>
+<td>桌面、Web、iOS、Android</td>
+<td>随时查看结果、答复问题和继续任务</td>
+<td>仍要维护执行机器及其登录状态</td>
+</tr>
+<tr>
+<td>T3 Connect、直接配对、SSH</td>
+<td>提供多种远程接入路径</td>
+<td>每条路径有不同的信任边界</td>
+</tr>
+<tr>
+<td>worktree、变更检查、PR 关联</td>
+<td>将并行任务与代码交付连起来</td>
+<td>worktree 不提供进程沙箱</td>
+</tr>
+<tr>
+<td>MCP 与线程 CLI</td>
+<td>外部 Agent 和脚本可以管理线程</td>
+<td>分工、验收和失败处理仍需设计</td>
+</tr>
+<tr>
+<td>MIT 开源</td>
+<td>可以修改、部署和 fork</td>
+<td>外部云服务不随源码自动变成自托管服务</td>
+</tr>
+</tbody></table>
+<p>T3 的架构文档要求 Provider 差异留在适配器内部。这个设计有利于统一界面。它也带来持续跟进 Provider 协议变化的成本。不同 Provider 的权限模式仍有差异。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/user/permission-modes.md">权限文档</a></p>
+<p>T3 Code 已提供对外控制入口。外部 MCP 客户端可以读取项目和线程，也可以获得启动、发送和停止线程的权限。本机脚本可以使用 <code>t3 thread</code>。这些能力适合接入自动化系统，但不能直接推导出完整的多 Agent 调度能力。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/user/outside-agents.md">外部 Agent 接入</a></p>
+<h2 id="开发活跃度与社区成熟度"><a href="#开发活跃度与社区成熟度" class="headerlink" title="开发活跃度与社区成熟度"></a>开发活跃度与社区成熟度</h2><p>以下数字是 2026 年 11 月 8 日约 14:19（UTC+8）的仓库快照：</p>
+<table>
+<thead>
+<tr>
+<th>仓库</th>
+<th align="right">Stars</th>
+<th align="right">Forks</th>
+<th>仓库创建时间</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>pingdotgg&#x2F;t3code</td>
+<td align="right">51,512</td>
+<td align="right">9,906</td>
+<td>2026-02-08 UTC</td>
+</tr>
+<tr>
+<td>herdrdev&#x2F;herdr，原有 TUI</td>
+<td align="right">49,189</td>
+<td align="right">3,967</td>
+<td>2026-03-27 UTC</td>
+</tr>
+<tr>
+<td>herdrdev&#x2F;herdr-app</td>
+<td align="right">2,356</td>
+<td align="right">380</td>
+<td>2026-10-16 UTC</td>
+</tr>
+<tr>
+<td>herdrdev&#x2F;herdr-core</td>
+<td align="right">491</td>
+<td align="right">120</td>
+<td>2026-10-16 UTC</td>
+</tr>
+</tbody></table>
+<p>来源为各仓库的 GitHub API：<a target="_blank" rel="noopener" href="https://api.github.com/repos/pingdotgg/t3code">T3 Code</a>、<a target="_blank" rel="noopener" href="https://api.github.com/repos/herdrdev/herdr">Herdr TUI</a>、<a target="_blank" rel="noopener" href="https://api.github.com/repos/herdrdev/herdr-app">Herdr App</a>、<a target="_blank" rel="noopener" href="https://api.github.com/repos/herdrdev/herdr-core">Herdr Core</a>。这些接口会继续变化，表中保留本次查询值。</p>
+<p>本次较早一次抽样中，T3 Code 最近 100 次提交覆盖约 46 小时。提交作者字段出现 29 个不同名字。这个口径没有核实独立自然人人数，也不衡量代码质量。11 月 7 日的发布记录包含四个 nightly。最新稳定版为 11 月 4 日发布的 v0.1.7。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/commits/main/">提交记录</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/releases">发布记录</a></p>
+<p>同期 GitHub 搜索快照显示，T3 Code 有约 1,948 个未关闭 Issue 和 3,864 个未关闭 PR。以 2026-10-09 为起点的查询得到 3,397 个新建 Issue、2,759 个关闭 Issue 和 4,691 个已合并 PR。新建与关闭事件不属于同一批问题，不能据此计算解决率。仓库 API 的 <code>open_issues_count</code> 同时包含 PR，也不能全部解释成 Bug。</p>
+<p>这些数据支持“开发和外部参与活跃”的判断。大量待处理反馈也说明维护压力很大。官方 README 仍提示项目处于早期，并限制大型外部功能贡献。Stars 和 Forks 无法证明用户留存、支持响应速度或日常稳定性。</p>
+<h3 id="生态需要分层判断"><a href="#生态需要分层判断" class="headerlink" title="生态需要分层判断"></a>生态需要分层判断</h3><p>T3 Code 的生态优势主要集中在三个方面：</p>
+<ul>
+<li>分发渠道丰富。官方列出了 npm、桌面安装包及多个系统包管理器。</li>
+<li>用户反馈渠道齐全。项目提供 Issues、Ideas Discussions 和 Discord。</li>
+<li>可程序化接入。项目已有 Provider 适配、MCP 和线程 CLI。</li>
+</ul>
+<p>本次未确认有类似 Herdr 的成体系第三方插件市场，也没有取得可信的月活、留存或 Discord 活跃用户数据。README 对贡献的限制，应与发布记录中的外部贡献分别理解。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code">README</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/main/CONTRIBUTING.md">贡献规则</a></p>
+<p>新版 Herdr App 与 Core 是独立的新仓库。不能把原有 TUI 的近五万 Stars 当成新架构已具备相同成熟度的证据。</p>
+<h2 id="新版-Herdr-的执行和界面分层"><a href="#新版-Herdr-的执行和界面分层" class="headerlink" title="新版 Herdr 的执行和界面分层"></a>新版 Herdr 的执行和界面分层</h2><p>Herdr 当前包含原有 TUI，以及基于 herdr-core 的新桌面应用。官方说明，新 App 与原有 TUI 不共享 Agent 会话。本文主要比较新架构。<a target="_blank" rel="noopener" href="https://herdr.dev/">Herdr 官网</a></p>
+<div class="code-wrapper"><pre><code class="hljs text">herdr-app / 自制客户端 / Shell 脚本 / 其他 Agent
+                         ↓ CLI 或 JSON-RPC
+                     herdr-core
+                         ↓
+               持久终端、进程、状态与事件
+                         ↓
+           Agent CLI / Shell / 测试 / 开发服务器</code></pre></div>
+
+<h3 id="herdr-core：独立运行的终端与协作运行时"><a href="#herdr-core：独立运行的终端与协作运行时" class="headerlink" title="herdr-core：独立运行的终端与协作运行时"></a>herdr-core：独立运行的终端与协作运行时</h3><p>Core 没有图形界面。它可以运行任意终端程序。用户通过 <code>hc</code> 启动、读取和接管终端。自制客户端可以使用 JSON-RPC API。<code>hc schema</code> 提供 OpenRPC 和 JSON Schema 描述。</p>
+<p>Core 在 Unix 上使用本地 socket，在 Windows 上使用 named pipe。<code>hc connect</code> 可以通过标准输入输出承载协议，也可以通过 SSH 连接远端机器。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/README.md">Core README</a>、<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/schema/README.md">API 文档</a></p>
+<p>新 Core 的状态机制需要单独说明：它只记录程序通过 OSC 7501 主动上报的状态。它不根据屏幕内容猜测 Agent 品牌和工作状态。</p>
+<p>因此，“能运行某个 CLI”和“能显示其 working、blocked、done 状态”是两种能力。没有状态上报的程序仍能运行，但没有这些状态。模板可以等待输出安静后发送初始消息。官方明确指出，输出安静不能证明程序已经准备好。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/docs/templates.md">Agent 模板</a></p>
+<h3 id="herdr-app：可修改的桌面工作台"><a href="#herdr-app：可修改的桌面工作台" class="headerlink" title="herdr-app：可修改的桌面工作台"></a>herdr-app：可修改的桌面工作台</h3><p>App 组织 space、tab 和 pane。它汇总 Core 中的 Agent。用户可以查看子任务，接管终端，也可以连接 SSH 机器。</p>
+<p>它的定制能力超出主题配置。layout 决定窗口排列。JavaScript mods 绘制面板、菜单和对话框。用户保存个人修改后，App 会重新加载。错误修改会保留上一个可用版本并报告错误。</p>
+<p>这适合增加运行计时、审查队列或项目面板。具体实现成本仍取决于 mod API。Mods 可以运行程序、读文件和访问网络，属于可信代码。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-app/blob/7fe7ac34fef8a3ee76cb5d2f17bc8d6331e50bd8/README.md">App README</a>、<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-app/blob/7fe7ac34fef8a3ee76cb5d2f17bc8d6331e50bd8/docs/mods.md">Mods 文档</a></p>
+<h2 id="T3-Code-与-Herdr-的关键差异"><a href="#T3-Code-与-Herdr-的关键差异" class="headerlink" title="T3 Code 与 Herdr 的关键差异"></a>T3 Code 与 Herdr 的关键差异</h2><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>T3 Code</th>
+<th>herdr-core + herdr-app</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>核心抽象</td>
+<td>项目、线程、结构化消息与工具事件</td>
+<td>终端、进程、父子关系、程序状态</td>
+</tr>
+<tr>
+<td>Agent 交互</td>
+<td>通过适配器统一展示</td>
+<td>保留 Agent 原生 TUI</td>
+</tr>
+<tr>
+<td>扩展兼容性</td>
+<td>取决于适配器或协议支持</td>
+<td>任意 CLI 可运行，状态能力需协议支持</td>
+</tr>
+<tr>
+<td>跨设备体验</td>
+<td>已有桌面、Web 和手机客户端</td>
+<td>当前 App 以桌面为主，Core 可供自制客户端使用</td>
+</tr>
+<tr>
+<td>自动化</td>
+<td>MCP、线程 CLI、RPC</td>
+<td>CLI、JSON-RPC、事件和父子终端</td>
+</tr>
+<tr>
+<td>界面改造</td>
+<td>修改源码及已有扩展接口</td>
+<td>layouts 和 JavaScript mods</td>
+</tr>
+<tr>
+<td>开发结果管理</td>
+<td>已有 checkpoint、diff 和 PR 等结构化工作流</td>
+<td>可通过工具和界面扩展组织，不能假定与 T3 等价</td>
+</tr>
+<tr>
+<td>API 成熟度</td>
+<td>项目快速变化</td>
+<td>Core API 明确标记为 preview、0.x</td>
+</tr>
+</tbody></table>
+<h3 id="多-Agent-协作"><a href="#多-Agent-协作" class="headerlink" title="多 Agent 协作"></a>多 Agent 协作</h3><p>Core 将父子关系放入运行时。在一个 hc 终端内启动的程序可以成为其子终端。Agent 可以通过 <code>hc send</code> 交换消息，也可以通过 <code>hc wait --children all</code> 等待子任务。父 Agent 会收到子任务需要关注或结束的通知。</p>
+<p>子终端默认随父终端结束。<code>--outlive-parent</code> 可以改变这一行为。Unix 上正常结束终端主要挂断程序及前台作业，刻意脱离的程序仍可能存活。它不能替代完整的进程隔离和清理策略。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/README.md">Core 生命周期说明</a></p>
+<p>T3 Code 提供启动和继续线程的接口。它适合把不同 Provider 的会话作为任务入口。本文核查的文档没有展示与 Core 同等明确的父子终端生命周期。</p>
+<p>两者都需要上层流程决定任务拆分、验收、重试和合并策略。运行多个 Agent 本身不构成完整调度系统。</p>
+<h3 id="持久化和恢复"><a href="#持久化和恢复" class="headerlink" title="持久化和恢复"></a>持久化和恢复</h3><p>Herdr App 关闭后，Core 中的任务继续运行。关闭 pane 或 tab 则会结束对应终端。Core 的 holder 进程允许更新或受支持的重启交接保留终端程序。</p>
+<p>机器重启不能保留原进程。保留的终端在程序丢失后恢复为新 Shell，不自动重跑原任务。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/docs/security.md">Core 持久化与信任说明</a></p>
+<p>T3 Code 更强调线程状态、命令去重和重连恢复。它先提交执行意图，再处理副作用。命令被接受，不代表 Agent 或后续工作已经完成。Provider 进程丢失后，相关执行也不能简单重放。</p>
+<p>所以需要分别评估会话记录恢复、网络重连、进程保活和任务重跑。一个“支持持久化”的标签不足以表达这些差异。</p>
+<h2 id="T3-的移动端、中继和认证是否开源"><a href="#T3-的移动端、中继和认证是否开源" class="headerlink" title="T3 的移动端、中继和认证是否开源"></a>T3 的移动端、中继和认证是否开源</h2><table>
+<thead>
+<tr>
+<th>组件</th>
+<th>核查结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>桌面、Web、执行服务器</td>
+<td>仓库公开源码</td>
+</tr>
+<tr>
+<td>iOS 与 Android 客户端</td>
+<td>源码位于 <code>apps/mobile</code>，使用 React Native 与 Expo</td>
+</tr>
+<tr>
+<td>T3 Connect relay</td>
+<td>源码位于 <code>infra/relay</code>，包含部署、认证和隧道管理逻辑</td>
+</tr>
+<tr>
+<td>环境配对、会话和 MCP 授权</td>
+<td>服务器侧源码公开</td>
+</tr>
+<tr>
+<td>云账号身份服务</td>
+<td>使用 Clerk，仓库未提供可自行运行的完整身份后端</td>
+</tr>
+<tr>
+<td>Cloudflare Tunnel 服务</td>
+<td>依赖 Cloudflare 基础设施</td>
+</tr>
+</tbody></table>
+<p>主仓库采用 MIT 许可证。Herdr 的 App 与 Core 使用 Apache-2.0。各项目依赖仍应按自身许可证处理。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/LICENSE">T3 许可证</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/tree/09a54f01bc0ae83865347a965ced50f8c8ec2953/apps/mobile">移动端源码</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/tree/09a54f01bc0ae83865347a965ced50f8c8ec2953/infra/relay">Relay 源码</a></p>
+<h3 id="自编译移动端需要注意更新来源"><a href="#自编译移动端需要注意更新来源" class="headerlink" title="自编译移动端需要注意更新来源"></a>自编译移动端需要注意更新来源</h3><p>移动端 README 提供 iOS 和 Android 构建步骤，并明确说明 T3 Connect 可选，新克隆仓库默认不启用它。</p>
+<p>但当前 <code>app.config.ts</code> 默认启用 Expo OTA 更新，并指向官方更新项目。自建时应检查这项配置。若希望自己控制客户端代码，可以在构建配置中关闭官方更新：</p>
+<div class="code-wrapper"><pre><code class="hljs dotenv">T3CODE_MOBILE_UPDATES_ENABLED=0</code></pre></div>
+
+<p>这个设置控制 OTA。它不等于关闭诊断，也不移除所有官方域名和云服务配置。严格自建还需检查登录域名、应用链接、推送、诊断和构建渠道。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/apps/mobile/README.md">移动端构建说明</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/apps/mobile/app.config.ts">移动端配置</a></p>
+<h2 id="官方-Connect-能否看到-Agent-交互"><a href="#官方-Connect-能否看到-Agent-交互" class="headerlink" title="官方 Connect 能否看到 Agent 交互"></a>官方 Connect 能否看到 Agent 交互</h2><p>这个问题需要区分正常数据流、主动发布的数据和授权能力。</p>
+<h3 id="正常聊天流不经过-relay-Worker-转发"><a href="#正常聊天流不经过-relay-Worker-转发" class="headerlink" title="正常聊天流不经过 relay Worker 转发"></a>正常聊天流不经过 relay Worker 转发</h3><p>根据官方架构，客户端完成连接引导后，普通 HTTP 和 WebSocket 流量通过环境的隧道域名访问执行服务器。Relay Worker 不转发普通会话流量。自动化 webhook 是一个例外。</p>
+<p>这里的“直接访问”仍经过 Cloudflare Tunnel。源码为托管隧道配置了指向本机 loopback HTTP 服务的入口。因此，不能把它理解为绕过云基础设施的设备直连。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/internals/t3-connect.md">Connect 架构</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/infra/relay/src/environments/ManagedEndpointProvider.ts">隧道配置源码</a></p>
+<p>本次核查的链路没有提供足以确认的应用层端到端加密保证。HTTPS 和隧道加密本身，不能证明云基础设施无法读取应用内容。</p>
+<h3 id="Relay-掌握连接引导的签名权"><a href="#Relay-掌握连接引导的签名权" class="headerlink" title="Relay 掌握连接引导的签名权"></a>Relay 掌握连接引导的签名权</h3><p>服务器的 <code>mintCredential</code> 会验证 relay 签名。它检查目标环境、关联用户、有效期和防重放信息。验证通过后，服务器创建绑定客户端证明密钥的短期连接凭据。</p>
+<p>DPoP 可以防止其他人拿到凭据后直接重复使用。它不排除掌握 relay 签名权的一方，使用自己的客户端密钥请求新的凭据。官方文档明确承认 relay 是可信授权中介，也承认签名密钥被攻破有实际影响。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/apps/server/src/cloud/CloudLink.ts">凭据签发源码</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/internals/environment-auth.md">环境认证设计</a></p>
+<p>由此可以作出一个有条件的安全推断：当环境仍与该 relay 关联、网络可达且接受其签名权时，控制该签名能力的一方可能建立获授权的客户端连接，进而访问其权限允许的数据。</p>
+<p>这属于信任模型分析。本文没有验证线上利用路径，也没有证据表明 T3 正在这样访问用户会话。公开源码同样无法证明线上服务运行的版本、配置和日志保留策略。</p>
+<h3 id="遥测与手机活动发布是独立通道"><a href="#遥测与手机活动发布是独立通道" class="headerlink" title="遥测与手机活动发布是独立通道"></a>遥测与手机活动发布是独立通道</h3><p>官方数据文档声明，产品事件不包含提示词、回答、文件内容和认证令牌。事件包含模型、用量、运行结果及哈希账号标识等信息。</p>
+<p>以下开关需要分别检查：</p>
+<table>
+<thead>
+<tr>
+<th>通道</th>
+<th>数据及控制边界</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>服务端产品事件和 relay 追踪</td>
+<td>可设置 <code>T3CODE_TELEMETRY_ENABLED=false</code></td>
+</tr>
+<tr>
+<td>独立浏览器与手机连接追踪</td>
+<td>不受服务端环境变量控制，文档称没有独立的 relay tracing 开关</td>
+</tr>
+<tr>
+<td>手机崩溃报告</td>
+<td>手机诊断设置控制，不能据此认为连接追踪也关闭</td>
+</tr>
+<tr>
+<td>Publish agent activity</td>
+<td>会发布项目名、线程标题、模型和状态；遥测退出不关闭它</td>
+</tr>
+<tr>
+<td>离线 webhook 暂存</td>
+<td>显式启用后，relay 会保存原始请求，属于另一条数据通道</td>
+</tr>
+</tbody></table>
+<p>错误报告中的错误文本可能包含当时处理的值。隐私评估不能只检查是否上传完整提示词。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/user/telemetry.md">遥测说明</a></p>
+<h2 id="能否不登录并完全自建"><a href="#能否不登录并完全自建" class="headerlink" title="能否不登录并完全自建"></a>能否不登录并完全自建</h2><p>可以不登录 T3 官方账号使用。首先要区分 Provider 登录、设备配对和云账号登录。</p>
+<p>Provider 凭据用于执行 Agent。设备配对用于授权客户端访问自己的服务器。T3 Connect 账号用于机器发现、云端连接引导和相关服务。这三者可以分开。</p>
+<table>
+<thead>
+<tr>
+<th>路径</th>
+<th>T3 官方账号</th>
+<th>Clerk</th>
+<th>开发工作</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>本地桌面或本地服务器</td>
+<td>不需要</td>
+<td>不需要</td>
+<td>常规安装配置</td>
+</tr>
+<tr>
+<td>自管网络、SSH 或 HTTPS 入口，加直接配对</td>
+<td>不需要</td>
+<td>不需要</td>
+<td>维护自己的网络与证书</td>
+</tr>
+<tr>
+<td>按官方方案自部署 Connect relay</td>
+<td>不需要</td>
+<td>默认需要自己的 Clerk 实例</td>
+<td>部署云资源，配置并构建客户端</td>
+</tr>
+<tr>
+<td>自部署 Connect，替换 Clerk</td>
+<td>不需要</td>
+<td>可移除</td>
+<td>需要适配客户端和 relay 认证代码</td>
+</tr>
+</tbody></table>
+<h3 id="最简单的自管路径"><a href="#最简单的自管路径" class="headerlink" title="最简单的自管路径"></a>最简单的自管路径</h3><p>若目标是让交互和授权留在自己的控制范围，优先使用直接配对：</p>
+<div class="code-wrapper"><pre><code class="hljs text">自管手机或桌面客户端
+          ↓ 自管 VPN / SSH / HTTPS 入口
+      自管 T3 Server
+          ↓
+     Provider 与项目文件</code></pre></div>
+
+<p>官方提供 <code>t3 pair</code> 和配对链接。桌面客户端也能添加 SSH 环境。这条路径不需要部署 T3 Connect relay。自行提供的反向代理或隧道负责可达性，T3 Server 负责设备认证。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/user/remote-access.md">远程连接文档</a></p>
+<p>这仍保留 Provider 自身的数据处理边界。使用第三方 VPN 或反向代理，也需要单独评估其信任关系。要排除官方网页更新带来的影响，应使用自部署 Web 客户端或自编译客户端。</p>
+<h3 id="自部署完整-Connect-的工作量"><a href="#自部署完整-Connect-的工作量" class="headerlink" title="自部署完整 Connect 的工作量"></a>自部署完整 Connect 的工作量</h3><p>官方提供以下客户端配置：</p>
+<div class="code-wrapper"><pre><code class="hljs dotenv">T3CODE_CLERK_PUBLISHABLE_KEY=&lt;自己的 Clerk 公钥&gt;
+T3CODE_CLERK_JWT_TEMPLATE=&lt;自己的 JWT 模板名&gt;
+T3CODE_CLERK_CLI_OAUTH_CLIENT_ID=&lt;自己的 OAuth 客户端 ID&gt;
+T3CODE_RELAY_URL=https://relay.example.com</code></pre></div>
+
+<p>客户端构建会嵌入公共配置。Relay 部署还需要云端资源与服务凭据。仓库提供部署脚本，但这不是一个只替换 URL 的单容器方案。</p>
+<p>当前认证代码直接使用 Clerk。本次未发现匿名模式或任意 OIDC 服务替换开关。若要用自建身份服务，需要修改认证集成。不能把“中继开源”直接解释成“整套身份服务可原样离线运行”。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/operations/connect-setup.md">Connect 部署说明</a>、<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/infra/relay/README.md">Relay 部署说明</a></p>
+<p>直接连接不提供官方 Connect 的全部附加服务。手机后台推送依赖 Connect。自建推送需要处理客户端构建和 Apple、Google 的平台凭据。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/docs/user/mobile-notifications.md">手机通知说明</a></p>
+<h2 id="Herdr-的隐私边界也需要检查"><a href="#Herdr-的隐私边界也需要检查" class="headerlink" title="Herdr 的隐私边界也需要检查"></a>Herdr 的隐私边界也需要检查</h2><p>Core 默认使用本地 socket 或 named pipe。远程连接依赖 SSH。它没有额外的云账号授权中介，但它信任能够访问 Core API 的客户端。</p>
+<p>官方明确说明，Core 不是沙箱，也不是 Agent 权限代理。连接者能以运行 Core 的系统账号执行命令和操作文件。Core 不提供单独的 API 密码或逐客户端权限检查。不同 session 也不构成安全隔离。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/docs/security.md">Core 安全模型</a></p>
+<p>Herdr App 发布版默认启用使用遥测。用户可以在 Privacy 设置关闭。第三方 mods 是未沙箱化的可信扩展。因此，不能仅凭本地架构就把整个 App 认定为无外连、低权限或不需要检查。</p>
+<h2 id="其他同类工具的位置"><a href="#其他同类工具的位置" class="headerlink" title="其他同类工具的位置"></a>其他同类工具的位置</h2><table>
+<thead>
+<tr>
+<th>项目</th>
+<th>主要关注点</th>
+<th>适合比较的维度</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Paradev，原 Superset</td>
+<td>每任务 worktree、终端、代码审查和浏览器预览</td>
+<td>并行开发工作区与代码交付</td>
+</tr>
+<tr>
+<td>cmux</td>
+<td>macOS 原生终端、通知、浏览器与可编程接口</td>
+<td>保留终端体验和桌面集成</td>
+</tr>
+<tr>
+<td>Conductor</td>
+<td>当前官网强调云端隔离执行环境和共享工作区</td>
+<td>托管执行与团队协作</td>
+</tr>
+</tbody></table>
+<p>这些产品也在快速变化。本文只把它们作为定位参照，没有进行等条件能力或性能测试。<a target="_blank" rel="noopener" href="https://github.com/paradevai/paradev">Paradev</a>、<a target="_blank" rel="noopener" href="https://github.com/manaflow-ai/cmux">cmux</a>、<a target="_blank" rel="noopener" href="https://www.conductor.build/">Conductor</a></p>
+<h2 id="选型与下一步验证"><a href="#选型与下一步验证" class="headerlink" title="选型与下一步验证"></a>选型与下一步验证</h2><p>需要现成的多 Provider 交互、跨设备操作和手机接管时，可以优先试用 T3 Code。需要原生终端、Agent 派生 worker 和自定义运行控制时，可以优先评估 herdr-core。需要修改桌面工作流时，再引入 herdr-app。</p>
+<p>若隐私要求是不把授权签发权交给 T3，T3 的直接配对与自管连接路径值得优先验证。没有必要为了远程可达性部署完整 Connect。若确实需要云端机器发现和推送，再评估自部署 relay 的运维成本。</p>
+<p>正式采用前，仍需完成四项验证：</p>
+<ol>
+<li>固定源码版本，构建客户端和服务器。确认关闭官方 Connect 后，直接配对可以完成实际任务。</li>
+<li>观察客户端、服务端及手机的网络请求。分别检查遥测、诊断、活动发布和 OTA。</li>
+<li>测试网络断开、客户端退出、服务更新和机器重启。记录哪些状态和进程可以恢复。</li>
+<li>用同一个小项目验证任务隔离、人工接管、审批和结果回报。不要用 Stars 代替工作流验证。</li>
+</ol>
+<p>T3 Code 与 Herdr 都提供了有价值的控制接口。最终决定权在于执行模型、授权根、客户端更新来源，以及团队愿意承担多少适配和运维工作。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/AI/" class="category-chain-item">AI</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+    <div class="post-meta">
+      <i class="iconfont icon-tags"></i>
+      
+        <a href="/tags/AI/" class="print-no-link">#AI</a>
+      
+        <a href="/tags/Agent/" class="print-no-link">#Agent</a>
+      
+        <a href="/tags/%E5%AE%89%E5%85%A8/" class="print-no-link">#安全</a>
+      
+        <a href="/tags/%E7%B3%BB%E7%BB%9F%E8%AE%BE%E8%AE%A1/" class="print-no-link">#系统设计</a>
+      
+        <a href="/tags/%E5%BC%80%E6%BA%90/" class="print-no-link">#开源</a>
+      
+    </div>
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界</div>
+      <div>https://fenixc9.github.io/t3code-herdr-agent-control-plane-research/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>作者</div>
+          <div>fenix</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>发布于</div>
+          <div>2026年11月8日</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>许可协议</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - 署名">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="NC - 非商业性使用">
+                    <i class="iconfont icon-cc-nc"></i>
+                  </span>
+                </a>
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="SA - 相同方式共享">
+                    <i class="iconfont icon-cc-sa"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/alpine-openssh-password-bypass/" title="太抽象了">
+                        <span class="hidden-mobile">太抽象了</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>目录</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    function isExpandAllEnabled() {
+      return CONFIG.toc && CONFIG.toc.expand_all === true;
+    }
+    function expandAllToc() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .tocbot-is-collapsed').removeClass('tocbot-is-collapsed');
+    }
+    function updateTocToggle($li, $childList) {
+      var $toggle = $li.children('.toc-toggle');
+      if ($toggle.length === 0) { return; }
+      var collapsed = $childList.hasClass('tocbot-is-collapsed');
+      $toggle
+        .toggleClass('toc-toggle-collapsed', collapsed)
+        .toggleClass('toc-toggle-expanded', !collapsed);
+    }
+    function bindTocToggle() {
+      if (!isExpandAllEnabled()) { return; }
+      jQuery('#toc-body .toc-list-item').each(function() {
+        var $li = jQuery(this);
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) {
+          if ($li.children('.toc-toggle').length === 0) {
+            $li.prepend('<span class="toc-toggle toc-toggle-placeholder" aria-hidden="true">›</span>');
+          }
+          return;
+        }
+
+        if ($li.children('.toc-toggle').length === 0) {
+          $li.prepend('<span class="toc-toggle toc-toggle-expanded" aria-hidden="true">›</span>');
+        }
+        updateTocToggle($li, $childList);
+      });
+      jQuery('#toc-body').off('click.tocToggle').on('click.tocToggle', '.toc-toggle', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $li = jQuery(this).parent('.toc-list-item');
+        var $childList = $li.children('ol');
+        if ($childList.length === 0) { return; }
+        $childList.toggleClass('tocbot-is-collapsed');
+        updateTocToggle($li, $childList);
+      });
+      if (!window.__tocToggleObserver) {
+        window.__tocToggleObserver = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.type !== 'attributes' || mutation.attributeName !== 'class') { return; }
+            var $list = jQuery(mutation.target);
+            var $li = $list.parent('.toc-list-item');
+            if ($li.length === 0) { return; }
+            updateTocToggle($li, $list);
+          });
+        });
+        jQuery('#toc-body ol').each(function() {
+          window.__tocToggleObserver.observe(this, { attributes: true });
+        });
+      }
+    }
+    var tocConfig = Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc);
+    if (isExpandAllEnabled()) {
+      tocConfig.collapseDepth = 6;
+    }
+    window.tocbot.init(tocConfig);
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+    expandAllToc();
+    bindTocToggle();
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+        expandAllToc();
+        bindTocToggle();
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+  
+<script src="/js/custom.js"></script>
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">博客在允许 JavaScript 运行的环境下浏览效果更佳</div>
+  </noscript>
+</body>
+</html>
