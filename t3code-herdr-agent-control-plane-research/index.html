@@ -21,15 +21,15 @@
   <meta name="author" content="fenix">
   <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
   
-    <meta name="description" content="对比 T3 Code、herdr-core 与 herdr-app 的执行架构、协作接口和社区活跃度，核查移动端、中继、Clerk 认证与自建路径的信任边界。">
+    <meta name="description" content="对比 T3 Code 与新版 Herdr 的执行架构、实时终端与聊天输入，分析 Mac 唤醒后的断线体验及社区修复，核查移动端、中继、认证与自建隐私边界。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界">
 <meta property="og:url" content="https://fenixc9.github.io/t3code-herdr-agent-control-plane-research/index.html">
 <meta property="og:site_name" content="ByteDrift">
-<meta property="og:description" content="对比 T3 Code、herdr-core 与 herdr-app 的执行架构、协作接口和社区活跃度，核查移动端、中继、Clerk 认证与自建路径的信任边界。">
+<meta property="og:description" content="对比 T3 Code 与新版 Herdr 的执行架构、实时终端与聊天输入，分析 Mac 唤醒后的断线体验及社区修复，核查移动端、中继、认证与自建隐私边界。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-11-08T06:18:51.000Z">
-<meta property="article:modified_time" content="2026-11-08T06:22:13.851Z">
+<meta property="article:modified_time" content="2026-11-08T10:40:50.000Z">
 <meta property="article:author" content="fenix">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="Agent">
@@ -324,7 +324,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          7.4k 字
+          9.8k 字
         
       </span>
     
@@ -335,7 +335,7 @@
         
         
         
-          63 分钟
+          82 分钟
         
       </span>
     
@@ -376,7 +376,7 @@
 <span id="more"></span>
 
 <blockquote>
-<p>核查日期：2026 年 11 月 8 日。本文依据官方仓库、GitHub API、项目文档及部分认证源码整理。未安装实测，未验证商店安装包与公开源码的一致性，未测试线上服务。性能、连接稳定性和任务成功率不在本次结论范围内。</p>
+<p>核查日期：2026 年 11 月 8 日。本文依据官方仓库、GitHub API、项目文档及部分认证源码整理。本次调研未安装实测，未验证商店安装包与公开源码的一致性，未测试线上服务。后文包含一次用户报告的唤醒后无响应现象，以及源码与社区提案分析。本文未独立复现该现象，也未进行性能、连接稳定性或任务成功率的对照测试。</p>
 </blockquote>
 <h2 id="T3-Code-提供什么"><a href="#T3-Code-提供什么" class="headerlink" title="T3 Code 提供什么"></a>T3 Code 提供什么</h2><p>T3 Code 自称 agent harness control surface。底层的 Agent 执行机制仍由 Claude Code、Codex、Cursor 等工具提供。T3 Code 统一展示项目、线程、消息、工具调用、审批和开发结果。用户继续使用自己的订阅或 Provider 凭据。</p>
 <p>它采用客户端与服务器分离的结构：</p>
@@ -540,6 +540,87 @@
 <td>Core API 明确标记为 preview、0.x</td>
 </tr>
 </tbody></table>
+<h3 id="实时终端与本地聊天输入"><a href="#实时终端与本地聊天输入" class="headerlink" title="实时终端与本地聊天输入"></a>实时终端与本地聊天输入</h3><p>Herdr App 的终端会持续把输入字节发送给 Core。远端 Shell 或 Agent CLI 处理输入，然后返回终端输出。用户看到的字符通常来自远端回显。粘贴和中文输入法提交的文本也可以作为一批字节发送，不能把这个过程理解为一个字对应一个网络包。连续输入也不要求等待上一个字的回复。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-app/blob/7fe7ac34fef8a3ee76cb5d2f17bc8d6331e50bd8/src/hc.rs">App 输入与传输实现</a></p>
+<p>T3 Code 的聊天输入框在客户端维护草稿。用户发送后，客户端提交完整消息，由服务器启动或继续 Agent 工作。这里讨论的是聊天输入框。T3 Code 的内置终端仍属于实时终端。<a target="_blank" rel="noopener" href="https://github.com/pingdotgg/t3code/blob/09a54f01bc0ae83865347a965ced50f8c8ec2953/apps/web/src/components/chat/ChatComposer.tsx">聊天输入实现</a></p>
+<div class="code-wrapper"><pre><code class="hljs text">Herdr 远程终端
+按键或已提交文本 → 本地 Core → SSH → 远端 Core → 程序
+屏幕显示       ← 本地 Core ← SSH ← 远端 Core ← 终端输出
+
+T3 Code 聊天
+输入 → 客户端编辑草稿
+发送 → T3 Server → Provider → Agent</code></pre></div>
+
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>Herdr 实时终端</th>
+<th>T3 Code 聊天输入</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>打字反馈</td>
+<td>通常依赖远端回显，受网络往返延迟影响</td>
+<td>客户端编辑草稿，不需要等待远端回显</td>
+</tr>
+<tr>
+<td>网络暂时不可用</td>
+<td>远程程序无法及时反馈输入</td>
+<td>草稿编辑与远端执行分开，提交和接收回复仍需要网络</td>
+</tr>
+<tr>
+<td>交互范围</td>
+<td>可直接操作 Shell、Vim、Agent CLI 和交互菜单</td>
+<td>使用客户端与 Provider 适配器提供的结构化交互</td>
+</tr>
+<tr>
+<td>输入与展示</td>
+<td>保留原生终端行为，编辑能力取决于远端程序</td>
+<td>容易提供长文编辑、附件、消息状态和工具调用展示</td>
+</tr>
+<tr>
+<td>接入成本</td>
+<td>程序能在终端运行即可操作，状态上报另有要求</td>
+<td>需要适配各 Provider 的协议和功能</td>
+</tr>
+</tbody></table>
+<p>终端客户端无法仅凭输入字符，可靠判断程序正在接收提示词、密码还是菜单操作。把所有输入改成本地编辑，再一次性发送，会改变这些程序的交互语义。需要针对输入场景设计独立入口。</p>
+<p>Herdr 的优势在于通用终端控制。T3 Code 的优势在于结构化 Agent 工作流。T3 Code 包含终端入口，但不能据此判定它覆盖了 Herdr 的全部会话管理、多机器操作和运行时协作能力。Herdr 能运行同一个 Agent CLI，也不代表它具有 T3 Code 的结构化交互。两者没有经过验证的严格超集关系。</p>
+<h3 id="Mac-唤醒后的无响应与探活机制"><a href="#Mac-唤醒后的无响应与探活机制" class="headerlink" title="Mac 唤醒后的无响应与探活机制"></a>Mac 唤醒后的无响应与探活机制</h3><p>本次讨论中，用户报告了一个具体问题：Mac 唤醒后，在 Herdr App 中敲字没有反馈，界面也没有显示重连提示。用户怀疑当时 Tailscale 尚未恢复。该现象未在本次调研中独立复现，实际原因仍待日志或复现确认。</p>
+<p>这个现象与“连接暂时失效，但程序尚未确认断线”的状态相符。系统可能仍保留旧连接。写入成功也可能只表示数据进入本地缓冲区。远端没有回复，不一定立即产生 EOF 或连接错误。这是依据传输机制和相关 PR 描述作出的推断。</p>
+<p>当前 Core 有定期探活。默认心跳间隔为 15 秒。远程连接连续没有收到任何数据，达到 <code>machine_timeout</code> 加心跳间隔后，Core 才放弃连接。<code>machine_timeout</code> 默认是 30 秒，因此默认静默判定阈值约为 45 秒。普通数据同样可以刷新存活判断。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/server.rs">心跳实现</a>、<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/crates/herdr-core/src/remote.rs">远程连接判定</a></p>
+<p>45 秒是静默阈值。它不代表每次打开屏幕后都恰好等待 45 秒。检测后的重试退避还可能增加等待时间。Core PR #139 明确指出，Mac 唤醒后可能先保持约 45 秒的假在线状态，也可能处于最长 30 秒的重试退避。</p>
+<p>Herdr App 已有连接丢失后的重连提示。问题发生在连接尚未被判定为丢失的阶段。客户端可以提前显示“远端未响应”或“正在验证连接”。实时终端对网络的依赖，不妨碍客户端提供这种反馈。</p>
+<h3 id="社区修复分别处理哪一层"><a href="#社区修复分别处理哪一层" class="headerlink" title="社区修复分别处理哪一层"></a>社区修复分别处理哪一层</h3><p>截至 2026 年 11 月 8 日，下列两个 PR 均处于 Open 状态，尚未合并。另一个本地回显方案仍是 Issue 提案。它们不能当作正式版已经具备的能力。</p>
+<table>
+<thead>
+<tr>
+<th>社区工作</th>
+<th>处理的问题</th>
+<th>方案与限制</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/pull/139">Core PR #139</a></td>
+<td>Mac 唤醒后旧 SSH 连接假在线，或停在重试退避</td>
+<td>监听系统唤醒完成事件，立即探测旧连接；3 秒内无回复就关闭旧传输，保留远端程序和查看会话，再重新连接</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-app/pull/633">App PR #633</a></td>
+<td>远程无响应时没有解释，用户误以为界面卡死</td>
+<td>增加无响应提示、待发送输入数量、断线原因与立即重连入口；不包含 Core 的假在线修复</td>
+</tr>
+<tr>
+<td><a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-app/issues/305">App Issue #305</a></td>
+<td>连接可用但延迟较高，字符显示慢半拍</td>
+<td>提议预测本地回显；作者称 fork 已有实现，目前该入口仍是提案</td>
+</tr>
+</tbody></table>
+<p>Core #139 在唤醒后设置一个 30 秒的快速恢复窗口。每次连接尝试最多持续 3 秒。重试间隔从 250 毫秒增加到最多 1 秒。这个设计可以覆盖网络比系统唤醒稍晚恢复的情况。它也避免复用可能失效的 SSH ControlMaster。作者注明，真实合盖和唤醒流程尚未完成硬件验证，不能承诺打开屏幕后固定几秒恢复。</p>
+<p>App #633 通过“输入后没有输出”和“往返探测也慢”共同判断无响应，避免把正常安静的程序误报为断线。它拟在 6 秒无响应时显示提示。确认机器不可用后，界面显示状态、持续时间、原因和 Reconnect now 按钮。远程新建终端也改为后台执行，超过 0.7 秒显示启动提示。发往无响应程序的滚动事件会被限速，减少输入堆积。</p>
+<p>Issue #305 借鉴 mosh 的预测本地回显。方案只预测光标后空白位置中的简单可打印字符。程序先确认会回显后，客户端才继续预测。远端输出与预测不符，或者 1.5 秒内没有确认，客户端就撤销预测。中文和输入法组合、粘贴、行中编辑、方向键等不在该方案的预测范围内。</p>
+<p>这三个方向分别改善恢复速度、连接状态反馈和高延迟下的打字手感。本地预测回显仍需远端程序确认，不能提供聊天输入框那样的离线草稿语义。</p>
+<p>频繁睡眠、通过 Tailscale 操作远端 Agent 时，可以优先验证聊天输入与终端组合的工作方式。长提示词在客户端编辑，需要原生 CLI 交互时再使用终端。Herdr 用户则应重点关注 #139 与 #633 的合并和发布进展。</p>
 <h3 id="多-Agent-协作"><a href="#多-Agent-协作" class="headerlink" title="多 Agent 协作"></a>多 Agent 协作</h3><p>Core 将父子关系放入运行时。在一个 hc 终端内启动的程序可以成为其子终端。Agent 可以通过 <code>hc send</code> 交换消息，也可以通过 <code>hc wait --children all</code> 等待子任务。父 Agent 会收到子任务需要关注或结束的通知。</p>
 <p>子终端默认随父终端结束。<code>--outlive-parent</code> 可以改变这一行为。Unix 上正常结束终端主要挂断程序及前台作业，刻意脱离的程序仍可能存活。它不能替代完整的进程隔离和清理策略。<a target="_blank" rel="noopener" href="https://github.com/herdrdev/herdr-core/blob/cd12ddd88bc11490228343291dc1096c9ed3bf77/README.md">Core 生命周期说明</a></p>
 <p>T3 Code 提供启动和继续线程的接口。它适合把不同 Provider 的会话作为任务入口。本文核查的文档没有展示与 Core 同等明确的父子终端生命周期。</p>
