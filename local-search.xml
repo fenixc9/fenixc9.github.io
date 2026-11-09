@@ -4,6 +4,37 @@
   
   
   <entry>
+    <title>黄仁勋、Megaspeed 与阿里：商业关系、融资指控和调查边界</title>
+    <link href="/jensen-huang-megaspeed-alibaba-relationships/"/>
+    <url>/jensen-huang-megaspeed-alibaba-relationships/</url>
+    
+    <content type="html"><![CDATA[<p>截至 2026 年 11 月 9 日，公开材料指向一条商业联系：Megaspeed 采购含英伟达 GPU 的设备，在东南亚提供算力服务。彭博报道将阿里列为其算力客户。做空机构 Culper 则进一步指称，阿里可能通过关联公司为 Megaspeed 提供融资。</p><p>今天受到关注的新进展，是黄仁勋公开承认对妻子不忠，以及英伟达董事会启动独立调查。这两件事没有让融资、芯片转运或情报活动的指控自动成为事实。</p><span id="more"></span><h2 id="今天能确认的进展"><a href="#今天能确认的进展" class="headerlink" title="今天能确认的进展"></a>今天能确认的进展</h2><p>英伟达于美国时间 2026 年 11 月 8 日发布黄仁勋的<a href="https://nvidianews.nvidia.com/news/a-message-to-our-company">公开信</a>。信中，黄仁勋承认对妻子不忠，向家人和同事道歉。<strong>公开信没有点名另一方。</strong></p><p>英伟达同日发布<a href="https://investor.nvidia.com/news/press-release-details/2026/Statement-from-NVIDIA-Board-of-Directors/default.aspx">董事会声明</a>。董事会表示，针对有关黄仁勋遭外国情报活动针对的报道，公司启动独立调查。独立董事委员会将与外部独立律师共同监督调查。</p><p>董事会同时表示，目前没有理由相信国家安全或英伟达秘密受到损害。董事会继续对黄仁勋及其领导团队表示信任。</p><p>这些声明确认了道歉和调查程序。调查尚未给出最终结论。董事会的当前判断，也不能作为调查已经结束的证明。</p><h2 id="Megaspeed-如何连接英伟达和阿里"><a href="#Megaspeed-如何连接英伟达和阿里" class="headerlink" title="Megaspeed 如何连接英伟达和阿里"></a>Megaspeed 如何连接英伟达和阿里</h2><p>Megaspeed 是一家总部位于新加坡的算力服务公司。其<a href="https://www.megaspeed.ai/">官网</a>列出 NVIDIA GB200 NVL72、HGX H100 等产品和 GPU 云服务。</p><table><thead><tr><th>双方</th><th>公开材料描述的关系</th><th>证据边界</th></tr></thead><tbody><tr><td>英伟达与 Megaspeed</td><td>GPU 技术供应方与区域算力客户</td><td>商业往来不自动证明存在违规交易</td></tr><tr><td>黄仁勋与 Alice Huang（黄乐）</td><td>媒体报道中的私人关系；Alice Huang 曾任 Megaspeed 高管</td><td>黄仁勋公开信没有点名；人物关系依赖媒体报道</td></tr><tr><td>Megaspeed 与阿里</td><td>彭博称阿里租用其东南亚设施中的英伟达算力</td><td>属于媒体调查报道</td></tr><tr><td>阿里与 Megaspeed 的融资关系</td><td>Culper 指称阿里通过关联公司间接提供资金</td><td>属于有利益关系的做空机构指控，尚未独立证实</td></tr></tbody></table><p><a href="https://apnews.com/article/68839e7ca6ba2b121529f7e475e501d6">美联社报道</a>将 Alice Huang 描述为 Megaspeed 前高管，并报道了她与黄仁勋的亲密关系。涉及她为北京收集信息的说法，是媒体转述的美国情报判断。本文取得的材料没有提供可供独立审查的完整情报证据。</p><p><a href="https://archive.ph/f3Id1">彭博 2025 年 12 月 22 日的调查报道存档</a>称，Megaspeed 在东南亚多个设施向阿里出租英伟达算力。该报道同时注明，彭博没有找到 Megaspeed 将芯片转运至中国或违反出口管制的证据。</p><h2 id="阿里融资的说法来自哪里"><a href="#阿里融资的说法来自哪里" class="headerlink" title="阿里融资的说法来自哪里"></a>阿里融资的说法来自哪里</h2><p>2026 年 5 月 13 日，Culper Research 发布有关英伟达的做空报告。报告把 Megaspeed 的财务变化，与其马来西亚子公司 Speedmatrix 的抵押安排联系起来。</p><p>根据<a href="https://culperresearch.com/wp-content/uploads/2026/05/Culper_NVDA_5-13-2026.pdf">报告检索摘录</a>和<a href="https://www.streetinsider.com/Investing/Culper%2BResearch%2Bshorts%2BNvidia%2Bover%2Balleged%2BChina%2Btrade%2Bviolations/26485063.html?classic=1">StreetInsider 的内容转述</a>，Culper 的主要依据包括：</p><ul><li>Megaspeed 在 2024 年获得约 29 亿美元、来源未具名的可退还押金。</li><li>Culper 引用的马来西亚文件显示，Speedmatrix 在 2024 年 6 月将业务资产抵押给 Apex Enterprise Solutions。</li><li>Culper 称，新加坡公司文件显示 Apex 属于阿里体系。</li></ul><p>Culper 据此推断，阿里可能通过关联公司，为 Megaspeed 采购英伟达服务器提供资金。</p><p><strong>这条推断不能直接写成“Megaspeed 是阿里的子公司”。</strong> 股权关系、融资关系和客户预付款分别需要证据。抵押安排也不能独立证明全部资金的来源及最终用途。</p><p>Culper 明确持有英伟达空头头寸。其报告具有可研究的线索，也存在直接的经济利益关系。本次整理未取得底层工商文件和资金流水进行独立复核。原报告 PDF 直接读取返回 403，融资细节依据检索摘录及媒体转述整理。</p><h2 id="算力租赁与芯片转运要分别核查"><a href="#算力租赁与芯片转运要分别核查" class="headerlink" title="算力租赁与芯片转运要分别核查"></a>算力租赁与芯片转运要分别核查</h2><p>芯片安装在东南亚数据中心，客户通过网络使用算力，与芯片被实际运入中国，是两种不同的交易安排。客户使用算力的位置，不能单独证明芯片所在的位置。</p><p>同样，不能仅凭“服务器在海外”就认定任何交易都合规。具体判断需要核对适用规则、交易主体、最终用户、用途和实际部署。本次材料不足以对所有相关交易作出法律结论。</p><p>Megaspeed 在<a href="https://www.megaspeed.ai/">官网声明</a>中否认参与非法芯片转运。公司称，BIS、马来西亚有关部门和英伟达曾多次检查，未发现违规。</p><p>这份材料能确认公司的回应。它不能替代监管机构公开发布的调查结论。</p><h2 id="哪些问题仍然没有答案"><a href="#哪些问题仍然没有答案" class="headerlink" title="哪些问题仍然没有答案"></a>哪些问题仍然没有答案</h2><p>现有材料支持分别追踪以下问题：</p><ol><li><strong>私人关系与公司治理</strong>：独立调查是否发现利益冲突、内部程序缺陷或信息泄露？</li><li><strong>融资来源</strong>：Apex 与 Speedmatrix 的原始合同如何约定？未具名押金的实际付款方是谁？</li><li><strong>芯片流向</strong>：设备采购、入库、部署和最终用途能否形成可核验的记录？</li><li><strong>阿里的角色</strong>：客户关系之外，是否存在已获独立证实的融资或控制关系？</li></ol><p>截至本文整理时，公开材料不足以认定阿里指使相关人员从事情报活动，也不足以认定阿里控制 Megaspeed 或参与芯片走私。后续判断应以调查结果、原始文件和可核验交易记录为依据。</p><h2 id="来源与时间范围"><a href="#来源与时间范围" class="headerlink" title="来源与时间范围"></a>来源与时间范围</h2><p>本文整理截至 <strong>2026 年 11 月 9 日</strong>的公开材料。官方声明用于确认当事人表态和调查程序，媒体报道用于描述尚待进一步核实的关系，做空报告用于记录机构指控。</p><ul><li>NVIDIA：<a href="https://nvidianews.nvidia.com/news/a-message-to-our-company">A Message to Our Company</a>，2026-11-08。</li><li>NVIDIA：<a href="https://investor.nvidia.com/news/press-release-details/2026/Statement-from-NVIDIA-Board-of-Directors/default.aspx">Statement from NVIDIA Board of Directors</a>，2026-11-08。检索返回正文，原页面直接读取失败。</li><li>AP：<a href="https://apnews.com/article/68839e7ca6ba2b121529f7e475e501d6">Nvidia investigates whether CEO Jensen Huang was targeted by Chinese spy with whom he had an affair</a>，2026-11-08。</li><li>Bloomberg：<a href="https://archive.ph/f3Id1">Nvidia Partner Megaspeed Draws China Chip Smuggling Concerns in US（存档）</a>，2025-12-22。本次使用检索返回的摘录。</li><li>Culper Research：<a href="https://culperresearch.com/wp-content/uploads/2026/05/Culper_NVDA_5-13-2026.pdf">英伟达报告</a>，2026-05-13。</li><li>StreetInsider：<a href="https://www.streetinsider.com/Investing/Culper%2BResearch%2Bshorts%2BNvidia%2Bover%2Balleged%2BChina%2Btrade%2Bviolations/26485063.html?classic=1">Culper Research shorts Nvidia over alleged China trade violations</a>，2026 年 5 月。</li><li>Megaspeed：<a href="https://www.megaspeed.ai/">公司官网及回应彭博报道的声明</a>，2026-11-09 读取。</li></ul>]]></content>
+    
+    
+    <categories>
+      
+      <category>AI</category>
+      
+    </categories>
+    
+    
+    <tags>
+      
+      <tag>AI</tag>
+      
+      <tag>芯片</tag>
+      
+      <tag>算力</tag>
+      
+      <tag>出口管制</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>T3 Code 与新版 Herdr 调研：Agent 控制台、开源范围与自建隐私边界</title>
     <link href="/t3code-herdr-agent-control-plane-research/"/>
     <url>/t3code-herdr-agent-control-plane-research/</url>
