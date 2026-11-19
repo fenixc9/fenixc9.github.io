@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://fenixc9.github.io/huang-return-three-hearings/</loc>
+    
+    <lastmod>2026-11-19</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://fenixc9.github.io/llm-api-pricing-claude-code-codex-subscriptions/</loc>
     
     <lastmod>2026-11-19</lastmod>
@@ -1787,6 +1796,13 @@
   
   <url>
     <loc>https://fenixc9.github.io/tags/Claude-Code/</loc>
+    <lastmod>2026-11-19</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://fenixc9.github.io/tags/%E5%85%AC%E5%8F%B8%E6%B2%BB%E7%90%86/</loc>
     <lastmod>2026-11-19</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
