@@ -21,26 +21,27 @@
   <meta name="author" content="fenix">
   <meta name="keywords" content="Web,Rust,Database,Kubernetes,Program">
   
-    <meta name="description" content="对比 OpenAI、Claude、DeepSeek 的按量 API 价格，用实测和外推估算 Claude Code、Codex 的订阅用量，并区分可直接调用的 API 赠额。">
+    <meta name="description" content="用实测和外推对比 Claude Code、Codex、Google Antigravity 的编程额度、等效 token 和 API 赠额，附主流模型按量价格。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="大模型 API 价格对照：Claude Code 和 Codex 的订阅额度值多少">
+<meta property="og:title" content="Claude Code、Codex、Gemini 的订阅额度值多少？">
 <meta property="og:url" content="https://fenixc9.github.io/llm-api-pricing-claude-code-codex-subscriptions/index.html">
 <meta property="og:site_name" content="ByteDrift">
-<meta property="og:description" content="对比 OpenAI、Claude、DeepSeek 的按量 API 价格，用实测和外推估算 Claude Code、Codex 的订阅用量，并区分可直接调用的 API 赠额。">
+<meta property="og:description" content="用实测和外推对比 Claude Code、Codex、Google Antigravity 的编程额度、等效 token 和 API 赠额，附主流模型按量价格。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2026-11-19T09:46:01.000Z">
-<meta property="article:modified_time" content="2026-11-19T09:46:34.028Z">
+<meta property="article:modified_time" content="2026-11-22T13:28:58.436Z">
 <meta property="article:author" content="fenix">
 <meta property="article:tag" content="AI">
 <meta property="article:tag" content="Claude Code">
 <meta property="article:tag" content="Codex">
+<meta property="article:tag" content="Gemini">
 <meta property="article:tag" content="大模型">
 <meta property="article:tag" content="推理">
 <meta name="twitter:card" content="summary_large_image">
   
   
   
-  <title>大模型 API 价格对照：Claude Code 和 Codex 的订阅额度值多少 · ByteDrift</title>
+  <title>Claude Code、Codex、Gemini 的订阅额度值多少？ · ByteDrift</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -304,7 +305,7 @@
 <div class="site-heading ">
   
     <p class="eyebrow">技术笔记</p>
-    <h1>大模型 API 价格对照：Claude Code 和 Codex 的订阅额度值多少</h1>
+    <h1>Claude Code、Codex、Gemini 的订阅额度值多少？</h1>
     
       <div class="reading-meta">
   <div class="mt-3">
@@ -324,7 +325,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3.2k 字
+          5.2k 字
         
       </span>
     
@@ -335,7 +336,7 @@
         
         
         
-          27 分钟
+          43 分钟
         
       </span>
     
@@ -366,17 +367,18 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">大模型 API 价格对照：Claude Code 和 Codex 的订阅额度值多少</h1>
+            <h1 id="seo-header">Claude Code、Codex、Gemini 的订阅额度值多少？</h1>
             
             
               <div class="markdown-body">
                 
                 <p>符合资格并领取后，ChatGPT Pro 100 每个完整账期提供 100 美元的可调用 API 赠额。它还包含 Codex 和 ChatGPT Work 的使用额度。按历史测量和额度调整外推，把每周工具额度用满，约相当于 2,300–3,000 美元的月度 API 官价用量。Claude Max 同样赠送 100 美元 API 额度，其工具权益有两种估算口径，分别约为 3,530 美元和 5,460 美元。</p>
-<p>本文以 2026 年 11 月 18–19 日为价格快照。订阅比较列出工具用量、API 赠额和数据来源。按量比较覆盖 OpenAI、Claude、DeepSeek 官价及部分第三方渠道。</p>
+<p>Google 的编程订阅通过 Antigravity 提供用量。以 Gemini 4 Neon 用满每周共享额度估算，Google AI Pro（$19.99）、Ultra 5×（$99.99）和 Ultra 20×（$199.99）分别约值 <strong>455、2,600、9,100–10,400 美元&#x2F;月</strong>。前两档根据调用前后的额度消耗推算，20× 档按官方倍数外推。 <a target="_blank" rel="noopener" href="https://antigravity.google/blog/changes-to-antigravity-plans/">Google Antigravity 套餐与倍数</a> · <a target="_blank" rel="noopener" href="https://subvalue.app/method/">Subvalue 测量说明</a></p>
+<p>Claude 和 OpenAI 数据取自 2026 年 11 月 18–19 日的调研，Gemini 对比于 11 月 22 日补入。</p>
 <span id="more"></span>
 
-<p><a href="/llm-api-pricing-claude-code-codex-subscriptions/pricing-comparison.xlsx">下载 Excel 价格对照表</a>。工作簿含订阅折算、40 条按量报价和可调整参数的成本示例。</p>
-<h2 id="Claude-Code-与-Codex-订阅"><a href="#Claude-Code-与-Codex-订阅" class="headerlink" title="Claude Code 与 Codex 订阅"></a>Claude Code 与 Codex 订阅</h2><p>金额均为美元。工具等值假设每周额度用满，按 API 官价重放相同 token 用量。合计同时假设实际 API 赠额用完。</p>
+<p><a href="/llm-api-pricing-claude-code-codex-subscriptions/pricing-comparison.xlsx">下载 11 月 19 日 Excel 快照</a>。工作簿含 Claude Code 和 Codex 的订阅折算、40 条按量报价和可调整参数的成本示例。</p>
+<h2 id="Claude-Code、Codex-与-Antigravity-订阅"><a href="#Claude-Code、Codex-与-Antigravity-订阅" class="headerlink" title="Claude Code、Codex 与 Antigravity 订阅"></a>Claude Code、Codex 与 Antigravity 订阅</h2><p>金额均为美元。工具等值假设每周额度用满，按 API 官价重放相同 token 用量。合计同时假设实际 API 赠额用完。</p>
 <table>
 <thead>
 <tr>
@@ -405,6 +407,14 @@
 <td>5 账户</td>
 </tr>
 <tr>
+<td>Google AI Pro（Antigravity）</td>
+<td align="right">19.99</td>
+<td align="right">约 455</td>
+<td align="right">0</td>
+<td align="right">约 455</td>
+<td>Gemini 共享额度，80 次调用测量后折月</td>
+</tr>
+<tr>
 <td>Claude Max</td>
 <td align="right">100</td>
 <td align="right">约 3,530 或 5,460</td>
@@ -421,6 +431,14 @@
 <td>历史实测结合官方翻倍外推</td>
 </tr>
 <tr>
+<td>Google AI Ultra 5×（Antigravity）</td>
+<td align="right">99.99</td>
+<td align="right">约 2,600</td>
+<td align="right">0</td>
+<td align="right">约 2,600</td>
+<td>Gemini 共享额度，109 次调用测量后折月</td>
+</tr>
+<tr>
 <td>Claude Ultra</td>
 <td align="right">200</td>
 <td align="right">6,830</td>
@@ -435,6 +453,14 @@
 <td align="right">200</td>
 <td align="right">3,391</td>
 <td>6 账户</td>
+</tr>
+<tr>
+<td>Google AI Ultra 20×（Antigravity）</td>
+<td align="right">199.99</td>
+<td align="right">约 9,100–10,400</td>
+<td align="right">0</td>
+<td align="right">约 9,100–10,400</td>
+<td>Gemini 共享额度，按官方倍数外推</td>
 </tr>
 <tr>
 <td>ChatGPT Pro 500</td>
@@ -485,14 +511,49 @@
 <td>官方公布更高工具额度</td>
 </tr>
 </tbody></table>
-<p>多账户数据来自 11 月 9–16 日的 Wokey 实际账号流量。研究者按 API 价格计入新输入、缓存读取、缓存写入和输出，根据用量计量表的变化估计满周容量，再按约 4.33 周折月。Claude 部分用约 92% 缓存读取占比的流量结构规范化。团队按席合计假设组织赠额未触及共享上限。Claude Team 和 ChatGPT Business 的 Standard、Premium 年付分别折合 20、100 美元&#x2F;席&#x2F;月。<a target="_blank" rel="noopener" href="https://wokey.ai/coding-plan-comparison">Wokey 方法与对照</a>、<a target="_blank" rel="noopener" href="https://claude.com/pricing">Claude 定价</a>、<a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/pricing">ChatGPT 定价</a>、<a target="_blank" rel="noopener" href="https://help.openai.com/en/articles/8792828-chatgpt-business-overview">Business 席位</a>。</p>
+<p>Claude 和 Codex 的多账户数据来自 11 月 9–16 日的 Wokey 实际账号流量。研究者按 API 价格计入新输入、缓存读取、缓存写入和输出，根据用量计量表的变化估计满周容量，再按约 4.33 周折月。Claude 部分用约 92% 缓存读取占比的流量结构规范化。团队按席合计假设组织赠额未触及共享上限。Claude Team 和 ChatGPT Business 的 Standard、Premium 年付分别折合 20、100 美元&#x2F;席&#x2F;月。<a target="_blank" rel="noopener" href="https://wokey.ai/coding-plan-comparison">Wokey 方法与对照</a>、<a target="_blank" rel="noopener" href="https://claude.com/pricing">Claude 定价</a>、<a target="_blank" rel="noopener" href="https://learn.chatgpt.com/docs/pricing">ChatGPT 定价</a>、<a target="_blank" rel="noopener" href="https://help.openai.com/en/articles/8792828-chatgpt-business-overview">Business 席位</a>。</p>
 <ul>
 <li><strong>Claude Max</strong> 的 3,530 美元为 706 × 官方 5 倍周额度，假设用量结构相同。约 5,460 美元来自 5dive 的两账户满周样本，按 Opus 5.5 重估，未用 Opus 5.5 重新测量。两个点代表不同情景。<a target="_blank" rel="noopener" href="https://claude.com/pricing">Claude 套餐</a>、<a target="_blank" rel="noopener" href="https://5dive.ai/models">5dive 测量说明</a>。</li>
 <li><strong>Codex Pro 100</strong> 的历史常规刷新基线约为 1,140–1,500 美元&#x2F;月。10 月 29 日官方把额度翻倍，按原工作负载外推约 2,300–3,000 美元。FinOps LLM 实际跑出的 3,221 美元包含 14 次提前刷新。Pro 500 的 13,900 美元来自旧 Astra 单模型约 6,955 美元的基线翻倍，该估算只适用于这一历史场景。<a target="_blank" rel="noopener" href="https://finopsllm.com/research/codex-pro-100-30-days-14-resets">FinOps LLM 日志</a>、<a target="_blank" rel="noopener" href="https://www.promptster.ai/blog/what-a-100-dollar-ai-coding-plan-is-worth">Promptster 实测</a>、<a target="_blank" rel="noopener" href="https://help.openai.com/en/articles/6825453-chatgpt-release-notes">OpenAI 额度变更</a>、<a target="_blank" rel="noopener" href="https://wokey.ai/codex-usage-limits">Astra 历史基线</a>。</li>
 <li><strong>限制与赠额</strong>。Claude Pro、Max 有 5 小时及周限额，Ultra 验证账户免 5 小时限额。Codex Plus 有 5 小时及周限额，Pro 三档当时无 5 小时限额。Codex 与 Work 共享工具额度，Claude 工具用量也受同账号其他 Claude 使用影响。API 赠额须领取并绑定组织，余额到期，团队共享额度受封顶规则约束。<a target="_blank" rel="noopener" href="https://help.openai.com/en/articles/20001516-managing-usage-with-gpt-6-astra-in-work-and-codex">Codex 用量</a>、<a target="_blank" rel="noopener" href="https://claude.com/pricing">Claude 订阅</a>、<a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/guides/chatgpt-api-credits">OpenAI API 赠额</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers">Claude API 赠额</a>。</li>
 </ul>
 <p>同价档的 API 等值会受模型单价和缓存结构影响。以 200 美元档为例，Claude Ultra 的等值约为 Codex Pro 200 的 2.14 倍，剔除缓存读取后，每周 token 数约为 1.28 倍（181M 对 141M）。采购时还需考虑相同任务的通过率、重试次数，以及是否能按节奏用完每周额度。<a target="_blank" rel="noopener" href="https://wokey.ai/coding-plan-comparison">同期对照</a>。</p>
-<h2 id="OpenAI、Claude、DeepSeek-的按量-API-价格"><a href="#OpenAI、Claude、DeepSeek-的按量-API-价格" class="headerlink" title="OpenAI、Claude、DeepSeek 的按量 API 价格"></a>OpenAI、Claude、DeepSeek 的按量 API 价格</h2><p>依次列出每百万 <strong>未缓存输入／缓存读取／输出</strong> token 的价格。美元和人民币按渠道原币展示。更多端点、缓存写入和价档见附件。</p>
+<h2 id="Gemini-的扣额与-token-换算"><a href="#Gemini-的扣额与-token-换算" class="headerlink" title="Gemini 的扣额与 token 换算"></a>Gemini 的扣额与 token 换算</h2><ul>
+<li><strong>工具范围与刷新。</strong> 编程对照采用 Google Antigravity 的客户端及 CLI。旧 Gemini CLI 和 Gemini Code Assist 的个人订阅入口已于 2026-06-18 停止服务。Pro 与 Ultra 有 5 小时和周限额。Google 公布 Ultra 两档相对 Pro 为 5×、20×，绝对容量随供给调整。Google One 的 AI credits 用于超额消费，常规套餐的 Gemini Developer API 赠额按 0 计。 <a target="_blank" rel="noopener" href="https://developers.google.com/gemini-code-assist/docs/deprecations/code-assist-individuals">Google 迁移公告</a> · <a target="_blank" rel="noopener" href="https://gemini.google/subscriptions/">Google AI 月费</a> · <a target="_blank" rel="noopener" href="https://antigravity.google/docs/plans/">Antigravity 套餐</a> · <a target="_blank" rel="noopener" href="https://antigravity.google/blog/changes-to-antigravity-plans/">Google 倍数与超额计费说明</a></li>
+<li><strong>共享额度。</strong> Subvalue 用 Antigravity CLI 调用前后的额度读数估算，Gemini 4 Neon、4 Hydrogen、3.8 Flash 在测试中按 API 标价扣共享额度。Pro 为约 30 美元&#x2F;5 小时、105 美元&#x2F;周，Ultra 5× 为约 150 美元&#x2F;5 小时、600 美元&#x2F;周。周上限比例约 5.7×。Ultra 20× 若按 Pro 周额度 ×20，得 2,100 美元&#x2F;周。若按 Ultra 5× 周额度 ×4，得 2,400 美元&#x2F;周。这两个值是不同刷新结构假设下的外推，尚缺同档实测。 <a target="_blank" rel="noopener" href="https://subvalue.app/plans/">Subvalue 分档测量</a> · <a target="_blank" rel="noopener" href="https://subvalue.app/method/">Subvalue 方法</a></li>
+<li><strong>模型选择。</strong> 同一测试中，Ultra 5× 的 Carbon 和 Argon 每 1 美元 API 用量消耗约 3 美元的共享额度。若全用其中一个模型，周额度折合约 200 美元，月等值约 866 美元。Pro 的独立 Argon 额度约值 65 美元&#x2F;月，独立 Claude 额度约值 22 美元&#x2F;月。Ultra 5× 的独立 Claude 额度约值 108 美元&#x2F;月。上表的 Google 行只统计 Gemini 共享额度。 <a target="_blank" rel="noopener" href="https://subvalue.app/plans/">Subvalue 分档测量</a></li>
+</ul>
+<p>按 <strong>Gemini 4 Neon</strong> 举例。假设总 token 中未缓存输入、缓存读取、含思考的输出分别占 <strong>5%、92%、3%</strong>，每百万总 token 的 API 成本为 <code>3 × 5% + 0.15 × 92% + 15 × 3% = 0.738 美元</code>。用周额度等值除以该成本，可得到下列情景值。实际 token 数取决于自己的输入、缓存与输出占比。 <a target="_blank" rel="noopener" href="https://ai.google.dev/gemini-api/docs/pricing#gemini-4-neon">Gemini API 定价</a></p>
+<table>
+<thead>
+<tr>
+<th>方案</th>
+<th align="right">Gemini 共享额度 API 等值&#x2F;周</th>
+<th align="right">等效总 token&#x2F;周</th>
+<th align="right">剔除缓存读取后&#x2F;周</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Google AI Pro</td>
+<td align="right">$105</td>
+<td align="right">约 142M</td>
+<td align="right">约 11M</td>
+</tr>
+<tr>
+<td>Google AI Ultra 5×</td>
+<td align="right">$600</td>
+<td align="right">约 813M</td>
+<td align="right">约 65M</td>
+</tr>
+<tr>
+<td>Google AI Ultra 20×</td>
+<td align="right">$2,100–2,400（外推）</td>
+<td align="right">约 2.85–3.25B</td>
+<td align="right">约 228–260M</td>
+</tr>
+</tbody></table>
+<p>按原表的工具等值，约 20 美元档位的 Gemini 共享额度在 Claude Pro 和 ChatGPT Plus 之间，约 100 美元档位落在 Codex Pro 100 的估算区间内。约 200 美元档位中，Neon 的外推值高于另两家，Carbon 的扣额差异会改变排序。这些估值来自各自的工作负载与限额测量，同一任务的实际吞吐还取决于模型、缓存命中、通过率和可用的 5 小时窗口。 <a target="_blank" rel="noopener" href="https://subvalue.app/plans/">Subvalue</a> · <a target="_blank" rel="noopener" href="https://wokey.ai/coding-plan-comparison">Wokey</a></p>
+<h2 id="OpenAI、Claude、Gemini、DeepSeek-的按量-API-价格"><a href="#OpenAI、Claude、Gemini、DeepSeek-的按量-API-价格" class="headerlink" title="OpenAI、Claude、Gemini、DeepSeek 的按量 API 价格"></a>OpenAI、Claude、Gemini、DeepSeek 的按量 API 价格</h2><p>依次列出每百万 <strong>未缓存输入／缓存读取／输出</strong> token 的价格。美元和人民币按渠道原币展示。更多端点、缓存写入和价档见附件。</p>
 <table>
 <thead>
 <tr>
@@ -520,6 +581,26 @@
 <td>Claude Opus 5.5 官方</td>
 <td>$4／$0.20／$20</td>
 <td>Standard</td>
+</tr>
+<tr>
+<td>Google Gemini 4 Neon 官方</td>
+<td>$3／$0.15／$15</td>
+<td>Standard，隐式缓存</td>
+</tr>
+<tr>
+<td>Google Gemini 4 Hydrogen 官方</td>
+<td>$1.50／$0.075／$7.50</td>
+<td>Standard，隐式缓存</td>
+</tr>
+<tr>
+<td>Google Gemini 4 Carbon／Argon 官方</td>
+<td>$2／$0.10／$10</td>
+<td>Standard，2026-12-01 起为 $4／$0.20／$20</td>
+</tr>
+<tr>
+<td>Google Gemini 3.8 Flash 官方</td>
+<td>$0.75／$0.075／$3.75</td>
+<td>Standard，2027-01-01 起为 $1.50／$0.15／$7.50，显式缓存存储另计</td>
 </tr>
 <tr>
 <td>Claude Sonnet 5.5 经 OpenRouter</td>
@@ -552,7 +633,7 @@
 <td>路由报价，平台费另计</td>
 </tr>
 </tbody></table>
-<p><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/pricing.md">OpenAI API</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/pricing">Claude API 与云渠道</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/anthropic/claude-sonnet-5.5">OpenRouter Claude</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/deepseek/deepseek-v4.1-flash">OpenRouter DeepSeek</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/pricing">OpenRouter 平台费</a>、<a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/">DeepSeek 官价</a>、<a target="_blank" rel="noopener" href="https://console.volcengine.com/ark/region:cn-beijing/docs/model-pricing">火山方舟</a>、<a target="_blank" rel="noopener" href="https://www.siliconflow.com/zh/pricing">SiliconFlow 国际站</a>。</p>
+<p><a target="_blank" rel="noopener" href="https://developers.openai.com/api/docs/pricing.md">OpenAI API</a>、<a target="_blank" rel="noopener" href="https://platform.claude.com/docs/en/about-claude/pricing">Claude API 与云渠道</a>、<a target="_blank" rel="noopener" href="https://ai.google.dev/gemini-api/docs/pricing">Gemini API</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/anthropic/claude-sonnet-5.5">OpenRouter Claude</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/deepseek/deepseek-v4.1-flash">OpenRouter DeepSeek</a>、<a target="_blank" rel="noopener" href="https://openrouter.ai/pricing">OpenRouter 平台费</a>、<a target="_blank" rel="noopener" href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing/">DeepSeek 官价</a>、<a target="_blank" rel="noopener" href="https://console.volcengine.com/ark/region:cn-beijing/docs/model-pricing">火山方舟</a>、<a target="_blank" rel="noopener" href="https://www.siliconflow.com/zh/pricing">SiliconFlow 国际站</a>。</p>
 <h2 id="DeepSeek-工具订阅的折算"><a href="#DeepSeek-工具订阅的折算" class="headerlink" title="DeepSeek 工具订阅的折算"></a>DeepSeek 工具订阅的折算</h2><ul>
 <li><strong>腾讯通用 Token Plan</strong> 当时的 V4.1 Flash 自营空闲活动价折合 ¥0.40／¥0.008／¥1.60，四档月费为 ¥39、¥99、¥299、¥599。<a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1823/130060">腾讯套餐</a> · <a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/1823/133811">腾讯积分</a></li>
 <li><strong>火山 Agent Plan</strong> 当时 V4.1 Flash 活动输入和输出均折合 ¥0.175&#x2F;百万 token，恢复原系数后均为 ¥0.50，四档月费 ¥40、¥200、¥500、¥1,000。两个折算都假设额度用完。个人套餐的文本模型限用于指定工具。<a target="_blank" rel="noopener" href="https://console.volcengine.com/ark/region:cn-beijing/docs/agent-plan-personal-plan-overview">火山套餐</a>、<a target="_blank" rel="noopener" href="https://console.volcengine.com/ark/region:cn-beijing/docs/agent-plan-personal-afp-credits-billing-rules">火山 AFP</a>。</li>
@@ -605,6 +686,8 @@
       
         <a href="/tags/Claude-Code/" class="print-no-link">#Claude Code</a>
       
+        <a href="/tags/Gemini/" class="print-no-link">#Gemini</a>
+      
     </div>
   
 </div>
@@ -615,7 +698,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>大模型 API 价格对照：Claude Code 和 Codex 的订阅额度值多少</div>
+      <div>Claude Code、Codex、Gemini 的订阅额度值多少？</div>
       <div>https://fenixc9.github.io/llm-api-pricing-claude-code-codex-subscriptions/</div>
     </div>
     <div class="license-meta">
